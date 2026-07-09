@@ -36,7 +36,7 @@ jobs:
           role-to-assume: arn:aws:iam::917902836630:role/cmiml-devops-oidc-github-role
           role-session-name: OIDC-GHA-session
           aws-region: ${{ env.AWS_REGION }}
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           repository: ChildMindInstitute/MindLogger-TAF
@@ -67,7 +67,7 @@ jobs:
         id: e2e-tests
 
       - name: Collect artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-results
           path: test-results/api
@@ -96,14 +96,14 @@ jobs:
       contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         name: Checkout
         with:
           ref: gh-pages
           path: gh-pages
 
       - name: Fetch results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: e2e-results
           path: test-results/api

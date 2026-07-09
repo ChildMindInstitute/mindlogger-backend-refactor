@@ -11,11 +11,12 @@ import aiofiles
 import pytz
 from botocore.exceptions import ClientError
 from ddtrace import tracer
-from fastapi import Body, Depends, File, Query, UploadFile
+from fastapi import Body, Depends, File, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from taskiq import TaskiqResult, TaskiqResultTimeoutError
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.file.domain import (
     AnswerUploadedFile,
@@ -35,7 +36,7 @@ from apps.file.errors import FileNotFoundError, SomethingWentWrongError
 from apps.file.services import LogFileService
 from apps.file.tasks import convert_audio_file, convert_image
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import BaseError, NotFoundError
 from apps.users.domain import User
 from apps.users.services.user import UserService
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
@@ -250,21 +251,44 @@ async def answer_upload(
 
 async def answer_download(
     applet_id: uuid.UUID,
-    request: FileDownloadRequest = Body(...),
+    request: Request,
+    schema: FileDownloadRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     app_settings=Depends(get_settings),
 ) -> StreamingResponse:
-    cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
-    if request.key.startswith(LogFileService.LOG_KEY):
-        LogFileService.raise_for_access(user.email)
-
     try:
-        file, media_type = cdn_client.download(request.key)
-    except ClientError:
-        raise SomethingWentWrongError
-    except ObjectNotFoundError:
-        raise FileNotFoundError
+        cdn_client = await select_answer_storage(applet_id=applet_id, session=session, app_settings=app_settings)
+        if schema.key.startswith(LogFileService.LOG_KEY):
+            LogFileService.raise_for_access(user.email)
+
+        try:
+            file, media_type = cdn_client.download(schema.key)
+        except ClientError:
+            raise SomethingWentWrongError
+        except ObjectNotFoundError:
+            raise FileNotFoundError
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_FILE_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                file_path=schema.key,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            event_action=EventAction.APPLET_ANSWER_FILE_DOWNLOAD,
+            curious_applet_id=[applet_id],
+            file_path=schema.key,
+            **http_audit_fields(request),
+        )
+    )
     return StreamingResponse(file, media_type=media_type)
 
 
@@ -314,13 +338,38 @@ async def check_file_uploaded(
 
 async def presign(
     applet_id: uuid.UUID,
-    request: FilePresignRequest = Body(...),
+    request: Request,
+    schema: FilePresignRequest = Body(...),
     user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
     app_settings=Depends(get_settings),
 ) -> ResponseMulti[str | None]:
-    service = await get_presign_service(applet_id, user.id, session, app_settings)
-    links = await service.presign(request.private_urls)
+    try:
+        service = await get_presign_service(applet_id, user.id, session, app_settings)
+        links = await service.presign(schema.private_urls)
+    except BaseError as e:
+        for url in schema.private_urls:
+            await log(
+                AuditEvent(
+                    user_id=user.id,
+                    event_action=EventAction.APPLET_ANSWER_FILE_DOWNLOAD,
+                    curious_applet_id=[applet_id],
+                    file_path=url,
+                    **http_audit_fields(request, e),
+                )
+            )
+        raise
+
+    for url in schema.private_urls:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                event_action=EventAction.APPLET_ANSWER_FILE_DOWNLOAD,
+                curious_applet_id=[applet_id],
+                file_path=url,
+                **http_audit_fields(request),
+            )
+        )
     return ResponseMulti[str | None](result=links, count=len(links))  # noqa
 
 

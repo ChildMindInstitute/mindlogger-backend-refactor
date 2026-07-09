@@ -348,6 +348,20 @@ async def mock_reencrypt_kiq(mocker) -> AsyncGenerator[Any, Any]:
     yield mock
 
 
+@pytest.fixture(autouse=True)
+def mock_audit_event_kiq(mocker: MockerFixture):
+    """Prevent audit events from being persisted during tests.
+
+    ``audit.log()`` enqueues ``send_audit_event``, which the in-memory test
+    broker runs synchronously. That task opens its own DB session and commits
+    to ``audit_logs`` outside the test's transaction, leaking rows across tests.
+    Tests that assert audit behaviour mock ``log`` directly, and the audit
+    query/export tests seed ``audit_logs`` explicitly, so disabling the enqueue
+    here is safe.
+    """
+    return mocker.patch("apps.audit.service.send_audit_event.kiq")
+
+
 @pytest.fixture(scope="session")
 def uuid_zero() -> uuid.UUID:
     return uuid.UUID("00000000-0000-0000-0000-000000000000")

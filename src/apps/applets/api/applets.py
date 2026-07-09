@@ -4,6 +4,7 @@ from copy import deepcopy
 
 from fastapi import Body, Depends
 from firebase_admin.exceptions import FirebaseError
+from starlette.requests import Request
 from starlette.responses import Response as HTTPResponse
 
 from apps.activities.crud import ActivitiesCRUD
@@ -35,9 +36,10 @@ from apps.applets.domain.base import Encryption
 from apps.applets.filters import AppletQueryParams, FlowItemHistoryExportQueryParams
 from apps.applets.service import AppletHistoryService, AppletService
 from apps.applets.service.applet_history import retrieve_applet_by_version, retrieve_versions
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.shared.domain.response import Response, ResponseMulti
-from apps.shared.exception import NotFoundError
+from apps.shared.exception import BaseError, NotFoundError
 from apps.shared.link import convert_link_key
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
@@ -124,17 +126,37 @@ async def applet_retrieve_by_key(
 
 async def applet_create(
     owner_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     schema: AppletCreate = Body(...),
     session=Depends(get_session),
 ) -> Response[public_detail.Applet]:
-    async with atomic(session):
-        await CheckAccessService(session, user.id).check_applet_create_access(owner_id)
-        has_editor = await UserAppletAccessCRUD(session).check_access_by_user_and_owner(
-            user_id=user.id, owner_id=owner_id, roles=[Role.EDITOR]
+    try:
+        async with atomic(session):
+            await CheckAccessService(session, user.id).check_applet_create_access(owner_id)
+            has_editor = await UserAppletAccessCRUD(session).check_access_by_user_and_owner(
+                user_id=user.id, owner_id=owner_id, roles=[Role.EDITOR]
+            )
+            manager_role = Role.EDITOR if has_editor else None
+            applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_CREATE,
+                user_id=user.id,
+                **http_audit_fields(request, e),
+            )
         )
-        manager_role = Role.EDITOR if has_editor else None
-        applet = await AppletService(session, owner_id).create(schema, user.id, manager_role)
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_CREATE,
+            user_id=user.id,
+            curious_applet_id=[applet.id],
+            **http_audit_fields(request),
+        )
+    )
     return Response(result=public_detail.Applet.model_validate(applet))
 
 
@@ -165,15 +187,36 @@ async def applet_update(
 
 async def applet_encryption_update(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     schema: Encryption = Body(...),
     session=Depends(get_session),
 ) -> Response[public_detail.Encryption]:
-    async with atomic(session):
-        service = AppletService(session, user.id)
-        await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
-        await service.update_encryption(applet_id, schema)
+    try:
+        async with atomic(session):
+            service = AppletService(session, user.id)
+            await service.exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
+            await service.update_encryption(applet_id, schema)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ENCRYPTION_UPDATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_ENCRYPTION_UPDATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
     return Response(result=public_detail.Encryption.model_validate(schema))
 
 
@@ -197,15 +240,36 @@ async def applet_duplicate(
 
 async def applet_set_report_configuration(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     schema: AppletReportConfiguration = Body(...),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        service = AppletService(session, user.id)
-        await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
-        await service.set_report_configuration(applet_id, schema)
+    try:
+        async with atomic(session):
+            service = AppletService(session, user.id)
+            await service.exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_edit_access(applet_id)
+            await service.set_report_configuration(applet_id, schema)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_REPORT_UPDATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_REPORT_UPDATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def flow_report_config_update(
@@ -331,15 +395,36 @@ async def applet_version_changes_retrieve(
 
 async def applet_delete(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        service = AppletService(session, user.id)
-        await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_delete_access(applet_id)
-        respondents_device_ids = await AppletsCRUD(session).get_respondents_device_ids(applet_id)
-        await service.delete_applet_by_id(applet_id)
+    try:
+        async with atomic(session):
+            service = AppletService(session, user.id)
+            await service.exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_delete_access(applet_id)
+            respondents_device_ids = await AppletsCRUD(session).get_respondents_device_ids(applet_id)
+            await service.delete_applet_by_id(applet_id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_DELETE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_DELETE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
     try:
         await service.send_notification_to_applet_respondents(
             applet_id,
@@ -415,15 +500,36 @@ async def applet_link_delete(
 
 async def applet_set_data_retention(
     applet_id: uuid.UUID,
+    request: Request,
     schema: AppletDataRetention,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        service = AppletService(session, user.id)
-        await service.exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_retention_access(applet_id)
-        await service.set_data_retention(applet_id, schema)
+    try:
+        async with atomic(session):
+            service = AppletService(session, user.id)
+            await service.exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_retention_access(applet_id)
+            await service.set_data_retention(applet_id, schema)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_RETENTION_UPDATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_RETENTION_UPDATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def applet_retrieve_base_info(

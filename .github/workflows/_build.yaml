@@ -55,12 +55,12 @@ jobs:
       image-sha: ${{ steps.sha.outputs.SHORT_SHA }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.git-ref }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: configure aws credentials
         uses: aws-actions/configure-aws-credentials@v6

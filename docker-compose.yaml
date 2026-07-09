@@ -70,9 +70,6 @@ services:
       - mailhog
     ports:
       - "8000:80"
-    networks:
-      - opensearch-net
-      - default
     develop:
       watch:
         - action: sync
@@ -186,43 +183,7 @@ services:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
 
-  opensearch:
-    image: opensearchproject/opensearch:latest
-    container_name: opensearch-node
-    environment:
-      discovery.type: single-node
-      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "${OPENSEARCH__PASSWORD:-MyStrongPassword123!}"
-      node.name: opensearch
-    ports:
-      - "9200:9200"
-      - "9600:9600"
-    volumes:
-      - opensearch-data:/usr/share/opensearch/data
-    networks:
-      - opensearch-net
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
-    container_name: opensearch-dashboards
-    environment:
-      OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-      OPENSEARCH_USERNAME: admin
-      OPENSEARCH_PASSWORD: "${OPENSEARCH__PASSWORD:-MyStrongPassword123!}"
-      OPENSEARCH_SSL_VERIFICATIONMODE: none
-      explore.enabled: true
-    depends_on:
-      - opensearch
-    ports:
-      - "5601:5601"
-    networks:
-      - opensearch-net
-
-
-networks:
-  opensearch-net:
-
 volumes:
   pg_data: {}
   pg_arb_data: {}
   datastore: {}
-  opensearch-data: {}

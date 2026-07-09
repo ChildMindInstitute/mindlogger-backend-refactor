@@ -1,5 +1,20 @@
 from .enums import EventAction, EventCategory, EventType
 
+# Account-level events (logged without ``curious.applet_id``) surfaced in an applet's audit export,
+# but only for users with a manager-class role on that applet.
+ACCOUNT_LEVEL_EXPORT_ACTIONS: frozenset[EventAction] = frozenset(
+    {
+        EventAction.USER_SESSION_LOGIN,
+        EventAction.USER_SESSION_LOGOUT,
+        EventAction.USER_SESSION_INVALID,
+        EventAction.USER_MFA_ENABLE,
+        EventAction.USER_MFA_DISABLE,
+        EventAction.USER_MFA_RECOVERY_VIEW,
+        EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+        EventAction.USER_MFA_RECOVERY_USE,
+    }
+)
+
 EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     # User auth
     EventAction.USER_SESSION_LOGIN: (EventCategory.SESSION, EventCategory.AUTHENTICATION),
@@ -17,9 +32,6 @@ EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     EventAction.USER_MFA_RECOVERY_VIEW: (EventCategory.IAM,),
     EventAction.USER_MFA_RECOVERY_DOWNLOAD: (EventCategory.IAM,),
     EventAction.USER_MFA_RECOVERY_USE: (EventCategory.IAM,),
-    # Workspace IAM
-    EventAction.WORKSPACE_ACCESS_GRANT: (EventCategory.IAM,),
-    EventAction.WORKSPACE_ACCESS_REVOKE: (EventCategory.IAM,),
     # Applet IAM
     EventAction.APPLET_CREATE: (EventCategory.IAM, EventCategory.CONFIGURATION),
     EventAction.APPLET_DELETE: (EventCategory.IAM, EventCategory.CONFIGURATION),
@@ -30,6 +42,10 @@ EVENT_ACTION_TO_EVENT_CATEGORY: dict[EventAction, tuple[EventCategory, ...]] = {
     EventAction.APPLET_INVITE_INITIATE: (EventCategory.IAM,),
     EventAction.APPLET_INVITE_ACCEPT: (EventCategory.IAM,),
     EventAction.APPLET_INVITE_DECLINE: (EventCategory.IAM,),
+    EventAction.APPLET_ACCESS_GRANT: (EventCategory.IAM,),
+    EventAction.APPLET_ACCESS_REVOKE: (EventCategory.IAM,),
+    EventAction.APPLET_RETENTION_UPDATE: (EventCategory.IAM, EventCategory.CONFIGURATION),
+    EventAction.APPLET_REPORT_UPDATE: (EventCategory.IAM, EventCategory.CONFIGURATION),
     # Applet data access
     EventAction.APPLET_SUBJECT_VIEW: (EventCategory.DATABASE,),
     EventAction.APPLET_ANSWER_VIEW: (EventCategory.DATABASE,),
@@ -62,9 +78,6 @@ EVENT_ACTION_TO_EVENT_TYPE: dict[EventAction, tuple[EventType, ...]] = {
     EventAction.USER_MFA_RECOVERY_VIEW: (EventType.ACCESS,),
     EventAction.USER_MFA_RECOVERY_DOWNLOAD: (EventType.ACCESS,),
     EventAction.USER_MFA_RECOVERY_USE: (EventType.CHANGE,),
-    # Workspace IAM
-    EventAction.WORKSPACE_ACCESS_GRANT: (EventType.CHANGE,),
-    EventAction.WORKSPACE_ACCESS_REVOKE: (EventType.CHANGE,),
     # Applet IAM
     EventAction.APPLET_CREATE: (EventType.CREATION,),
     EventAction.APPLET_DELETE: (EventType.DELETION,),
@@ -75,6 +88,10 @@ EVENT_ACTION_TO_EVENT_TYPE: dict[EventAction, tuple[EventType, ...]] = {
     EventAction.APPLET_INVITE_INITIATE: (EventType.INFO,),
     EventAction.APPLET_INVITE_ACCEPT: (EventType.CHANGE,),
     EventAction.APPLET_INVITE_DECLINE: (EventType.INFO,),
+    EventAction.APPLET_ACCESS_GRANT: (EventType.CHANGE,),
+    EventAction.APPLET_ACCESS_REVOKE: (EventType.CHANGE,),
+    EventAction.APPLET_RETENTION_UPDATE: (EventType.CHANGE,),
+    EventAction.APPLET_REPORT_UPDATE: (EventType.CHANGE,),
     # Applet data access
     EventAction.APPLET_SUBJECT_VIEW: (EventType.ACCESS,),
     EventAction.APPLET_ANSWER_VIEW: (EventType.ACCESS,),

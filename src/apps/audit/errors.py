@@ -4,5 +4,5 @@ from apps.shared.exception import FieldError
 
 
 class InvalidAuditDateRangeError(FieldError):
-    message = _("fromDate must be less than or equal to toDate")
+    message = _("fromDatetime must be less than or equal to toDatetime")
     zero_path = "query"

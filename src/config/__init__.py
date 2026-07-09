@@ -18,7 +18,6 @@ from config.mfa import MFASettings
 from config.multiinformant import MultiInformantSettings
 from config.notification import FirebaseCloudMessagingSettings
 from config.oneup_health import OneUpHealthSettings
-from config.opensearch import OpenSearchSettings
 from config.password import PasswordSettings
 from config.prolific_respondent import ProlificRespondent
 from config.rabbitmq import RabbitMQSettings
@@ -65,9 +64,6 @@ class Settings(BaseSettings):
     # Redis
     redis: RedisSettings = RedisSettings()
     rabbitmq: RabbitMQSettings = RabbitMQSettings()
-
-    # OpenSearch
-    opensearch: OpenSearchSettings = OpenSearchSettings()
 
     # Mailing
     mailing: MailingSettings = MailingSettings()
@@ -140,6 +136,7 @@ settings = Settings(
         "authentication",
         "job",
         "subjects",
+        "audit",
         "integrations",
         "integrations.loris",
     ],

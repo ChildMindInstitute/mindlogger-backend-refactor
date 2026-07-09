@@ -1,9 +1,11 @@
 """Tests for security aspects of MFA disable flow."""
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
@@ -44,8 +46,10 @@ class TestMFADisableSecurity:
     disable_initiate_url = "/users/me/mfa/totp/disable/initiate"
     disable_verify_url = "/users/me/mfa/totp/disable/verify"
 
-    async def test_disable_requires_authentication(self, client: TestClient):
+    async def test_disable_requires_authentication(self, client: TestClient, mocker: MockerFixture):
         """Unauthenticated requests to disable endpoints are rejected."""
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+
         # Try to initiate without authentication
         response = await client.post(self.disable_initiate_url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -54,6 +58,14 @@ class TestMFADisableSecurity:
         verify_data = {"mfaToken": "fake-token", "code": "123456"}
         response = await client.post(self.disable_verify_url, data=verify_data)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # Each unauthenticated request emits user:session:invalid
+        assert audit_log.await_count == 2
+        for call in audit_log.await_args_list:
+            event = call.args[0]
+            assert event.user_id is None
+            assert event.event_action == EventAction.USER_SESSION_INVALID
+            assert event.event_outcome == EventOutcome.FAILURE
 
     async def test_cannot_disable_another_users_mfa(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession

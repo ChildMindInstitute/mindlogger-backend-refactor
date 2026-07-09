@@ -13,6 +13,7 @@ from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.invitations.domain import InvitationManagersRequest, InvitationRespondentRequest
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
@@ -1483,3 +1484,50 @@ class TestWorkspaces(BaseTest):
         assert date_now.year == date_answer.year
         assert date_now.hour == date_answer.hour
         assert date_now.minute == date_answer.minute
+
+    # ── Audit event tests ──
+
+    async def test_remove_manager_access_audit_event(
+        self, client, tom, lucy, applet_one, applet_one_lucy_manager, mocker
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+        data = {
+            "user_id": lucy.id,
+            "applet_ids": [str(applet_one.id)],
+        }
+        response = await client.delete(self.remove_manager_access, data=data)
+        assert response.status_code == 200
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.user_target_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_managers_applet_access_set_audit_event(
+        self, client, tom, lucy, applet_one, applet_one_lucy_manager, mocker
+    ):
+        audit_log = mocker.patch("apps.workspaces.api.log")
+        client.login(tom)
+        data = {
+            "accesses": [
+                {
+                    "applet_id": str(applet_one.id),
+                    "roles": [Role.COORDINATOR],
+                }
+            ]
+        }
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=lucy.id),
+            data=data,
+        )
+        assert response.status_code == 200
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ACCESS_GRANT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.user_target_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]

@@ -33,14 +33,16 @@ API process                                 Worker process
       │
       └──────── RabbitMQ queue ──────────►  3. send_audit_event(payload)
                                                   │
-                                                  │  OpenSearchClient().index_document()
-                                                  │
+                                                  │  AuditLogCRUD(session).save(...)
+                                                  │  INSERT ... ON CONFLICT DO NOTHING
                                                   ▼
-                                            POST /audit-logs/_doc
-                                            → document stored in OpenSearch
+                                            row stored in the `audit_logs`
+                                            table (primary Postgres database)
 ```
 
-**The API never waits for OpenSearch.** As soon as the message is on the queue (step 2), the HTTP response can return. The write to OpenSearch happens in a separate worker process.
+**The API never waits for the audit write.** As soon as the message is on the queue (step 2), the HTTP response can return. The write to Postgres happens in a separate worker process.
+
+Audit events are stored in the primary Postgres database. A few fields are denormalized into typed columns for filtering/sorting; the full ECS document is kept in a JSONB `payload` column and is what the export endpoint returns.
 
 ---
 
@@ -51,11 +53,10 @@ API process                                 Worker process
 | `apps/audit/domain.py` | `AuditEvent` — the Pydantic model that defines every field an audit event can have |
 | `apps/audit/enums.py` | `EventAction`, `EventOutcome` — the vocabulary of valid actions and outcomes |
 | `apps/audit/service.py` | `audit.log()` — the one function callers use. Serializes and enqueues. |
-| `apps/audit/tasks.py` | `send_audit_event` — the Taskiq worker task. Writes to OpenSearch, handles retries. |
-| `apps/audit/index_mapping.py` | OpenSearch field type definitions for the `audit-logs` index |
-| `infrastructure/utility/opensearch_client.py` | Singleton `AsyncOpenSearch` wrapper used by the worker |
-| `infrastructure/lifespan.py` | Creates the `audit-logs` index on app startup (once, idempotent) |
-| `config/opensearch.py` | `OpenSearchSettings` — host, port, credentials, index name |
+| `apps/audit/tasks.py` | `send_audit_event` — the Taskiq worker task. Writes to Postgres, handles retries. |
+| `apps/audit/db/schemas.py` | `AuditLogSchema` — the `audit_logs` table (typed columns + JSONB `payload`) |
+| `apps/audit/crud.py` | `AuditLogCRUD` — idempotent insert and the applet-scoped export query |
+| `apps/audit/query_service.py` | `AuditQueryService` — rebuilds `AuditEvent`s from stored rows for the export endpoint |
 
 ---
 
@@ -83,39 +84,32 @@ Only `user_id` and `event_action` are required. Everything else is optional and 
 
 ## Failure handling
 
-If OpenSearch is unavailable or returns an error:
+If the database write fails:
 
 1. The worker logs a warning and re-enqueues the task with a **5-second delay**.
 2. This repeats up to **3 times** (configurable via `retries`).
 3. After all retries are exhausted, the full event payload is logged at **ERROR level**, which captures it in Datadog. The event is not silently dropped.
 
----
-
-## OpenSearch index
-
-The `audit-logs` index is created once on app startup by `startup_opensearch()` in `lifespan.py`. The mapping is defined explicitly in `index_mapping.py` — field types are chosen for the queries we expect:
-
-- `keyword` — IDs, enums, statuses (exact match, aggregation)
-- `ip` — `client.ip` (CIDR range queries)
-- `date` — `@timestamp` (time-range queries)
-- `text` — URL paths, user agent strings (full-text search)
-
-Adding new **event actions** (new values of `EventAction`) requires no mapping changes. Adding new **fields** to `AuditEvent` requires a corresponding entry in `index_mapping.py`.
+Each event carries a unique `event_id`, stored in a unique column. The insert uses `ON CONFLICT (event_id) DO NOTHING`, so a retried task that re-delivers the same event never creates a duplicate row.
 
 ---
 
-## Configuration
+## Storage
 
-All OpenSearch settings are nested under `OPENSEARCH__` in the environment:
+Audit events live in the `audit_logs` table (`apps/audit/db/schemas.py`), created by an Alembic migration like any other table.
 
-```bash
-OPENSEARCH__HOST=opensearch        # default: opensearch (Docker service name)
-OPENSEARCH__PORT=9200              # default: 9200
-OPENSEARCH__USER=admin             # default: admin
-OPENSEARCH__PASSWORD=admin         # default: admin
-OPENSEARCH__USE_SSL=True           # default: True (required by the Docker image)
-OPENSEARCH__VERIFY_CERTS=False     # default: False (self-signed cert in local/dev)
-OPENSEARCH__AUDIT_INDEX=audit-logs # default: audit-logs
-```
+- Typed columns — `event_id`, `event_timestamp`, `event_action`, `event_outcome`, `user_id`, `applet_ids` — back the export query's filter and sort.
+- `payload` (JSONB) holds the full event document; the export endpoint returns it verbatim.
 
-For local development, if running the backend outside Docker, set `OPENSEARCH__HOST=localhost`.
+Indexes:
+- unique on `event_id` (idempotency)
+- `(event_timestamp, event_id)` — the date-range filter and sort order
+- GIN on `applet_ids` — `:applet_id = ANY(applet_ids)` membership lookups
+
+Adding new **event actions** (new values of `EventAction`) requires no schema change. Adding new **fields** to `AuditEvent` requires no schema change either — they are stored in the JSONB `payload` automatically; only promote a field to its own column (with a migration) if you need to filter or sort on it.
+
+---
+
+## Retention
+
+There is currently no retention policy — the `audit_logs` table grows unbounded. When retention becomes necessary, the recommended approach is native Postgres range partitioning by `event_timestamp` (e.g. monthly) with a scheduled job that drops partitions older than a configurable window.

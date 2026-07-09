@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from fastapi import Body, Depends, HTTPException, Query, Request
-from fastapi import status as http_status
+from fastapi import Body, Depends, Query, Request
 from fastapi.responses import Response as FastAPIResponse
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.deps import get_current_user
 from apps.authentication.domain.recovery_code.public import RecoveryCodesListResponse
@@ -15,11 +15,13 @@ from apps.authentication.services.recovery_codes import (
     format_recovery_codes_text,
     generate_recovery_codes,
     get_recovery_codes,
+    is_recovery_code,
     send_recovery_code_notifications,
     verify_recovery_code_service,
 )
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
+from apps.shared.exception import BaseError
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import (
     MFADisableConfirmRequest,
@@ -45,9 +47,12 @@ from apps.users.errors import (
     MFAAlreadyEnabledError,
     MFANotEnabledError,
     MFASessionPurposeMismatchError,
+    MFATokenUserMismatchError,
     RecoveryCodeAlreadyUsedError,
     RecoveryCodeInvalidError,
     RecoveryCodeNotFoundError,
+    RecoveryCodesDownloadTokenInvalidError,
+    RecoveryCodesDownloadTokenUserMismatchError,
     RecoveryCodesNotFoundError,
 )
 from apps.users.services.totp import totp_service
@@ -61,15 +66,36 @@ from infrastructure.logger import logger
 
 
 async def user_create(
+    request: Request,
     user_create_schema: UserCreateRequest = Body(...),
     session=Depends(get_session),
 ) -> Response[PublicUser]:
-    async with atomic(session):
-        service = UserService(session)
-        prepared_data = UserCreate(**user_create_schema.model_dump())
-        user = await service.create_user(prepared_data)
-        # Create default workspace for new user
-        await WorkspaceService(session, user.id).create_workspace_from_user(user)
+    try:
+        async with atomic(session):
+            service = UserService(session)
+            prepared_data = UserCreate(**user_create_schema.model_dump())
+            user = await service.create_user(prepared_data)
+            # Create default workspace for new user
+            await WorkspaceService(session, user.id).create_workspace_from_user(user)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=None,
+                user_email=user_create_schema.email,
+                event_action=EventAction.USER_CREATE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_CREATE,
+            **http_audit_fields(request),
+        )
+    )
     return Response(result=PublicUser.from_user(user))
 
 
@@ -97,11 +123,32 @@ async def user_update(
 
 
 async def user_delete(
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ) -> None:
-    async with atomic(session):
-        await UsersCRUD(session).delete(user.id)
+    try:
+        async with atomic(session):
+            await UsersCRUD(session).delete(user.id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_DELETE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_DELETE,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def user_save_device(
@@ -150,6 +197,7 @@ async def user_mfa_totp_initiate(
 
 
 async def user_mfa_totp_verify(
+    request: Request,
     schema: TOTPVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -158,51 +206,71 @@ async def user_mfa_totp_verify(
 
     Returns recovery codes on first-time setup only (displayed once).
     """
-    async with atomic(session):
-        # Refetch user from database to ensure we have latest MFA state
-        fresh_user = await UsersCRUD(session).get_by_id(user.id)
+    try:
+        async with atomic(session):
+            # Refetch user from database to ensure we have latest MFA state
+            fresh_user = await UsersCRUD(session).get_by_id(user.id)
 
-        # Prevent activation if MFA already enabled (race condition protection)
-        if fresh_user.mfa_enabled:
-            raise MFAAlreadyEnabledError()
+            # Prevent activation if MFA already enabled (race condition protection)
+            if fresh_user.mfa_enabled:
+                raise MFAAlreadyEnabledError()
 
-        # Validate pending setup and get decrypted secret
-        decrypted_secret = totp_service.validate_pending_setup(fresh_user)
+            # Validate pending setup and get decrypted secret
+            decrypted_secret = totp_service.validate_pending_setup(fresh_user)
 
-        # Verify code with standard time-window tolerance
-        is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=1)
+            # Verify code with standard time-window tolerance
+            is_valid = totp_service.verify_code(decrypted_secret, schema.code, valid_window=1)
 
-        if not is_valid:
-            raise InvalidTOTPCodeError()
+            if not is_valid:
+                raise InvalidTOTPCodeError()
 
-        # Activate MFA atomically
-        assert fresh_user.pending_mfa_secret is not None  # Already validated above
-        await UsersCRUD(session).activate_mfa(
-            user_id=fresh_user.id,
-            encrypted_secret=fresh_user.pending_mfa_secret,
-        )
-
-        # Generate recovery codes on first-time MFA setup only
-        # Check if codes actually exist in DB, not just if timestamp is set
-        # (handles case where previous attempt set timestamp but failed to create codes)
-        codes = None
-        download_token = None
-        existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
-        if len(existing_codes) == 0:
-            codes = await generate_recovery_codes(session, fresh_user.id)
-            # Generate download token so user can download their codes immediately
-            download_token = AuthenticationService.create_download_recovery_codes_token(fresh_user.id)
-            logger.info(
-                f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
-                f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
+            # Activate MFA atomically
+            assert fresh_user.pending_mfa_secret is not None  # Already validated above
+            await UsersCRUD(session).activate_mfa(
+                user_id=fresh_user.id,
+                encrypted_secret=fresh_user.pending_mfa_secret,
             )
 
-        notification_service = MFANotificationService()
-        await notification_service.send_mfa_enabled_notification(
-            user=fresh_user,
-            enabled_at=datetime.now(timezone.utc),
-            recovery_codes_count=settings.mfa.recovery_code_count,
+            # Generate recovery codes on first-time MFA setup only
+            # Check if codes actually exist in DB, not just if timestamp is set
+            # (handles case where previous attempt set timestamp but failed to create codes)
+            codes = None
+            download_token = None
+            existing_codes = await RecoveryCodeCRUD(session).get_by_user_id(fresh_user.id)
+            if len(existing_codes) == 0:
+                codes = await generate_recovery_codes(session, fresh_user.id)
+                # Generate download token so user can download their codes immediately
+                download_token = AuthenticationService.create_download_recovery_codes_token(fresh_user.id)
+                logger.info(
+                    f"Recovery codes generated during MFA setup user_id={fresh_user.id} "
+                    f"download_token_expires_in={settings.mfa.download_token_expiration_seconds}s"
+                )
+
+            notification_service = MFANotificationService()
+            await notification_service.send_mfa_enabled_notification(
+                user=fresh_user,
+                enabled_at=datetime.now(timezone.utc),
+                recovery_codes_count=settings.mfa.recovery_code_count,
+            )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_ENABLE,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_ENABLE,
+            **http_audit_fields(request),
+        )
+    )
 
     result = TOTPVerifyResponse(
         message="TOTP MFA has been successfully enabled for your account.",
@@ -260,153 +328,188 @@ async def user_mfa_totp_disable_verify(
     Accepts either a TOTP code (preferred) or a recovery code as verification.
     """
 
-    # Step 1: Validate mfa_token and get session data
-    mfa_service = MFASessionService()
-    mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.mfa_token)
+    recovery_code_used = False
+    try:
+        # Step 1: Validate mfa_token and get session data
+        mfa_service = MFASessionService()
+        mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.mfa_token)
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(f"MFA disable attempted with mismatched user current_user={user.id} token_user={token_user_id}")
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
-        )
-
-    # Step 3: Validate session purpose is "disable"
-    if purpose != "disable":
-        logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
-        raise MFASessionPurposeMismatchError()
-
-    # Step 4: Check global lockout
-    is_locked = await mfa_service.is_globally_locked_out(token_user_id)
-    if is_locked:
-        logger.warning(f"MFA disable blocked - global lockout user_id={token_user_id}")
-        raise MFAGlobalLockoutError(
-            global_attempts_remaining=0,
-        )
-
-    # Step 5: Get session data to check per-session attempts
-    session_data = await mfa_service.get_session(mfa_session_id)
-    if not session_data:
-        logger.warning(f"MFA session expired during verification mfa_session_id={mfa_session_id}")
-        raise MFASessionNotFoundError()
-
-    # Step 6: Check per-session max attempts
-    max_attempts = settings.redis.mfa_max_attempts
-    if session_data.has_exceeded_max_attempts(max_attempts):
-        global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
-        logger.warning(
-            f"MFA disable blocked - max attempts exceeded user_id={token_user_id} "
-            f"attempts={session_data.failed_totp_attempts}"
-        )
-        raise TooManyTOTPAttemptsError(
-            session_attempts_remaining=0,
-            global_attempts_remaining=global_remaining,
-            lockout_reason="session_limit",
-        )
-
-    # Step 7-11: Single atomic transaction for all database operations
-    async with atomic(session):
-        # Fetch user from database
-        crud = UsersCRUD(session)
-        db_user = await crud.get_by_id(token_user_id)
-
-        # Validate user has MFA enabled (race condition protection)
-        if not db_user.mfa_enabled or not db_user.mfa_secret:
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
             logger.warning(
-                f"MFA disable attempted but MFA not enabled user_id={token_user_id} "
-                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                f"MFA disable attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise MFANotEnabledError()
+            raise MFATokenUserMismatchError()
 
-        # Try TOTP verification first
-        # Decrypt TOTP secret
-        decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
+        # Step 3: Validate session purpose is "disable"
+        if purpose != "disable":
+            logger.warning(f"MFA session purpose mismatch user_id={token_user_id} expected=disable actual={purpose}")
+            raise MFASessionPurposeMismatchError()
 
-        # Verify TOTP code with replay protection
-        is_valid, time_step_used = totp_service.verify_with_replay_check(
-            secret=decrypted_secret,
-            code=schema.code,
-            last_used_step=db_user.last_totp_time_step,
-        )
+        # Step 4: Check global lockout
+        is_locked = await mfa_service.is_globally_locked_out(token_user_id)
+        if is_locked:
+            logger.warning(f"MFA disable blocked - global lockout user_id={token_user_id}")
+            raise MFAGlobalLockoutError(
+                global_attempts_remaining=0,
+            )
 
-        if is_valid:
-            # Update last TOTP time step immediately (replay protection)
-            assert time_step_used is not None
-            await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
-            logger.info(f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}")
-        else:
-            # TOTP failed, try recovery code verification
-            try:
-                await verify_recovery_code_service(session, token_user_id, schema.code)
+        # Step 5: Get session data to check per-session attempts
+        session_data = await mfa_service.get_session(mfa_session_id)
+        if not session_data:
+            logger.warning(f"MFA session expired during verification mfa_session_id={mfa_session_id}")
+            raise MFASessionNotFoundError()
 
-                # Send recovery code notifications (used + warning if needed)
-                request_metadata = extract_request_metadata(request)
-                await send_recovery_code_notifications(
-                    session=session,
-                    user=db_user,
-                    used_at=datetime.now(timezone.utc),
-                    request_info=request_metadata,
-                )
+        # Step 6: Check per-session max attempts
+        max_attempts = settings.redis.mfa_max_attempts
+        if session_data.has_exceeded_max_attempts(max_attempts):
+            global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+            logger.warning(
+                f"MFA disable blocked - max attempts exceeded user_id={token_user_id} "
+                f"attempts={session_data.failed_totp_attempts}"
+            )
+            raise TooManyTOTPAttemptsError(
+                session_attempts_remaining=0,
+                global_attempts_remaining=global_remaining,
+                lockout_reason="session_limit",
+            )
 
-                logger.info(f"Recovery code verified for MFA disable user_id={token_user_id}")
-            except (
-                RecoveryCodeInvalidError,
-                RecoveryCodeAlreadyUsedError,
-                RecoveryCodesNotFoundError,
-                RecoveryCodeNotFoundError,
-            ):
-                # Both TOTP and recovery code failed - increment counters
-                new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-                global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+        # Step 7-11: Single atomic transaction for all database operations
+        async with atomic(session):
+            # Fetch user from database
+            crud = UsersCRUD(session)
+            db_user = await crud.get_by_id(token_user_id)
 
-                # Calculate remaining attempts using service methods
-                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
-                global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
-
+            # Validate user has MFA enabled (race condition protection)
+            if not db_user.mfa_enabled or not db_user.mfa_secret:
                 logger.warning(
-                    f"Invalid TOTP/recovery code for MFA disable user_id={token_user_id} "
-                    f"session_attempts={new_count} global_attempts={global_count}"
+                    f"MFA disable attempted but MFA not enabled user_id={token_user_id} "
+                    f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
                 )
+                raise MFANotEnabledError()
 
-                # Check if global lockout threshold reached
-                if global_count >= settings.redis.mfa_global_lockout_attempts:
-                    logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
-                    await mfa_service.delete_session(mfa_session_id)
+            # Try TOTP verification first
+            # Decrypt TOTP secret
+            decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
 
-                    # Send account locked notification
-                    notification_service = MFANotificationService()
-                    await notification_service.send_account_locked_email(
+            # Verify TOTP code with replay protection
+            is_valid, time_step_used = totp_service.verify_with_replay_check(
+                secret=decrypted_secret,
+                code=schema.code,
+                last_used_step=db_user.last_totp_time_step,
+            )
+
+            if is_valid:
+                # Update last TOTP time step immediately (replay protection)
+                assert time_step_used is not None
+                await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
+                logger.info(f"TOTP verified for MFA disable user_id={token_user_id} time_step={time_step_used}")
+            else:
+                # TOTP failed, try recovery code verification
+                try:
+                    await verify_recovery_code_service(session, token_user_id, schema.code)
+                    recovery_code_used = True
+
+                    # Send recovery code notifications (used + warning if needed)
+                    request_metadata = extract_request_metadata(request)
+                    await send_recovery_code_notifications(
+                        session=session,
                         user=db_user,
-                        lockout_reason="Too many failed MFA disable attempts",
-                        failed_attempts=global_count,
-                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                        used_at=datetime.now(timezone.utc),
+                        request_info=request_metadata,
                     )
 
-                    raise MFAGlobalLockoutError(
-                        global_attempts_remaining=0,
+                    logger.info(f"Recovery code verified for MFA disable user_id={token_user_id}")
+                except (
+                    RecoveryCodeInvalidError,
+                    RecoveryCodeAlreadyUsedError,
+                    RecoveryCodesNotFoundError,
+                    RecoveryCodeNotFoundError,
+                ) as e:
+                    # Log user:mfa:recovery:use "failure" if user attempted a recovery code
+                    if is_recovery_code(schema.code):
+                        await log(
+                            AuditEvent(
+                                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                                user_id=token_user_id,
+                                user_target_id=token_user_id,
+                                **http_audit_fields(request, e),
+                            )
+                        )
+
+                    # Both TOTP and recovery code failed - increment counters
+                    new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                    global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+
+                    # Calculate remaining attempts using service methods
+                    session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                    global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+
+                    logger.warning(
+                        f"Invalid TOTP/recovery code for MFA disable user_id={token_user_id} "
+                        f"session_attempts={new_count} global_attempts={global_count}"
                     )
 
-                # Check if per-session threshold reached
-                if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
-                    await mfa_service.delete_session(mfa_session_id)
-                    logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
+                    # Check if global lockout threshold reached
+                    if global_count >= settings.redis.mfa_global_lockout_attempts:
+                        logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
+                        await mfa_service.delete_session(mfa_session_id)
 
-                # Send failed disable attempt notification
-                if global_count >= settings.mfa.disable_failed_attempts_warning_threshold:
-                    notification_service = MFANotificationService()
-                    await notification_service.send_disable_failed_attempts_warning(
-                        user=db_user,
-                        failed_attempts=global_count,
-                        attempted_at=datetime.now(timezone.utc),
+                        # Send account locked notification
+                        notification_service = MFANotificationService()
+                        await notification_service.send_account_locked_email(
+                            user=db_user,
+                            lockout_reason="Too many failed MFA disable attempts",
+                            failed_attempts=global_count,
+                            lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                        )
+
+                        raise MFAGlobalLockoutError(
+                            global_attempts_remaining=0,
+                        )
+
+                    # Check if per-session threshold reached
+                    if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
+                        await mfa_service.delete_session(mfa_session_id)
+                        logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
+
+                    # Send failed disable attempt notification
+                    if global_count >= settings.mfa.disable_failed_attempts_warning_threshold:
+                        notification_service = MFANotificationService()
+                        await notification_service.send_disable_failed_attempts_warning(
+                            user=db_user,
+                            failed_attempts=global_count,
+                            attempted_at=datetime.now(timezone.utc),
+                        )
+
+                    raise InvalidTOTPCodeError(
+                        session_attempts_remaining=session_remaining,
+                        global_attempts_remaining=global_remaining,
                     )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_DISABLE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
 
-                raise InvalidTOTPCodeError(
-                    session_attempts_remaining=session_remaining,
-                    global_attempts_remaining=global_remaining,
-                )
+    # Log user:mfa:recovery:use after atomic database transaction is committed
+    if recovery_code_used:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                user_id=token_user_id,
+                user_target_id=token_user_id,
+                **http_audit_fields(request),
+            )
+        )
 
     # Code validation successful - transition session to confirmation phase
-    # (MFA is NOT disabled yet)
+    # (MFA is NOT disabled yet - do not log user:mfa:disable "success")
     confirmation_token = await mfa_service.transition_to_confirmation(mfa_session_id, confirmation_ttl=300)
 
     # Clear global lockout after successful code validation
@@ -436,59 +539,77 @@ async def user_mfa_totp_disable_confirm(
     from the successful verify endpoint call.
     """
 
-    # Step 1: Validate confirmation_token and get session data
-    mfa_service = MFASessionService()
-    mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.confirmation_token)
+    try:
+        # Step 1: Validate confirmation_token and get session data
+        mfa_service = MFASessionService()
+        mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.confirmation_token)
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(
-            f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This confirmation token belongs to a different user"
-        )
-
-    # Step 3: Validate session purpose is "disable_confirmed"
-    if purpose != "disable_confirmed":
-        logger.warning(
-            f"MFA session purpose mismatch for confirm user_id={token_user_id} "
-            f"expected=disable_confirmed actual={purpose}"
-        )
-        raise MFASessionPurposeMismatchError()
-
-    # Step 4-8: Single atomic transaction for all database operations
-    async with atomic(session):
-        # Fetch user from database
-        crud = UsersCRUD(session)
-        db_user = await crud.get_by_id(token_user_id)
-
-        # Validate user has MFA enabled (race condition protection)
-        if not db_user.mfa_enabled or not db_user.mfa_secret:
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
             logger.warning(
-                f"MFA disable confirm attempted but MFA not enabled user_id={token_user_id} "
-                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                f"MFA disable confirm attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise MFANotEnabledError()
+            raise MFATokenUserMismatchError("This confirmation token belongs to a different user.")
 
-        # Disable MFA and clear all related fields
-        disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
-        await crud.disable_mfa(user_id=db_user.id, disabled_at=disabled_at)
+        # Step 3: Validate session purpose is "disable_confirmed"
+        if purpose != "disable_confirmed":
+            logger.warning(
+                f"MFA session purpose mismatch for confirm user_id={token_user_id} "
+                f"expected=disable_confirmed actual={purpose}"
+            )
+            raise MFASessionPurposeMismatchError()
 
-        # Invalidate all recovery codes (soft delete)
-        recovery_crud = RecoveryCodeCRUD(session)
-        await recovery_crud.delete_by_user_id(user_id=token_user_id)
+        # Step 4-8: Single atomic transaction for all database operations
+        async with atomic(session):
+            # Fetch user from database
+            crud = UsersCRUD(session)
+            db_user = await crud.get_by_id(token_user_id)
 
-        logger.info(f"MFA disabled and recovery codes invalidated user_id={token_user_id}")
+            # Validate user has MFA enabled (race condition protection)
+            if not db_user.mfa_enabled or not db_user.mfa_secret:
+                logger.warning(
+                    f"MFA disable confirm attempted but MFA not enabled user_id={token_user_id} "
+                    f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                )
+                raise MFANotEnabledError()
 
-    # Step 9: Delete MFA session (cleanup)
-    await mfa_service.delete_session(mfa_session_id)
+            # Disable MFA and clear all related fields
+            disabled_at = datetime.now(timezone.utc).replace(tzinfo=None)
+            await crud.disable_mfa(user_id=db_user.id, disabled_at=disabled_at)
 
-    # Step 10: Send MFA disabled notification
-    notification_service = MFANotificationService()
-    await notification_service.send_mfa_disabled_notification(
-        user=db_user,
-        disabled_at=datetime.now(timezone.utc),
+            # Invalidate all recovery codes (soft delete)
+            recovery_crud = RecoveryCodeCRUD(session)
+            await recovery_crud.delete_by_user_id(user_id=token_user_id)
+
+            logger.info(f"MFA disabled and recovery codes invalidated user_id={token_user_id}")
+
+        # Step 9: Delete MFA session (cleanup)
+        await mfa_service.delete_session(mfa_session_id)
+
+        # Step 10: Send MFA disabled notification
+        notification_service = MFANotificationService()
+        await notification_service.send_mfa_disabled_notification(
+            user=db_user,
+            disabled_at=datetime.now(timezone.utc),
+        )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_DISABLE,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_DISABLE,
+            **http_audit_fields(request),
+        )
     )
 
     logger.info(f"MFA disable completed user_id={token_user_id}")
@@ -553,7 +674,8 @@ async def user_recovery_codes_view_initiate(
     )
 
 
-async def user_recovery_codes_view_verify(
+async def user_recovery_codes_view_verify(  # noqa: C901
+    request: Request,
     schema: RecoveryCodesViewVerifyRequest = Body(...),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -574,204 +696,247 @@ async def user_recovery_codes_view_verify(
     - codes: List of recovery codes with usage status
     - download_token: Short-lived JWT (5 min) for downloading codes
     """
-    # Step 1: Validate mfa_token and get session data
-    mfa_service = MFASessionService()
-    mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.mfa_token)
+    try:
+        # Step 1: Validate mfa_token and get session data
+        mfa_service = MFASessionService()
+        mfa_session_id, token_user_id, purpose = await mfa_service.validate_and_get_session(schema.mfa_token)
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(
-            f"Recovery codes view attempted with mismatched user current_user={user.id} token_user={token_user_id}"
-        )
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This MFA token belongs to a different user"
-        )
-
-    # Step 3: Validate session purpose is "view_recovery_codes"
-    if purpose != "view_recovery_codes":
-        logger.warning(
-            f"MFA session purpose mismatch user_id={token_user_id} expected=view_recovery_codes actual={purpose}"
-        )
-        raise MFASessionPurposeMismatchError()
-
-    # Step 4: Check global lockout
-    is_locked = await mfa_service.is_globally_locked_out(token_user_id)
-    if is_locked:
-        logger.warning(f"Recovery codes view blocked - global lockout user_id={token_user_id}")
-        raise MFAGlobalLockoutError(
-            global_attempts_remaining=0,
-        )
-
-    # Step 5: Get session data to check per-session attempts
-    session_data = await mfa_service.get_session(mfa_session_id)
-    if not session_data:
-        logger.warning(f"MFA session expired during verification mfa_session_id={mfa_session_id}")
-        raise MFASessionNotFoundError()
-
-    # Step 6: Check per-session max attempts
-    max_attempts = settings.redis.mfa_max_attempts
-    if session_data.has_exceeded_max_attempts(max_attempts):
-        global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
-        logger.warning(
-            f"Recovery codes view blocked - max attempts exceeded user_id={token_user_id} "
-            f"attempts={session_data.failed_totp_attempts}"
-        )
-        raise TooManyTOTPAttemptsError(
-            session_attempts_remaining=0,
-            global_attempts_remaining=global_remaining,
-            lockout_reason="session_limit",
-        )
-
-    # Step 7: Fetch user from database
-    async with atomic(session):
-        crud = UsersCRUD(session)
-        db_user = await crud.get_by_id(token_user_id)
-
-        # Step 8: Validate user has MFA enabled (race condition protection)
-        if not db_user.mfa_enabled or not db_user.mfa_secret:
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
             logger.warning(
-                f"Recovery codes view attempted but MFA not enabled user_id={token_user_id} "
-                f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
+                f"Recovery codes view attempted with mismatched user current_user={user.id} token_user={token_user_id}"
             )
-            raise MFANotEnabledError()
+            raise MFATokenUserMismatchError()
 
-        # Step 9: Try TOTP verification first
-        verification_method = None
+        # Step 3: Validate session purpose is "view_recovery_codes"
+        if purpose != "view_recovery_codes":
+            logger.warning(
+                f"MFA session purpose mismatch user_id={token_user_id} expected=view_recovery_codes actual={purpose}"
+            )
+            raise MFASessionPurposeMismatchError()
 
-        # Decrypt TOTP secret
-        decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
+        # Step 4: Check global lockout
+        is_locked = await mfa_service.is_globally_locked_out(token_user_id)
+        if is_locked:
+            logger.warning(f"Recovery codes view blocked - global lockout user_id={token_user_id}")
+            raise MFAGlobalLockoutError(
+                global_attempts_remaining=0,
+            )
 
-        # Verify TOTP code with replay protection
-        is_valid, time_step_used = totp_service.verify_with_replay_check(
-            secret=decrypted_secret,
-            code=schema.code,
-            last_used_step=db_user.last_totp_time_step,
-        )
+        # Step 5: Get session data to check per-session attempts
+        session_data = await mfa_service.get_session(mfa_session_id)
+        if not session_data:
+            logger.warning(f"MFA session expired during verification mfa_session_id={mfa_session_id}")
+            raise MFASessionNotFoundError()
 
-        if is_valid:
-            verification_method = "totp"
-            # Update last TOTP time step (replay protection)
-            assert time_step_used is not None
-            await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
-            logger.info(f"TOTP verified for recovery codes view user_id={token_user_id} time_step={time_step_used}")
-        else:
-            # Step 10: TOTP failed, try recovery code verification
-            try:
-                await verify_recovery_code_service(session, token_user_id, schema.code)
-                verification_method = "recovery_code"
-                logger.info(f"Recovery code verified for recovery codes view user_id={token_user_id}")
-            except (
-                RecoveryCodeInvalidError,
-                RecoveryCodeAlreadyUsedError,
-                RecoveryCodesNotFoundError,
-                RecoveryCodeNotFoundError,
-            ):
-                # Both TOTP and recovery code failed - increment counters and raise error
-                new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
-                global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+        # Step 6: Check per-session max attempts
+        max_attempts = settings.redis.mfa_max_attempts
+        if session_data.has_exceeded_max_attempts(max_attempts):
+            global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+            logger.warning(
+                f"Recovery codes view blocked - max attempts exceeded user_id={token_user_id} "
+                f"attempts={session_data.failed_totp_attempts}"
+            )
+            raise TooManyTOTPAttemptsError(
+                session_attempts_remaining=0,
+                global_attempts_remaining=global_remaining,
+                lockout_reason="session_limit",
+            )
 
-                # Calculate remaining attempts using service methods
-                session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
-                global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+        # Step 7: Fetch user from database
+        async with atomic(session):
+            crud = UsersCRUD(session)
+            db_user = await crud.get_by_id(token_user_id)
 
+            # Step 8: Validate user has MFA enabled (race condition protection)
+            if not db_user.mfa_enabled or not db_user.mfa_secret:
                 logger.warning(
-                    f"Invalid TOTP/recovery code for recovery codes view user_id={token_user_id} "
-                    f"session_attempts={new_count} global_attempts={global_count} "
-                    f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
+                    f"Recovery codes view attempted but MFA not enabled user_id={token_user_id} "
+                    f"mfa_enabled={db_user.mfa_enabled} has_secret={bool(db_user.mfa_secret)}"
                 )
+                raise MFANotEnabledError()
 
-                # Send warning email if global attempts hit threshold
-                if global_count == settings.mfa.failed_attempts_warning_threshold:
-                    logger.info(
-                        f"Sending view recovery codes failed attempts warning email user_id={token_user_id} "
-                        f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
+            # Step 9: Try TOTP verification first
+            verification_method = None
+
+            # Decrypt TOTP secret
+            decrypted_secret = totp_service.decrypt_secret(db_user.mfa_secret)
+
+            # Verify TOTP code with replay protection
+            is_valid, time_step_used = totp_service.verify_with_replay_check(
+                secret=decrypted_secret,
+                code=schema.code,
+                last_used_step=db_user.last_totp_time_step,
+            )
+
+            if is_valid:
+                verification_method = "totp"
+                # Update last TOTP time step (replay protection)
+                assert time_step_used is not None
+                await crud.update_last_totp_time_step(user_id=db_user.id, time_step=time_step_used)
+                logger.info(f"TOTP verified for recovery codes view user_id={token_user_id} time_step={time_step_used}")
+            else:
+                # Step 10: TOTP failed, try recovery code verification
+                try:
+                    await verify_recovery_code_service(session, token_user_id, schema.code)
+                    verification_method = "recovery_code"
+                    logger.info(f"Recovery code verified for recovery codes view user_id={token_user_id}")
+                except (
+                    RecoveryCodeInvalidError,
+                    RecoveryCodeAlreadyUsedError,
+                    RecoveryCodesNotFoundError,
+                    RecoveryCodeNotFoundError,
+                ) as e:
+                    # In this fallback path we cannot tell from the error whether the user
+                    # intended a TOTP code or a recovery code. Gate failure audit on input
+                    # shape: only emit when the input looks like a recovery code.
+                    if is_recovery_code(schema.code):
+                        await log(
+                            AuditEvent(
+                                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                                user_id=token_user_id,
+                                user_target_id=token_user_id,
+                                **http_audit_fields(request, e),
+                            )
+                        )
+
+                    # Both TOTP and recovery code failed - increment counters and raise error
+                    new_count = await mfa_service.increment_failed_totp_attempts(mfa_session_id)
+                    global_count = await mfa_service.increment_global_failed_attempts(token_user_id)
+
+                    # Calculate remaining attempts using service methods
+                    session_remaining = await mfa_service.get_remaining_session_attempts(mfa_session_id)
+                    global_remaining = await mfa_service.get_remaining_global_attempts(token_user_id)
+
+                    logger.warning(
+                        f"Invalid TOTP/recovery code for recovery codes view user_id={token_user_id} "
+                        f"session_attempts={new_count} global_attempts={global_count} "
+                        f"warning_threshold={settings.mfa.failed_attempts_warning_threshold}"
                     )
-                    notification_service = MFANotificationService()
-                    await notification_service.send_view_recovery_codes_failed_attempts_warning(
-                        user=db_user,
-                        failed_attempts=global_count,
-                        max_attempts=settings.redis.mfa_global_lockout_attempts,
-                        remaining_attempts=global_remaining,
-                        attempted_at=datetime.now(timezone.utc),
+
+                    # Send warning email if global attempts hit threshold
+                    if global_count == settings.mfa.failed_attempts_warning_threshold:
+                        logger.info(
+                            f"Sending view recovery codes failed attempts warning email user_id={token_user_id} "
+                            f"global_count={global_count} threshold={settings.mfa.failed_attempts_warning_threshold}"
+                        )
+                        notification_service = MFANotificationService()
+                        await notification_service.send_view_recovery_codes_failed_attempts_warning(
+                            user=db_user,
+                            failed_attempts=global_count,
+                            max_attempts=settings.redis.mfa_global_lockout_attempts,
+                            remaining_attempts=global_remaining,
+                            attempted_at=datetime.now(timezone.utc),
+                        )
+                        logger.info(f"View recovery codes failed attempts warning email sent user_id={token_user_id}")
+
+                    # Check if global lockout threshold reached
+                    if global_count >= settings.redis.mfa_global_lockout_attempts:
+                        logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
+                        await mfa_service.delete_session(mfa_session_id)
+
+                        # Send account locked notification
+                        notification_service = MFANotificationService()
+                        await notification_service.send_account_locked_email(
+                            user=db_user,
+                            lockout_reason="Too many failed attempts to view recovery codes",
+                            failed_attempts=global_count,
+                            lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
+                        )
+
+                        raise MFAGlobalLockoutError(
+                            global_attempts_remaining=0,
+                        )
+
+                    # Check if per-session threshold reached
+                    if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
+                        await mfa_service.delete_session(mfa_session_id)
+                        logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
+
+                    raise InvalidTOTPCodeError(
+                        session_attempts_remaining=session_remaining,
+                        global_attempts_remaining=global_remaining,
                     )
-                    logger.info(f"View recovery codes failed attempts warning email sent user_id={token_user_id}")
 
-                # Check if global lockout threshold reached
-                if global_count >= settings.redis.mfa_global_lockout_attempts:
-                    logger.warning(f"Global lockout threshold reached user_id={token_user_id}")
-                    await mfa_service.delete_session(mfa_session_id)
+            # Step 11: Get recovery codes with decrypted values
+            codes = await get_recovery_codes(session, db_user.id)
 
-                    # Send account locked notification
-                    notification_service = MFANotificationService()
-                    await notification_service.send_account_locked_email(
-                        user=db_user,
-                        lockout_reason="Too many failed attempts to view recovery codes",
-                        failed_attempts=global_count,
-                        lockout_ttl_seconds=settings.redis.mfa_global_lockout_ttl,
-                    )
+            # Check if recovery codes exist
+            if not codes:
+                raise RecoveryCodesNotFoundError()
 
-                    raise MFAGlobalLockoutError(
-                        global_attempts_remaining=0,
-                    )
+            # Step 12: Generate download token (short-lived, 5 minutes)
+            download_token = AuthenticationService.create_download_recovery_codes_token(token_user_id)
 
-                # Check if per-session threshold reached
-                if new_count is not None and new_count >= settings.redis.mfa_max_attempts:
-                    await mfa_service.delete_session(mfa_session_id)
-                    logger.warning(f"MFA session deleted - max attempts exceeded mfa_session_id={mfa_session_id}")
+            logger.info(
+                f"Download token generated for recovery codes user_id={token_user_id} "
+                f"verification_method={verification_method} "
+                f"expires_in={settings.mfa.download_token_expiration_seconds}s"
+            )
 
-                raise InvalidTOTPCodeError(
-                    session_attempts_remaining=session_remaining,
-                    global_attempts_remaining=global_remaining,
-                )
+            # Calculate statistics
+            total = len(codes)
+            unused = sum(1 for c in codes if not c.used)
 
-        # Step 11: Get recovery codes with decrypted values
-        codes = await get_recovery_codes(session, db_user.id)
+        # Step 13: Clear global lockout (outside atomic block, Redis operation)
+        await mfa_service.clear_global_lockout(token_user_id)
 
-        # Check if recovery codes exist
-        if not codes:
-            raise RecoveryCodesNotFoundError()
+        # Step 14: Delete MFA session (cleanup)
+        await mfa_service.delete_session(mfa_session_id)
 
-        # Step 12: Generate download token (short-lived, 5 minutes)
-        download_token = AuthenticationService.create_download_recovery_codes_token(token_user_id)
+        # Step 15: Send notifications based on verification method
+        notification_service = MFANotificationService()
+        viewed_at = datetime.now(timezone.utc)
 
-        logger.info(
-            f"Download token generated for recovery codes user_id={token_user_id} "
-            f"verification_method={verification_method} "
-            f"expires_in={settings.mfa.download_token_expiration_seconds}s"
+        if verification_method == "recovery_code":
+            # Send recovery code notifications (used + warning if needed)
+            await send_recovery_code_notifications(
+                session=session,
+                user=db_user,
+                used_at=viewed_at,
+                request_info=None,
+            )
+            # Also send recovery codes viewed notification
+            await notification_service.send_recovery_codes_viewed_notification(
+                user=db_user,
+                viewed_at=viewed_at,
+            )
+        else:
+            await notification_service.send_recovery_codes_viewed_notification(
+                user=db_user,
+                viewed_at=viewed_at,
+            )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_RECOVERY_VIEW,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
 
-        # Calculate statistics
-        total = len(codes)
-        unused = sum(1 for c in codes if not c.used)
-
-    # Step 13: Clear global lockout (outside atomic block, Redis operation)
-    await mfa_service.clear_global_lockout(token_user_id)
-
-    # Step 14: Delete MFA session (cleanup)
-    await mfa_service.delete_session(mfa_session_id)
-
-    # Step 15: Send notifications based on verification method
-    notification_service = MFANotificationService()
-    viewed_at = datetime.now(timezone.utc)
-
+    # If a recovery code was consumed during verification, log it now that the
+    # atomic block has committed (avoids false-positive SUCCESS on rollback).
     if verification_method == "recovery_code":
-        # Send recovery code notifications (used + warning if needed)
-        await send_recovery_code_notifications(
-            session=session,
-            user=db_user,
-            used_at=viewed_at,
-            request_info=None,
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_MFA_RECOVERY_USE,
+                user_id=user.id,
+                user_target_id=user.id,
+                **http_audit_fields(request),
+            )
         )
-        # Also send recovery codes viewed notification
-        await notification_service.send_recovery_codes_viewed_notification(
-            user=db_user,
-            viewed_at=viewed_at,
+
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_RECOVERY_VIEW,
+            **http_audit_fields(request),
         )
-    else:
-        await notification_service.send_recovery_codes_viewed_notification(
-            user=db_user,
-            viewed_at=viewed_at,
-        )
+    )
 
     logger.info(f"Recovery codes view completed user_id={token_user_id}")
 
@@ -787,6 +952,7 @@ async def user_recovery_codes_view_verify(
 
 
 async def user_download_recovery_codes(
+    request: Request,
     download_token: str = Query(..., description="Short-lived download token obtained from view/verify endpoint"),
     user: User = Depends(get_current_user),
     session=Depends(get_session),
@@ -804,46 +970,61 @@ async def user_download_recovery_codes(
     - Token must match authenticated user
     - Validates MFA is enabled and recovery codes exist
     """
-    # Step 1: Validate download token and extract user_id
     try:
-        token_user_id = AuthenticationService.validate_download_recovery_codes_token(download_token)
-    except Exception as e:
-        logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN,
-            detail="Invalid or expired download token. Please verify your TOTP code again to get a new token.",
+        # Step 1: Validate download token and extract user_id
+        try:
+            token_user_id = AuthenticationService.validate_download_recovery_codes_token(download_token)
+        except Exception as e:
+            logger.warning(f"Invalid download token user_id={user.id} error={str(e)}")
+            raise RecoveryCodesDownloadTokenInvalidError()
+
+        # Step 2: SECURITY - Validate current user matches token's user
+        if user.id != token_user_id:
+            logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
+            raise RecoveryCodesDownloadTokenUserMismatchError()
+
+        # Step 3: Refetch user to ensure latest MFA state
+        fresh_user = await UsersCRUD(session).get_by_id(user.id)
+
+        # Step 4: Check MFA is enabled (race condition protection)
+        if not fresh_user.mfa_secret:
+            raise MFANotEnabledError()
+
+        # Step 5: Get all recovery codes with decrypted values
+        codes = await get_recovery_codes(session, fresh_user.id)
+
+        # Step 6: Check if recovery codes exist
+        if not codes:
+            raise RecoveryCodesNotFoundError()
+
+        # Step 7: Get user email for text file header
+        email = fresh_user.email_encrypted or fresh_user.email
+
+        # Step 8: Format as downloadable text
+        text_content = format_recovery_codes_text(codes, email)
+
+        # Step 9: Generate filename with timestamp
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        filename = f"recovery_codes_{timestamp}.txt"
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                user_id=user.id,
+                user_target_id=user.id,
+                event_action=EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+                **http_audit_fields(request, e),
+            )
         )
+        raise
 
-    # Step 2: SECURITY - Validate current user matches token's user
-    if user.id != token_user_id:
-        logger.warning(f"Download token user mismatch current_user={user.id} token_user={token_user_id}")
-        raise HTTPException(
-            status_code=http_status.HTTP_403_FORBIDDEN, detail="This download token belongs to a different user"
+    await log(
+        AuditEvent(
+            user_id=user.id,
+            user_target_id=user.id,
+            event_action=EventAction.USER_MFA_RECOVERY_DOWNLOAD,
+            **http_audit_fields(request),
         )
-
-    # Step 3: Refetch user to ensure latest MFA state
-    fresh_user = await UsersCRUD(session).get_by_id(user.id)
-
-    # Step 4: Check MFA is enabled (race condition protection)
-    if not fresh_user.mfa_secret:
-        raise MFANotEnabledError()
-
-    # Step 5: Get all recovery codes with decrypted values
-    codes = await get_recovery_codes(session, fresh_user.id)
-
-    # Step 6: Check if recovery codes exist
-    if not codes:
-        raise RecoveryCodesNotFoundError()
-
-    # Step 7: Get user email for text file header
-    email = fresh_user.email_encrypted or fresh_user.email
-
-    # Step 8: Format as downloadable text
-    text_content = format_recovery_codes_text(codes, email)
-
-    # Step 9: Generate filename with timestamp
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    filename = f"recovery_codes_{timestamp}.txt"
+    )
 
     logger.info(f"Recovery codes downloaded user_id={user.id} filename={filename}")
 

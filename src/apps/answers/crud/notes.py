@@ -79,6 +79,7 @@ class AnswerNotesCRUD(BaseCRUD[AnswerNoteSchema]):
             result.append(
                 AnswerNoteDetail(
                     id=note.id,
+                    answer_id=note.answer_id,
                     user=dict(
                         id=note_user.id,
                         first_name=note_user.first_name,
