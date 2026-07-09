@@ -34,14 +34,15 @@ def test_constant_covers_all_event_actions(constant_name: str, constant: dict) -
 
 
 def test_account_level_export_actions() -> None:
-    """The account-level export set carries session (minus refresh) and MFA actions.
+    """The account-level export set carries session and MFA actions.
 
-    Guards the export scoping policy: high-volume ``refresh`` events and applet-scoped
-    actions must never be classified as account-level.
+    Guards the export scoping policy: applet-scoped actions must never be
+    classified as account-level.
     """
     expected = {
         EventAction.USER_SESSION_LOGIN,
         EventAction.USER_SESSION_LOGOUT,
+        EventAction.USER_SESSION_REFRESH,
         EventAction.USER_SESSION_INVALID,
         EventAction.USER_MFA_ENABLE,
         EventAction.USER_MFA_DISABLE,
@@ -50,6 +51,5 @@ def test_account_level_export_actions() -> None:
         EventAction.USER_MFA_RECOVERY_USE,
     }
     assert ACCOUNT_LEVEL_EXPORT_ACTIONS == expected
-    assert EventAction.USER_SESSION_REFRESH not in ACCOUNT_LEVEL_EXPORT_ACTIONS
     # All account-level actions are applet-less (their resource is "user", never "applet").
     assert all(action.resource == "user" for action in ACCOUNT_LEVEL_EXPORT_ACTIONS)

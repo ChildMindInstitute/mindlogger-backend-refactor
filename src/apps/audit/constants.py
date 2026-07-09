@@ -1,11 +1,13 @@
 from .enums import EventAction, EventCategory, EventType
 
 # Account-level events (logged without ``curious.applet_id``) surfaced in an applet's audit export,
-# but only for users with a manager-class role on that applet.
+# but only for users with a manager-class role on that applet. Kept as an explicit whitelist:
+# some applet-scoped failures also lack an applet id.
 ACCOUNT_LEVEL_EXPORT_ACTIONS: frozenset[EventAction] = frozenset(
     {
         EventAction.USER_SESSION_LOGIN,
         EventAction.USER_SESSION_LOGOUT,
+        EventAction.USER_SESSION_REFRESH,
         EventAction.USER_SESSION_INVALID,
         EventAction.USER_MFA_ENABLE,
         EventAction.USER_MFA_DISABLE,

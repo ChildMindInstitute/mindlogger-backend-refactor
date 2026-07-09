@@ -19,6 +19,11 @@ from apps.workspaces.db.schemas import UserAppletAccessSchema
 URL = "/audit/applets/{applet_id}/events"
 
 
+def _utcnow() -> datetime.datetime:
+    """Naive UTC now, matching the stored ``event_timestamp``/``created_at`` convention."""
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+
 @pytest.fixture(autouse=True)
 def mock_audit_log(mocker: MockerFixture):
     """Stub the export endpoint's self-logging.
@@ -157,7 +162,8 @@ async def test_date_range_filters_results(client: TestClient, session: AsyncSess
 async def test_owner_sees_own_account_event(
     client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull
 ):
-    login = await _seed_account_event(session, user_id=tom.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    # Account events only surface from the access grant onwards, so seed after it.
+    login = await _seed_account_event(session, user_id=tom.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
 
     client.login(tom)
     response = await client.get(URL.format(applet_id=applet_one.id))
@@ -172,18 +178,18 @@ async def test_owner_sees_manager_account_events(
     client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
 ):
     applet = applet_one_lucy_manager
-    login = await _seed_account_event(session, user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    login = await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
     mfa = await _seed_account_event(
         session,
         user_id=lucy.id,
-        timestamp=datetime.datetime(2026, 5, 1, 11, 0, 0),
+        timestamp=_utcnow() + datetime.timedelta(hours=2),
         action=EventAction.USER_MFA_DISABLE,
     )
     # A failed login attributed (post-enrichment) to the manager.
     invalid = await _seed_account_event(
         session,
         user_id=lucy.id,
-        timestamp=datetime.datetime(2026, 5, 1, 12, 0, 0),
+        timestamp=_utcnow() + datetime.timedelta(hours=3),
         action=EventAction.USER_SESSION_INVALID,
     )
 
@@ -194,11 +200,29 @@ async def test_owner_sees_manager_account_events(
     assert returned == {str(login.event_id), str(mfa.event_id), str(invalid.event_id)}
 
 
+async def test_owner_does_not_see_manager_account_events_from_before_joining(
+    client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
+):
+    """Adding a team member must not expose their session history from before
+    they were granted access to the applet."""
+    applet = applet_one_lucy_manager
+    await _seed_account_event(session, user_id=lucy.id, timestamp=datetime.datetime(2020, 1, 1, 10, 0, 0))
+    after_join = await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
+
+    client.login(tom)
+    response = await client.get(URL.format(applet_id=applet.id))
+    assert response.status_code == http.HTTPStatus.OK
+    body = response.json()
+    assert body["count"] == 1
+    assert body["result"][0]["event.id"] == str(after_join.event_id)
+
+
 async def test_owner_does_not_see_revoked_manager_account_events(
     client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
 ):
     applet = applet_one_lucy_manager
-    await _seed_account_event(session, user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    # After the grant, so revocation alone is what hides it.
+    await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
 
     # Revoke lucy's access (role removal is a soft delete).
     await session.execute(
@@ -217,7 +241,8 @@ async def test_owner_does_not_see_respondent_account_events(
     client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_respondent: AppletFull
 ):
     applet = applet_one_lucy_respondent
-    await _seed_account_event(session, user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
+    # After the grant, so the respondent role alone is what hides it.
+    await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
 
     client.login(tom)
     response = await client.get(URL.format(applet_id=applet.id))
@@ -225,20 +250,20 @@ async def test_owner_does_not_see_respondent_account_events(
     assert response.json()["count"] == 0
 
 
-async def test_owner_does_not_see_refresh_events(
-    client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull
-):
-    await _seed_account_event(
+async def test_owner_sees_refresh_events(client: TestClient, session: AsyncSession, tom: User, applet_one: AppletFull):
+    refresh = await _seed_account_event(
         session,
         user_id=tom.id,
-        timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0),
+        timestamp=_utcnow() + datetime.timedelta(hours=1),
         action=EventAction.USER_SESSION_REFRESH,
     )
 
     client.login(tom)
     response = await client.get(URL.format(applet_id=applet_one.id))
     assert response.status_code == http.HTTPStatus.OK
-    assert response.json()["count"] == 0
+    body = response.json()
+    assert body["count"] == 1
+    assert body["result"][0]["event.id"] == str(refresh.event_id)
 
 
 async def test_export_self_logs_applet_audit_export(
