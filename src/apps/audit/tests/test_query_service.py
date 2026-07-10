@@ -12,6 +12,11 @@ from apps.audit.tasks import _build_schema
 from apps.users.domain import User
 
 
+def _utcnow() -> datetime.datetime:
+    """Naive UTC now, matching the stored ``event_timestamp``/``created_at`` convention."""
+    return datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+
 def _make_event(
     applet_id: uuid.UUID,
     *,
@@ -122,7 +127,8 @@ async def test_returns_empty_when_no_events(session: AsyncSession):
 async def test_includes_account_event_for_privileged_user(session: AsyncSession, tom: User, applet_one: AppletFull):
     """A login by a manager-class user of the applet is surfaced, even though it
     carries no applet id; the same event by a non-member is not."""
-    ts = datetime.datetime(2026, 5, 1, 10, 0, 0)
+    # After the fixture granted tom his role on the applet.
+    ts = _utcnow() + datetime.timedelta(hours=1)
     owner_login = _make_account_event(user_id=tom.id, timestamp=ts)
     stranger_login = _make_account_event(user_id=uuid.uuid4(), timestamp=ts)
     await _seed(session, owner_login)
@@ -134,21 +140,22 @@ async def test_includes_account_event_for_privileged_user(session: AsyncSession,
     assert [e.event_id for e in events] == [owner_login.event_id]
 
 
-async def test_excludes_refresh_account_event(session: AsyncSession, tom: User, applet_one: AppletFull):
-    """USER_SESSION_REFRESH is deliberately kept out of the export."""
-    ts = datetime.datetime(2026, 5, 1, 10, 0, 0)
-    await _seed(session, _make_account_event(user_id=tom.id, timestamp=ts, action=EventAction.USER_SESSION_REFRESH))
+async def test_includes_refresh_account_event(session: AsyncSession, tom: User, applet_one: AppletFull):
+    """USER_SESSION_REFRESH is exported like the other session events."""
+    ts = _utcnow() + datetime.timedelta(hours=1)
+    refresh = _make_account_event(user_id=tom.id, timestamp=ts, action=EventAction.USER_SESSION_REFRESH)
+    await _seed(session, refresh)
 
     events, total = await AuditQueryService(session).search_applet_events(applet_one.id)
 
-    assert total == 0
-    assert events == []
+    assert total == 1
+    assert [e.event_id for e in events] == [refresh.event_id]
 
 
 async def test_mixes_applet_and_account_events(session: AsyncSession, tom: User, applet_one: AppletFull):
     """Applet-scoped and account-level events are returned together, in timestamp order."""
-    account_event = _make_account_event(user_id=tom.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0))
-    applet_event = _make_event(applet_one.id, user_id=tom.id, timestamp=datetime.datetime(2026, 5, 2, 10, 0, 0))
+    account_event = _make_account_event(user_id=tom.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
+    applet_event = _make_event(applet_one.id, user_id=tom.id, timestamp=_utcnow() + datetime.timedelta(hours=2))
     await _seed(session, applet_event)
     await _seed(session, account_event)
 
@@ -168,13 +175,29 @@ async def test_account_event_isolated_across_applets(
     """An account event surfaces only in exports of applets the user is privileged
     on. lucy manages applet_one but has no role on applet_two, so her login must
     not leak into applet_two's export."""
-    await _seed(session, _make_account_event(user_id=lucy.id, timestamp=datetime.datetime(2026, 5, 1, 10, 0, 0)))
+    await _seed(session, _make_account_event(user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1)))
 
     _, total_one = await AuditQueryService(session).search_applet_events(applet_one_lucy_manager.id)
     _, total_two = await AuditQueryService(session).search_applet_events(applet_two.id)
 
     assert total_one == 1
     assert total_two == 0
+
+
+async def test_excludes_account_events_from_before_access_granted(
+    session: AsyncSession, tom: User, applet_one: AppletFull
+):
+    """Adding a team member must not expose their earlier session history: only
+    account events at/after the access grant surface in the export."""
+    before_join = _make_account_event(user_id=tom.id, timestamp=datetime.datetime(2020, 1, 1, 10, 0, 0))
+    after_join = _make_account_event(user_id=tom.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
+    await _seed(session, before_join)
+    await _seed(session, after_join)
+
+    events, total = await AuditQueryService(session).search_applet_events(applet_one.id)
+
+    assert total == 1
+    assert [e.event_id for e in events] == [after_join.event_id]
 
 
 async def test_save_is_idempotent_on_event_id(session: AsyncSession):

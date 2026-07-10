@@ -59,22 +59,31 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         Returns the applet's own events plus account-level events
         (``ACCOUNT_LEVEL_EXPORT_ACTIONS``) for its manager-class users. Membership
         is resolved at query time against current roles, so an account event stops
-        appearing once the user loses their role on the applet.
+        appearing once the user loses their role on the applet, and events from
+        before the user's access was granted are never surfaced.
         """
         # Users with a manager-class role on this applet. Their account-level events
         # (login/logout/MFA/...) are surfaced in the export even though those events
-        # carry no applet id; respondents are intentionally excluded.
-        privileged_user_ids = select(UserAppletAccessSchema.user_id).where(
-            UserAppletAccessSchema.applet_id == applet_id,
-            UserAppletAccessSchema.role.in_(Role.managers()),
-            UserAppletAccessSchema.soft_exists(),
+        # carry no applet id; respondents are intentionally excluded. Only events
+        # from the access grant onwards qualify — adding a member must not expose
+        # their earlier session history (both columns are naive UTC).
+        privileged_access = (
+            select(UserAppletAccessSchema.id)
+            .where(
+                UserAppletAccessSchema.applet_id == applet_id,
+                UserAppletAccessSchema.role.in_(Role.managers()),
+                UserAppletAccessSchema.soft_exists(),
+                UserAppletAccessSchema.user_id == AuditLogSchema.user_id,
+                UserAppletAccessSchema.created_at <= AuditLogSchema.event_timestamp,
+            )
+            .exists()
         )
 
         scope = or_(
             AuditLogSchema.applet_ids.contains([applet_id]),
             and_(
                 AuditLogSchema.event_action.in_(ACCOUNT_LEVEL_EXPORT_ACTIONS),
-                AuditLogSchema.user_id.in_(privileged_user_ids),
+                privileged_access,
             ),
         )
 
