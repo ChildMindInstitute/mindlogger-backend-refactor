@@ -298,11 +298,13 @@ async def invitation_accept(
 ):
     """General endpoint to approve the applet invitation."""
     applet_id = None
+    invitation_role = None
     try:
         invitation_service = InvitationsService(session, user)
         invitation = await invitation_service.get(key)
         if invitation:
             applet_id = invitation.applet_id
+            invitation_role = invitation.role
 
         try:
             async with atomic(session):
@@ -342,6 +344,8 @@ async def invitation_accept(
                 event_action=EventAction.APPLET_INVITE_ACCEPT,
                 user_id=user.id,
                 curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
+                user_target_roles=[invitation_role] if invitation_role else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -352,6 +356,8 @@ async def invitation_accept(
             event_action=EventAction.APPLET_INVITE_ACCEPT,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            user_target_roles=[invitation_role] if invitation_role else None,
             **http_audit_fields(request),
         )
     )
@@ -364,11 +370,13 @@ async def private_invitation_accept(
     session=Depends(get_session),
 ):
     applet_id = None
+    invitation_role = None
     try:
         private_service = PrivateInvitationService(session)
         invitation = await private_service.get_invitation(key)
         if invitation:
             applet_id = invitation.applet_id
+            invitation_role = invitation.role
 
         async with atomic(session):
             await private_service.accept_invitation(user, key)
@@ -378,6 +386,8 @@ async def private_invitation_accept(
                 event_action=EventAction.APPLET_INVITE_ACCEPT,
                 user_id=user.id,
                 curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
+                user_target_roles=[invitation_role] if invitation_role else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -388,6 +398,8 @@ async def private_invitation_accept(
             event_action=EventAction.APPLET_INVITE_ACCEPT,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            user_target_roles=[invitation_role] if invitation_role else None,
             **http_audit_fields(request),
         )
     )
@@ -415,6 +427,7 @@ async def invitation_decline(
                 event_action=EventAction.APPLET_INVITE_DECLINE,
                 user_id=user.id,
                 curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
                 **http_audit_fields(request, e),
             )
         )
@@ -425,6 +438,7 @@ async def invitation_decline(
             event_action=EventAction.APPLET_INVITE_DECLINE,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_id=user.id,
             **http_audit_fields(request),
         )
     )

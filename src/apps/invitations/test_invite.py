@@ -1609,6 +1609,8 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.MANAGER]
 
     async def test_invitation_accept_audit_event_failure(
         self,
@@ -1625,6 +1627,9 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_ACCEPT
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
+        # The key did not resolve to an invitation, so the role is unknown.
+        assert event.user_target_roles is None
 
     async def test_private_invitation_accept_audit_event(
         self,
@@ -1643,6 +1648,8 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one_with_link.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.RESPONDENT]
 
     async def test_invitation_decline_audit_event(
         self,
@@ -1661,6 +1668,7 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
 
     async def test_invitation_decline_audit_event_failure(
         self,
@@ -1677,6 +1685,7 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_DECLINE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
 
     async def test_shell_create_account_audit_event(
         self, client: TestClient, shell_create_data: dict, bob: User, applet_four: AppletFull, mocker

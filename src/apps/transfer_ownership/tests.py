@@ -674,6 +674,8 @@ class TestTransfer(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.OWNER]
 
     async def test_decline_transfer_audit_event(
         self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User
@@ -694,3 +696,5 @@ class TestTransfer(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles is None

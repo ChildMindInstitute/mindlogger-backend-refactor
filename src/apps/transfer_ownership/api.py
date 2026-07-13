@@ -10,6 +10,7 @@ from apps.shared.exception import BaseError
 from apps.transfer_ownership.domain import InitiateTransfer
 from apps.transfer_ownership.service import TransferService
 from apps.users.domain import User
+from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
@@ -66,6 +67,8 @@ async def transfer_accept(
                 event_action=EventAction.APPLET_TRANSFER_ACCEPT,
                 user_id=user.id,
                 curious_applet_id=[applet_id],
+                user_target_id=user.id,
+                user_target_roles=[Role.OWNER],
                 **http_audit_fields(request, e),
             )
         )
@@ -76,6 +79,8 @@ async def transfer_accept(
             event_action=EventAction.APPLET_TRANSFER_ACCEPT,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            user_target_roles=[Role.OWNER],
             **http_audit_fields(request),
         )
     )
@@ -98,6 +103,7 @@ async def transfer_decline(
                 event_action=EventAction.APPLET_TRANSFER_DECLINE,
                 user_id=user.id,
                 curious_applet_id=[applet_id],
+                user_target_id=user.id,
                 **http_audit_fields(request, e),
             )
         )
@@ -108,6 +114,7 @@ async def transfer_decline(
             event_action=EventAction.APPLET_TRANSFER_DECLINE,
             user_id=user.id,
             curious_applet_id=[applet_id],
+            user_target_id=user.id,
             **http_audit_fields(request),
         )
     )
