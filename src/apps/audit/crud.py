@@ -57,24 +57,29 @@ class AuditLogCRUD(BaseCRUD[AuditLogSchema]):
         """Events for an applet's audit export.
 
         Returns the applet's own events plus account-level events
-        (``ACCOUNT_LEVEL_EXPORT_ACTIONS``) for its manager-class users. Membership
-        is resolved at query time against current roles, so an account event stops
-        appearing once the user loses their role on the applet, and events from
-        before the user's access was granted are never surfaced.
+        (``ACCOUNT_LEVEL_EXPORT_ACTIONS``) for its manager-class users. Events
+        for current members are included from the time the membership started.
+        Events for past members are included for the time period of the most
+        recent past membership. (Note that we do not store membership history
+        beyond the most recent past membership, so events during older past
+        memberships will not be included.)
         """
         # Users with a manager-class role on this applet. Their account-level events
         # (login/logout/MFA/...) are surfaced in the export even though those events
         # carry no applet id; respondents are intentionally excluded. Only events
-        # from the access grant onwards qualify — adding a member must not expose
-        # their earlier session history (both columns are naive UTC).
+        # inside the most recent membership window qualify — adding a member must
+        # not expose their earlier session history.
         privileged_access = (
             select(UserAppletAccessSchema.id)
             .where(
                 UserAppletAccessSchema.applet_id == applet_id,
                 UserAppletAccessSchema.role.in_(Role.managers()),
-                UserAppletAccessSchema.soft_exists(),
                 UserAppletAccessSchema.user_id == AuditLogSchema.user_id,
                 UserAppletAccessSchema.created_at <= AuditLogSchema.event_timestamp,
+                or_(
+                    UserAppletAccessSchema.soft_exists(),
+                    AuditLogSchema.event_timestamp <= UserAppletAccessSchema.updated_at,
+                ),
             )
             .exists()
         )
