@@ -262,6 +262,7 @@ async def applet_activity_answers_list(
     query_params: QueryParams = Depends(parse_query_params(AppletSubmissionsFilter)),
     answer_session=Depends(get_answer_session),
 ) -> ResponseMulti[AppletActivityAnswerPublic]:
+    target_subject_id = query_params.filters.get("target_subject_id")
     try:
         filters = query_params.filters
         await AppletService(session, user.id).exist_by_id(applet_id)
@@ -283,6 +284,7 @@ async def applet_activity_answers_list(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=[target_subject_id] if target_subject_id else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -293,6 +295,7 @@ async def applet_activity_answers_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
+            curious_subject_id=[target_subject_id] if target_subject_id else None,
             curious_answer_id=[a.answer_id for a in answers if a.answer_id] or None,
             **http_audit_fields(request),
         )
@@ -309,6 +312,7 @@ async def applet_flow_submissions_list(
     session=Depends(get_session),
     answer_session=Depends(get_answer_session),
 ) -> PublicFlowSubmissionsResponse:
+    target_subject_id = query_params.filters.get("target_subject_id")
     try:
         await AppletService(session, user.id).exist_by_id(applet_id)
         await CheckAccessService(session, user.id).check_answer_review_access(applet_id)
@@ -328,6 +332,7 @@ async def applet_flow_submissions_list(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_VIEW,
                 curious_applet_id=[applet_id],
+                curious_subject_id=[target_subject_id] if target_subject_id else None,
                 **http_audit_fields(request, e),
             )
         )
@@ -338,6 +343,7 @@ async def applet_flow_submissions_list(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_VIEW,
             curious_applet_id=[applet_id],
+            curious_subject_id=[target_subject_id] if target_subject_id else None,
             curious_submit_id=[s.submit_id for s in submissions.submissions] or None,
             curious_answer_id=[a.id for s in submissions.submissions for a in s.answers] or None,
             **http_audit_fields(request),
