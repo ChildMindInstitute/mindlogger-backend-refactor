@@ -1570,6 +1570,7 @@ class TestInvite(BaseTest):
         self,
         client: TestClient,
         lucy: User,
+        user: User,
         applet_one: AppletFull,
         invitation_respondent_data: InvitationRespondentRequest,
         mocker,
@@ -1586,6 +1587,8 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_INITIATE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == lucy.id
+        assert event.user_target_id == user.id  # failure inviting regsitered user should carry user ID
+        assert event.user_target_email is None
 
     async def test_invitation_accept_audit_event(
         self,
