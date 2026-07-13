@@ -424,7 +424,6 @@ async def summary_flow_latest_report_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
                 curious_applet_id=[applet_id],
-                curious_flow_id=[flow_id],
                 curious_subject_id=[subject_id],
                 **http_audit_fields(request, e),
             )
@@ -436,7 +435,6 @@ async def summary_flow_latest_report_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
             curious_applet_id=[applet_id],
-            curious_flow_id=[flow_id],
             curious_subject_id=[subject_id],
             **http_audit_fields(request),
         )
@@ -1342,7 +1340,6 @@ async def applet_ehr_answers_export(
                 curious_applet_id=[applet_id],
                 curious_subject_id=query_params.filters.get("target_subject_ids"),
                 curious_activity_id=query_params.filters.get("activity_ids"),
-                curious_flow_id=query_params.filters.get("flow_ids"),
                 **http_audit_fields(request, e),
             )
         )

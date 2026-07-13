@@ -55,7 +55,6 @@ class AuditEvent(PublicModel):
     Applicable to Curious database records:
     - curious_applet_id
     - curious_subject_id
-    - curious_flow_id
     - curious_activity_id
     - curious_submit_id
     - curious_answer_id
@@ -108,7 +107,6 @@ class AuditEvent(PublicModel):
     # For Curious database records
     curious_applet_id: Annotated[list[UUID] | None, Field(alias="curious.applet_id")] = None
     curious_subject_id: Annotated[list[UUID] | None, Field(alias="curious.subject_id")] = None
-    curious_flow_id: Annotated[list[UUID] | None, Field(alias="curious.flow_id")] = None
     curious_activity_id: Annotated[list[UUID] | None, Field(alias="curious.activity_id")] = None
     curious_submit_id: Annotated[list[UUID] | None, Field(alias="curious.submit_id")] = None
     curious_answer_id: Annotated[list[UUID] | None, Field(alias="curious.answer_id")] = None

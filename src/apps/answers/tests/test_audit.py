@@ -954,7 +954,6 @@ class TestAnswersAudit(BaseTest):
         assert event.curious_applet_id == [applet.id]
         assert event.curious_subject_id == [target_subject_id]
         assert event.curious_activity_id == [activity_id]
-        assert event.curious_flow_id == [flow_id]
 
     async def test_ehr_download_zip_failure_emits_error_event(
         self,
@@ -1035,7 +1034,6 @@ class TestAnswersAudit(BaseTest):
         assert event.curious_applet_id == [applet.id]
         assert event.curious_activity_id == [applet.activities[0].id]
         assert event.curious_subject_id == [tom_applet_subject.id]
-        assert event.curious_flow_id is None
 
     async def test_activity_report_download_failure_subject_not_found(
         self,
@@ -1121,7 +1119,6 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_flow_id == [applet_with_flow.activity_flows[0].id]
         assert event.curious_subject_id == [tom_applet_with_flow_subject.id]
         assert event.curious_activity_id is None
 
@@ -1152,4 +1149,3 @@ class TestAnswersAudit(BaseTest):
         assert event.event_action == EventAction.APPLET_ANSWER_REPORT_DOWNLOAD
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.curious_applet_id == [applet_with_flow.id]
-        assert event.curious_flow_id == [applet_with_flow.activity_flows[0].id]
