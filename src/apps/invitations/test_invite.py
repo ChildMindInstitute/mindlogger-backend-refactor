@@ -96,7 +96,7 @@ async def applet_one_lucy_roles(
 @pytest.fixture
 def user_create_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test12345!",

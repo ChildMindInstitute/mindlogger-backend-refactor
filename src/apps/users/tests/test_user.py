@@ -19,7 +19,7 @@ from apps.users.tests.factories import UserUpdateRequestFactory
 @pytest.fixture
 def request_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test12345!",

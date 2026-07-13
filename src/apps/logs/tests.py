@@ -4,7 +4,7 @@ from apps.shared.test import BaseTest
 
 EMPTY_DESCRIPTIONS = [
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test1",
         notification_descriptions=None,
@@ -12,7 +12,7 @@ EMPTY_DESCRIPTIONS = [
         scheduled_notifications=[{"name": "notifications1"}],
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test2",
         notification_descriptions=[],
@@ -20,7 +20,7 @@ EMPTY_DESCRIPTIONS = [
         scheduled_notifications=[{"name": "notifications2"}],
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test3",
         notification_descriptions=None,
@@ -31,7 +31,7 @@ EMPTY_DESCRIPTIONS = [
 
 EMPTY_QUEUE = [
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test1",
         notification_descriptions=[{"name": "description"}],
@@ -39,7 +39,7 @@ EMPTY_QUEUE = [
         scheduled_notifications=[{"name": "notifications1"}],
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test2",
         notification_descriptions=[{"name": "description"}],
@@ -47,7 +47,7 @@ EMPTY_QUEUE = [
         scheduled_notifications=[{"name": "notifications2"}],
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test3",
         notification_descriptions=[{"name": "description"}],
@@ -58,7 +58,7 @@ EMPTY_QUEUE = [
 
 EMPTY_SCHEDULE = [
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test1",
         notification_descriptions=[{"name": "description"}],
@@ -66,7 +66,7 @@ EMPTY_SCHEDULE = [
         scheduled_notifications=None,
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test2",
         notification_descriptions=[{"name": "description"}],
@@ -74,7 +74,7 @@ EMPTY_SCHEDULE = [
         scheduled_notifications=[],
     ),
     dict(
-        user_id="tom@mindlogger.com",
+        user_id="tom@gettingcurious.com",
         device_id="deviceid",
         action_type="test3",
         notification_descriptions=[{"name": "description"}],
@@ -88,7 +88,7 @@ EMPTY_SCHEDULE = [
 def dummy_logs_payload() -> list[dict]:
     return [
         dict(
-            user_id="tom@mindlogger.com",
+            user_id="tom@gettingcurious.com",
             device_id="deviceid",
             action_type=f"test{i}",
             notification_descriptions=[{"sample": f"descriptions{i}"}],
@@ -104,7 +104,7 @@ class TestNotificationLogs(BaseTest):
 
     async def test_create_log(self, client, device_tom):
         create_data = dict(
-            user_id="tom@mindlogger.com",
+            user_id="tom@gettingcurious.com",
             device_id="deviceid",
             action_type="test",
             notification_descriptions=[{"sample": "json"}],
@@ -118,7 +118,7 @@ class TestNotificationLogs(BaseTest):
 
     async def test_retrieve_log(self, client, device_tom):
         query = dict(
-            email="tom@mindlogger.com",
+            email="tom@gettingcurious.com",
             device_id=device_tom,
         )
 
@@ -129,7 +129,7 @@ class TestNotificationLogs(BaseTest):
 
         new_device_id = "new_device_id"
         create_data = dict(
-            user_id="tom@mindlogger.com",
+            user_id="tom@gettingcurious.com",
             device_id=new_device_id,
             action_type="test",
             notification_descriptions=[{"sample": "json"}],
@@ -142,7 +142,7 @@ class TestNotificationLogs(BaseTest):
         assert response.json()["result"]["id"]
 
         query = dict(
-            email="tom@mindlogger.com",
+            email="tom@gettingcurious.com",
             device_id=new_device_id,
             limit=10,
         )
@@ -173,7 +173,7 @@ class TestNotificationLogs(BaseTest):
             assert response.status_code == 201
 
         create_data = dict(
-            user_id="tom@mindlogger.com",
+            user_id="tom@gettingcurious.com",
             device_id="deviceid",
             action_type="test",
             notification_descriptions=description,
@@ -193,7 +193,7 @@ class TestNotificationLogs(BaseTest):
         response = await client.post(
             self.logs_url,
             data=dict(
-                user_id="tom@mindlogger.com",
+                user_id="tom@gettingcurious.com",
                 device_id="deviceid",
                 action_type="test",
                 notification_descriptions=None,
@@ -211,7 +211,7 @@ class TestNotificationLogs(BaseTest):
     async def test_create_log_use_previous_non_null_if_attribute_null(self, client):
         payloads = [
             dict(
-                user_id="tom@mindlogger.com",
+                user_id="tom@gettingcurious.com",
                 device_id="deviceid",
                 action_type="test",
                 notification_descriptions=[{"name": "descriptions1"}],
@@ -219,7 +219,7 @@ class TestNotificationLogs(BaseTest):
                 scheduled_notifications=[{"name": "notifications1"}],
             ),
             dict(
-                user_id="tom@mindlogger.com",
+                user_id="tom@gettingcurious.com",
                 device_id="deviceid",
                 action_type="test",
                 notification_descriptions=None,
@@ -232,7 +232,7 @@ class TestNotificationLogs(BaseTest):
             assert response.status_code == 201
 
         create_data = dict(
-            user_id="tom@mindlogger.com",
+            user_id="tom@gettingcurious.com",
             device_id="deviceid",
             action_type="test",
             notification_descriptions=None,
@@ -251,7 +251,7 @@ class TestNotificationLogs(BaseTest):
     async def test_create_log_allow_empty_array(self, client):
         payloads = [
             dict(
-                user_id="tom@mindlogger.com",
+                user_id="tom@gettingcurious.com",
                 device_id="deviceid",
                 action_type="test",
                 notification_descriptions=[{"name": "descriptions1"}],
@@ -259,7 +259,7 @@ class TestNotificationLogs(BaseTest):
                 scheduled_notifications=[{"name": "notifications1"}],
             ),
             dict(
-                user_id="tom@mindlogger.com",
+                user_id="tom@gettingcurious.com",
                 device_id="deviceid",
                 action_type="test",
                 notification_descriptions=[],
@@ -273,7 +273,7 @@ class TestNotificationLogs(BaseTest):
             assert response.status_code == 201
 
         query = dict(
-            email="tom@mindlogger.com",
+            email="tom@gettingcurious.com",
             device_id="deviceid",
             limit=5,
         )
@@ -304,7 +304,7 @@ class TestNotificationLogs(BaseTest):
             assert response.status_code == 201
 
         query = dict(
-            email="tom@mindlogger.com",
+            email="tom@gettingcurious.com",
             device_id="deviceid",
             limit=5,
         )

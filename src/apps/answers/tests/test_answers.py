@@ -102,7 +102,7 @@ async def olive(olive_create: UserCreate, global_session: AsyncSession, pytestco
 @pytest.fixture(scope="session", autouse=True)
 def sam_create() -> UserCreate:
     return UserCreate(
-        email="sam@mindlogger.com",
+        email="sam@gettingcurious.com",
         password="Test12345!",
         first_name="Sam",
         last_name="Smith",
@@ -112,7 +112,7 @@ def sam_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def olive_create() -> UserCreate:
     return UserCreate(
-        email="olive@mindlogger.com",
+        email="olive@gettingcurious.com",
         password="Test12345!",
         first_name="Olive",
         last_name="Johnson",
@@ -1839,7 +1839,7 @@ class TestAnswerActivityItems(BaseTest):
                 creator_id=tom.id,
                 first_name="source",
                 last_name="subject",
-                email="source_subject@mindlogger.com",
+                email="source_subject@gettingcurious.com",
                 secret_user_id=f"{uuid.uuid4()}",
             )
         )

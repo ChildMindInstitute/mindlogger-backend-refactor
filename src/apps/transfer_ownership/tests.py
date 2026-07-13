@@ -454,7 +454,7 @@ class TestTransfer(BaseTest):
 
     async def test_init_transfer_owner_invite_themself(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
-        data = {"email": "tom@mindlogger.com"}
+        data = {"email": "tom@gettingcurious.com"}
         applet_id = applet_one.id
         resp = await client.post(
             self.transfer_url.format(applet_id=applet_id),
