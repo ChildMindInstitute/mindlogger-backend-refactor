@@ -371,7 +371,6 @@ async def summary_activity_latest_report_retrieve(
                 user_id=user.id,
                 event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
                 curious_applet_id=[applet_id],
-                curious_activity_id=[activity_id],
                 curious_subject_id=[subject_id],
                 **http_audit_fields(request, e),
             )
@@ -383,7 +382,6 @@ async def summary_activity_latest_report_retrieve(
             user_id=user.id,
             event_action=EventAction.APPLET_ANSWER_REPORT_DOWNLOAD,
             curious_applet_id=[applet_id],
-            curious_activity_id=[activity_id],
             curious_subject_id=[subject_id],
             **http_audit_fields(request),
         )
@@ -1339,7 +1337,6 @@ async def applet_ehr_answers_export(
                 event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
                 curious_applet_id=[applet_id],
                 curious_subject_id=query_params.filters.get("target_subject_ids"),
-                curious_activity_id=query_params.filters.get("activity_ids"),
                 **http_audit_fields(request, e),
             )
         )
@@ -1351,7 +1348,6 @@ async def applet_ehr_answers_export(
             event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
             curious_applet_id=[applet_id],
             curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
-            curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
             curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
             **http_audit_fields(request),
         )
@@ -1397,7 +1393,6 @@ async def applet_ehr_answers_export(
                     event_action=EventAction.APPLET_ANSWER_EHR_DOWNLOAD,
                     curious_applet_id=[applet_id],
                     curious_subject_id=list({a.target_subject_id for a in ehr_answers}) or None,
-                    curious_activity_id=list({a.activity_id for a in ehr_answers}) or None,
                     curious_submit_id=list({a.submit_id for a in ehr_answers}) or None,
                     event_outcome=EventOutcome.FAILURE,
                     error_type=type(e).__name__,
