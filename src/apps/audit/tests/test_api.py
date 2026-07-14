@@ -217,14 +217,40 @@ async def test_owner_does_not_see_manager_account_events_from_before_joining(
     assert body["result"][0]["event.id"] == str(after_join.event_id)
 
 
-async def test_owner_does_not_see_revoked_manager_account_events(
+async def test_owner_sees_revoked_manager_account_events_from_during_membership(
     client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
 ):
+    """Removing a team member keeps their account events from while they were
+    a member visible in the export."""
     applet = applet_one_lucy_manager
-    # After the grant, so revocation alone is what hides it.
-    await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
+    during = await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow())
 
     # Revoke lucy's access (role removal is a soft delete).
+    await session.execute(
+        update(UserAppletAccessSchema)
+        .where(UserAppletAccessSchema.user_id == lucy.id, UserAppletAccessSchema.applet_id == applet.id)
+        .values(is_deleted=True)
+    )
+
+    client.login(tom)
+    response = await client.get(URL.format(applet_id=applet.id))
+    assert response.status_code == http.HTTPStatus.OK
+    body = response.json()
+    assert body["count"] == 1
+    assert body["result"][0]["event.id"] == str(during.event_id)
+
+
+async def test_owner_does_not_see_revoked_manager_account_events_from_after_removal(
+    client: TestClient, session: AsyncSession, tom: User, lucy: User, applet_one_lucy_manager: AppletFull
+):
+    """Removing a team member ends their membership window: account events
+    from after the revocation stay out of the export."""
+    applet = applet_one_lucy_manager
+
+    # Timestamp event an hour after the revocation below.
+    await _seed_account_event(session, user_id=lucy.id, timestamp=_utcnow() + datetime.timedelta(hours=1))
+
+    # Revoke lucy's access (role removal is a soft delete that bumps updated_at).
     await session.execute(
         update(UserAppletAccessSchema)
         .where(UserAppletAccessSchema.user_id == lucy.id, UserAppletAccessSchema.applet_id == applet.id)
