@@ -1,3 +1,6 @@
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
+
 from fastapi import FastAPI
 
 from broker import broker
@@ -16,15 +19,8 @@ async def shutdown_taskiq() -> None:
         await broker.shutdown()
 
 
-def startup(app: FastAPI):
-    async def _startup():
-        await startup_taskiq()
-
-    return _startup
-
-
-def shutdown(app: FastAPI):
-    async def _shutdown():
-        await shutdown_taskiq()
-
-    return _shutdown
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    await startup_taskiq()
+    yield
+    await shutdown_taskiq()
