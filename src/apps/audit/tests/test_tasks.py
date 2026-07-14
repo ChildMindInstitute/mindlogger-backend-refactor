@@ -12,7 +12,7 @@ def _payload(**overrides) -> dict:
     event = AuditEvent(
         event_action=EventAction.USER_SESSION_INVALID,
         user_id=None,
-        user_email="tom@mindlogger.com",
+        user_email="tom@gettingcurious.com",
     )
     payload = event.model_dump(mode="json")
     payload.update(overrides)

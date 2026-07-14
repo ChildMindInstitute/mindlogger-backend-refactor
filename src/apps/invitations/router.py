@@ -164,7 +164,7 @@ async def create_shell_account(
                 user_id=user.id,
                 curious_applet_id=[applet_id],
                 user_target_email=subject_schema.email,
-                user_target_roles=["shell-account"],
+                # `user_target_roles=None` because shell account grants no role
                 **http_audit_fields(request, e),
             )
         )
@@ -176,7 +176,6 @@ async def create_shell_account(
             user_id=user.id,
             curious_applet_id=[applet_id],
             user_target_email=subject_schema.email,
-            user_target_roles=["shell-account"],
             **http_audit_fields(request),
         )
     )

@@ -617,7 +617,13 @@ class TestTransfer(BaseTest):
     # ── Audit event tests ──
 
     async def test_initiate_transfer_audit_event(
-        self, client: TestClient, applet_one: AppletFull, tom: User, mailbox: TestMail, mocker: MockerFixture
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        tom: User,
+        lucy: User,
+        mailbox: TestMail,
+        mocker: MockerFixture,
     ):
         audit_log = mocker.patch("apps.transfer_ownership.api.log")
         client.login(tom)
@@ -633,6 +639,9 @@ class TestTransfer(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [Role.OWNER]
 
     async def test_initiate_transfer_audit_event_failure(self, client: TestClient, tom: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.transfer_ownership.api.log")
@@ -648,6 +657,9 @@ class TestTransfer(BaseTest):
         assert event.event_action == EventAction.APPLET_TRANSFER_INITIATE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id
+        assert event.user_target_id is None
+        assert event.user_target_email == "aloevdamirkhon@gmail.com"
+        assert event.user_target_roles == [Role.OWNER]
 
     async def test_accept_transfer_audit_event(
         self,
@@ -674,6 +686,8 @@ class TestTransfer(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.OWNER]
 
     async def test_decline_transfer_audit_event(
         self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User
@@ -694,3 +708,5 @@ class TestTransfer(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles is None

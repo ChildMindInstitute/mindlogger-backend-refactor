@@ -1468,6 +1468,7 @@ class TestInvite(BaseTest):
         self,
         client: TestClient,
         tom: User,
+        user: User,
         applet_one: AppletFull,
         invitation_respondent_data: InvitationRespondentRequest,
         mocker,
@@ -1485,13 +1486,39 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
-        assert event.user_target_email == invitation_respondent_data.email
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [Role.RESPONDENT]
+
+    async def test_invite_respondent_audit_event_email_fallback(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        invitation_respondent_data.email = "respondent@example.com"
+        client.login(tom)
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
+            invitation_respondent_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_target_id is None
+        assert event.user_target_email == "respondent@example.com"
         assert event.user_target_roles == [Role.RESPONDENT]
 
     async def test_invite_reviewer_audit_event(
         self,
         client: TestClient,
         tom: User,
+        user: User,
         applet_one: AppletFull,
         invitation_reviewer_data: InvitationReviewerRequest,
         mocker,
@@ -1509,13 +1536,15 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
-        assert event.user_target_email == invitation_reviewer_data.email
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
         assert event.user_target_roles == [Role.REVIEWER]
 
     async def test_invite_manager_audit_event(
         self,
         client: TestClient,
         tom: User,
+        user: User,
         applet_one: AppletFull,
         invitation_manager_data: InvitationManagersRequest,
         mocker,
@@ -1533,13 +1562,15 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == tom.id
         assert event.curious_applet_id == [applet_one.id]
-        assert event.user_target_email == invitation_manager_data.email
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
         assert event.user_target_roles == [invitation_manager_data.role]
 
     async def test_invite_respondent_audit_event_failure(
         self,
         client: TestClient,
         lucy: User,
+        user: User,
         applet_one: AppletFull,
         invitation_respondent_data: InvitationRespondentRequest,
         mocker,
@@ -1556,6 +1587,8 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_INITIATE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == lucy.id
+        assert event.user_target_id == user.id  # failure inviting regsitered user should carry user ID
+        assert event.user_target_email is None
 
     async def test_invitation_accept_audit_event(
         self,
@@ -1576,6 +1609,8 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.MANAGER]
 
     async def test_invitation_accept_audit_event_failure(
         self,
@@ -1592,6 +1627,9 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_ACCEPT
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
+        # The key did not resolve to an invitation, so the role is unknown.
+        assert event.user_target_roles is None
 
     async def test_private_invitation_accept_audit_event(
         self,
@@ -1610,6 +1648,8 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one_with_link.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.RESPONDENT]
 
     async def test_invitation_decline_audit_event(
         self,
@@ -1628,6 +1668,7 @@ class TestInvite(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert event.user_id == lucy.id
         assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
 
     async def test_invitation_decline_audit_event_failure(
         self,
@@ -1644,6 +1685,7 @@ class TestInvite(BaseTest):
         assert event.event_action == EventAction.APPLET_INVITE_DECLINE
         assert event.event_outcome == EventOutcome.FAILURE
         assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
 
     async def test_shell_create_account_audit_event(
         self, client: TestClient, shell_create_data: dict, bob: User, applet_four: AppletFull, mocker
@@ -1662,4 +1704,4 @@ class TestInvite(BaseTest):
         assert event.user_id == bob.id
         assert event.curious_applet_id == [applet_four.id]
         assert event.user_target_email == "shell@example.com"
-        assert event.user_target_roles == ["shell-account"]
+        assert event.user_target_roles is None  # shell account grants no role

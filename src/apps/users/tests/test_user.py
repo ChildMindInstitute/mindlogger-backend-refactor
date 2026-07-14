@@ -114,7 +114,7 @@ class TestUser:
 
     async def test_create_user_not_valid_email(self, client: TestClient, request_data: UserCreateRequest):
         data = request_data.model_dump()
-        data["email"] = "tom2@mindlogger@com"
+        data["email"] = "tom2@gettingcurious@com"
         response = await client.post(self.user_create_url, data=data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         result = response.json()["result"]
