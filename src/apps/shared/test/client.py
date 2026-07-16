@@ -28,6 +28,23 @@ class TestClient:
             headers_.update(headers)
         return headers_
 
+    def _get_json_headers(
+        self,
+        headers: dict | None = None,
+        body: str | None = None,
+        files: Mapping[str, BytesIO] | None = None,
+    ) -> dict:
+        """Headers for a request whose body is serialized JSON.
+
+        The body is passed to httpx as raw ``content``, so the JSON content type has to be set
+        explicitly - Starlette will not parse the body into the endpoint's model without it.
+        Skipped for multipart requests and when the caller sets the header itself.
+        """
+        headers_ = self._get_updated_headers(headers)
+        if body is not None and not files and not any(k.lower() == "content-type" for k in headers_):
+            headers_["Content-Type"] = "application/json"
+        return headers_
+
     @staticmethod
     def _get_body(
         data: dict[str, Any] | BaseModel | list[dict[str, Any]] | list[BaseModel] | None = None,
@@ -50,10 +67,11 @@ class TestClient:
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
+        body = self._get_body(data)
         response = await self.client.post(
             url,
-            content=self._get_body(data),
-            headers=self._get_updated_headers(headers),
+            content=body,
+            headers=self._get_json_headers(headers, body, files),
             files=files,
         )
         return response
@@ -67,10 +85,11 @@ class TestClient:
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
+        body = self._get_body(data)
         response = await self.client.put(
             url,
-            content=self._get_body(data),
-            headers=self._get_updated_headers(headers),
+            content=body,
+            headers=self._get_json_headers(headers, body),
         )
         return response
 
@@ -94,11 +113,12 @@ class TestClient:
     ) -> Response:
         if query:
             url = self._prepare_url(url, query)
+        body = self._get_body(data)
         response = await self.client.request(
             "DELETE",
             url,
-            content=self._get_body(data),
-            headers=self._get_updated_headers(headers),
+            content=body,
+            headers=self._get_json_headers(headers, body),
         )
         return response
 

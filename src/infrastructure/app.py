@@ -47,7 +47,7 @@ from infrastructure.http.exceptions import (
     sqlalchemy_database_error_handler,
     starlette_http_exception_handler,
 )
-from infrastructure.lifespan import shutdown, startup
+from infrastructure.lifespan import lifespan
 from infrastructure.logger import logger
 
 # Declare your routers here
@@ -108,10 +108,8 @@ def create_app():
         description=f"Commit id: <b>{settings.commit_id}</b><br>Version: <b>{settings.version}</b>",
         default_response_class=ORJSONResponse,
         debug=settings.debug,
+        lifespan=lifespan,
     )
-
-    app.add_event_handler("startup", startup(app))
-    app.add_event_handler("shutdown", shutdown(app))
 
     if settings.sentry.dsn:
         sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
