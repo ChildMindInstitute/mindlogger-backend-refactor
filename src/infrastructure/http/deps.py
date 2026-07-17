@@ -22,6 +22,27 @@ async def get_mindlogger_content_source(
         return MindloggerContentSource.web
 
 
+async def get_optional_mindlogger_content_source(
+    request: Request,
+) -> MindloggerContentSource | None:
+    """Fetch the Mindlogger-Content-Source HTTP header without assuming a default.
+
+    Unlike ``get_mindlogger_content_source``, a missing or unrecognized header
+    resolves to ``None`` ("unknown client") rather than ``web``. Authentication
+    decisions (e.g. per-client token lifetimes) must not guess: mobile app
+    versions released before might not send the header and would
+    otherwise be misclassified as web clients.
+    """
+
+    header_value = request.headers.get("mindlogger-content-source")
+    if header_value is None:
+        return None
+    try:
+        return MindloggerContentSource(header_value)
+    except ValueError:
+        return None
+
+
 def get_language(request: Request) -> str:
     return request.headers.get("Content-Language", "en-US").split("-")[0]
 
