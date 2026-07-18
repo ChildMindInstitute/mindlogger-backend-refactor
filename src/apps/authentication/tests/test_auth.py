@@ -493,6 +493,47 @@ class TestLoginClientClaim(BaseTest):
         assert refresh_payload["client"] == content_source
         self._assert_lifetimes_unchanged(access_payload, refresh_payload, before, after)
 
+    async def test_login_audit_event_records_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source == "admin"
+
+    async def test_login_audit_event_without_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source is None
+
+    async def test_refresh_audit_event_records_client_source(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "web",
+            }
+        )
+        resp = await client.post(
+            auth_router.url_path_for("refresh_access_token"),
+            data={"refresh_token": refresh_token},
+            headers={"Mindlogger-Content-Source": "web"},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source == "web"
+
     @pytest.mark.parametrize(
         "headers",
         (None, {"Mindlogger-Content-Source": "invalid-content-source"}),
