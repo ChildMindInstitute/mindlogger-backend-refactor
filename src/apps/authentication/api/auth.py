@@ -687,13 +687,19 @@ async def refresh_access_token(
 
                 rjti = str(uuid.uuid4())
                 refresh_token = AuthenticationService.create_refresh_token(
-                    {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, JWTClaim.exp: token_data.exp}
+                    {
+                        JWTClaim.sub: str(user_id),
+                        JWTClaim.jti: rjti,
+                        JWTClaim.exp: token_data.exp,
+                        **client_token_claims(token_data.client),
+                    }
                 )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user_id),
                     JWTClaim.rjti: rjti,
+                    **client_token_claims(token_data.client),
                 }
             )
     except BaseError as e:

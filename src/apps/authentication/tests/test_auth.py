@@ -189,6 +189,78 @@ class TestAuthentication(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == http.HTTPStatus.OK
 
+    async def test_refresh_access_token__propagates_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "admin",
+            }
+        )
+        response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["refreshToken"] == refresh_token
+        access_payload = jwt.decode(
+            result["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert access_payload["client"] == "admin"
+
+    async def test_refresh_access_token__legacy_token_without_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+            }
+        )
+        response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        assert response.status_code == http.HTTPStatus.OK
+        access_payload = jwt.decode(
+            response.json()["result"]["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert "client" not in access_payload
+
+    async def test_refresh_token_key_transition__preserves_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        token_key = settings.authentication.refresh_token.secret_key
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "web",
+            }
+        )
+        new_token_key = "new token key"
+        transition_expire_date = datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=1)
+
+        with mock.patch("config.settings.authentication.refresh_token") as token_settings_mock:
+            token_settings_mock.secret_key = new_token_key
+            token_settings_mock.transition_key = token_key
+            token_settings_mock.transition_expire_date = transition_expire_date
+            token_settings_mock.expiration = 540
+
+            _status_code, new_refresh_token = await self._request_refresh_token(client, refresh_token)
+            assert _status_code == http.HTTPStatus.OK
+            assert new_refresh_token
+            assert new_refresh_token != refresh_token
+            refresh_payload = jwt.decode(
+                new_refresh_token,
+                new_token_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+            assert refresh_payload["client"] == "web"
+
     async def test_login_and_logout_device(self, client: TestClient, user: User):
         device_id = str(uuid.uuid4())
 
