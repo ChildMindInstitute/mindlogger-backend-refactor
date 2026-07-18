@@ -47,7 +47,14 @@ from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http.deps import get_optional_mindlogger_content_source
+from infrastructure.http.domain import MindloggerContentSource
 from infrastructure.logger import logger
+
+
+def client_token_claims(content_source: MindloggerContentSource | None) -> dict:
+    """Extra claims recording which client the tokens are issued to; empty when unknown."""
+    return {JWTClaim.client: content_source} if content_source else {}
 
 
 async def get_token(
@@ -57,6 +64,7 @@ async def get_token(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin | MFARequiredResponse]:
     """Generate the JWT access token."""
     try:
@@ -104,12 +112,15 @@ async def get_token(
         )
 
     rjti = str(uuid.uuid4())
-    refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+    refresh_token = AuthenticationService.create_refresh_token(
+        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+    )
 
     access_token = AuthenticationService.create_access_token(
         {
             JWTClaim.sub: str(user.id),
             JWTClaim.rjti: rjti,
+            **client_token_claims(content_source),
         }
     )
 
@@ -139,6 +150,7 @@ async def verify_mfa_totp(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Verify TOTP code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
@@ -280,7 +292,7 @@ async def verify_mfa_totp(
 
             logger.info(
                 f"MFA verification successful user_id={user.id} email={user.email_encrypted} "
-                f"device_id={verify_request.device_id}"
+                f"device_id={verify_request.device_id} client={content_source}"
             )
 
             # Register device if device_id provided
@@ -295,12 +307,15 @@ async def verify_mfa_totp(
 
             # Issue refresh and access tokens
             rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+            refresh_token = AuthenticationService.create_refresh_token(
+                {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+            )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user.id),
                     JWTClaim.rjti: rjti,
+                    **client_token_claims(content_source),
                 }
             )
     except BaseError as e:
@@ -339,6 +354,7 @@ async def verify_mfa_recovery_code(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Verify recovery code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
@@ -553,7 +569,7 @@ async def verify_mfa_recovery_code(
 
             logger.info(
                 f"MFA recovery code verification successful user_id={user_id} email={user.email_encrypted} "
-                f"device_id={verify_request.device_id}"
+                f"device_id={verify_request.device_id} client={content_source}"
             )
 
             # Step 5: Register device if device_id provided
@@ -568,12 +584,15 @@ async def verify_mfa_recovery_code(
 
             # Step 6: Issue refresh and access tokens
             rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user_id), JWTClaim.jti: rjti})
+            refresh_token = AuthenticationService.create_refresh_token(
+                {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+            )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user_id),
                     JWTClaim.rjti: rjti,
+                    **client_token_claims(content_source),
                 }
             )
     except BaseError as e:

@@ -368,3 +368,74 @@ class TestAuthentication(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == InvalidRefreshToken.message
         settings.authentication.refresh_token.expiration = 540
+
+
+class TestLoginClientClaim(BaseTest):
+    """The client claim records which client tokens were issued to, without changing lifetimes."""
+
+    get_token_url = auth_router.url_path_for("get_token")
+
+    @staticmethod
+    def _decode_tokens(result: dict) -> tuple[dict, dict]:
+        access_payload = jwt.decode(
+            result["token"]["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        refresh_payload = jwt.decode(
+            result["token"]["refreshToken"],
+            settings.authentication.refresh_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        return access_payload, refresh_payload
+
+    @staticmethod
+    def _assert_lifetimes_unchanged(
+        access_payload: dict, refresh_payload: dict, before: datetime.datetime, after: datetime.datetime
+    ):
+        access_delta = datetime.timedelta(minutes=settings.authentication.access_token.expiration)
+        refresh_delta = datetime.timedelta(minutes=settings.authentication.refresh_token.expiration)
+        assert (
+            int((before + access_delta).timestamp())
+            <= access_payload["exp"]
+            <= int((after + access_delta).timestamp()) + 1
+        )
+        assert (
+            int((before + refresh_delta).timestamp())
+            <= refresh_payload["exp"]
+            <= int((after + refresh_delta).timestamp()) + 1
+        )
+
+    @pytest.mark.parametrize("content_source", ("web", "admin", "mobile"))
+    async def test_login_embeds_client_claim(self, client: TestClient, user: User, content_source: str):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": content_source},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
+        assert access_payload["client"] == content_source
+        assert refresh_payload["client"] == content_source
+        self._assert_lifetimes_unchanged(access_payload, refresh_payload, before, after)
+
+    @pytest.mark.parametrize(
+        "headers",
+        (None, {"Mindlogger-Content-Source": "invalid-content-source"}),
+        ids=("missing-header", "invalid-header"),
+    )
+    async def test_login_without_client_claim(self, client: TestClient, user: User, headers: dict | None):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers=headers,
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
+        assert "client" not in access_payload
+        assert "client" not in refresh_payload
+        self._assert_lifetimes_unchanged(access_payload, refresh_payload, before, after)
