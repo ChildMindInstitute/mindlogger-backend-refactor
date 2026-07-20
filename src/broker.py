@@ -2,7 +2,7 @@ from typing import Any, Coroutine, Union
 
 import structlog
 import taskiq_fastapi
-from taskiq import AsyncBroker, InMemoryBroker, TaskiqMessage, TaskiqMiddleware
+from taskiq import AsyncBroker, InMemoryBroker, TaskiqMessage, TaskiqMiddleware, TaskiqResult
 from taskiq.formatters.json_formatter import JSONFormatter
 from taskiq_aio_pika import AioPikaBroker
 from taskiq_redis import RedisAsyncResultBackend
@@ -34,11 +34,18 @@ class StructlogMiddleware(TaskiqMiddleware):
         return message
 
 
+class ErrorLoggerMiddleware(TaskiqMiddleware):
+    """Custom error logging middleware so Datadog receives errors"""
+
+    async def on_error(self, message: TaskiqMessage, result: TaskiqResult[Any], exception: BaseException) -> None:
+        logger.error(f"Task {message.task_name} failed! ", exc_info=exception)
+
+
 if settings.env == "testing" or settings.env == "local":
     logger.info("Starting in memory broker")
     broker = InMemoryBroker().with_formatter(JSONFormatter())
 
-middlewares = [StructlogMiddleware()]
+middlewares = [StructlogMiddleware(), ErrorLoggerMiddleware()]
 broker.add_middlewares(*middlewares)
 
 taskiq_fastapi.init(broker, "main:app")
