@@ -16,15 +16,9 @@ async def shutdown_taskiq() -> None:
         await broker.shutdown()
 
 
-def startup(app: FastAPI):
-    async def _startup():
-        await startup_taskiq()
-
-    return _startup
+async def startup(app: FastAPI):
+    await startup_taskiq()
 
 
-def shutdown(app: FastAPI):
-    async def _shutdown():
-        await shutdown_taskiq()
-
-    return _shutdown
+async def shutdown(app: FastAPI):
+    await shutdown_taskiq()

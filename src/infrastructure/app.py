@@ -105,13 +105,15 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Load the ML model
+    # Runs on app startup
     logger.info("Running app startup tasks...")
-    startup(app)
-    yield
+    await startup(app)
+
+    yield  # Waits
+
+    # Runs on app shutdown
     logger.info("Running app shutdown tasks...")
-    # Clean up the ML models and release the resources
-    shutdown(app)
+    await shutdown(app)
 
 
 def create_app():
