@@ -1,6 +1,6 @@
 version = 1
-revision = 3
-requires-python = "==3.13.*"
+revision = 2
+requires-python = ">=3.13.0, <3.14"
 
 [[package]]
 name = "aio-pika"
@@ -650,7 +650,7 @@ requires-dist = [
     { name = "structlog", specifier = "~=25.4.0" },
     { name = "taskiq", extras = ["reload"], specifier = "==0.11.*" },
     { name = "taskiq-aio-pika", specifier = "==0.4.2" },
-    { name = "taskiq-fastapi", specifier = "==0.3.*" },
+    { name = "taskiq-fastapi", specifier = "==0.5.*" },
     { name = "taskiq-redis", specifier = "==1.0.8" },
     { name = "typer", specifier = "==0.16.0" },
     { name = "uvicorn", extras = ["standard"], specifier = "==0.38.*" },
@@ -2390,15 +2390,15 @@ wheels = [
 
 [[package]]
 name = "taskiq-fastapi"
-version = "0.3.5"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi" },
     { name = "taskiq" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cd/29/d4f08a3730d23870f73404d855e5145d13d0bcf1e5376008522804afa51b/taskiq_fastapi-0.3.5.tar.gz", hash = "sha256:0df3df3e7e0a355b9f21a4f81429ad95d0d33af305e75039654ac13ae26c538f", size = 5102, upload-time = "2025-04-20T22:45:21.924Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/62/6d6fcee0cf1d4f82c668cbf199ee8c89de229440698ae38eca5037c5261a/taskiq_fastapi-0.5.0.tar.gz", hash = "sha256:f8a3f1ed60be04a9e1f6a1edea321eebe4a38f320b395dcea1e996b7973b7307", size = 5889, upload-time = "2026-04-18T10:36:24.709Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/06/6ba382f300aebc5d739cd01d708572329d4360ea0c02b7734583a2894b16/taskiq_fastapi-0.3.5-py3-none-any.whl", hash = "sha256:35553cb05cfb8e34d50179bad747d79a42d782f5b9c529128ad64263af8c246f", size = 5116, upload-time = "2025-04-20T22:45:21.049Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/77/ff0504698dd833b3275c9184cc818480a8a55e397eabd4a119ca49164d9d/taskiq_fastapi-0.5.0-py3-none-any.whl", hash = "sha256:a329ab7f7aa07a2a94751b297694ac97ba5fa470e0ed1e01e4fdf8e45dbc56bc", size = 5398, upload-time = "2026-04-18T10:36:23.603Z" },
 ]
 
 [[package]]
