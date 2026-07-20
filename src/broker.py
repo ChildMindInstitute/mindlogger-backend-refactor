@@ -36,6 +36,7 @@ class StructlogMiddleware(TaskiqMiddleware):
 
 class ErrorLoggerMiddleware(TaskiqMiddleware):
     """Custom error logging middleware so Datadog receives errors"""
+
     async def on_error(self, message: TaskiqMessage, result: TaskiqResult[Any], exception: BaseException) -> None:
         logger.error(f"Task {message.task_name} failed! ", exc_info=exception)
 
