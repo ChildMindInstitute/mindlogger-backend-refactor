@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from typing import Iterable, Type
 
 import sentry_sdk
@@ -102,16 +103,25 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
+    logger.info("Running app startup tasks...")
+    startup(app)
+    yield
+    logger.info("Running app shutdown tasks...")
+    # Clean up the ML models and release the resources
+    shutdown(app)
+
+
 def create_app():
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}</b><br>Version: <b>{settings.version}</b>",
         default_response_class=ORJSONResponse,
         debug=settings.debug,
+        lifespan=lifespan,
     )
-
-    app.add_event_handler("startup", startup(app))
-    app.add_event_handler("shutdown", shutdown(app))
 
     if settings.sentry.dsn:
         sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
