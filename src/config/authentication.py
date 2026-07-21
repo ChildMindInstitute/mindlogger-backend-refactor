@@ -7,9 +7,9 @@ class AccessTokenSettings(BaseModel):
     secret_key: str
     # Set in minutes
     expiration: int = 30
-    # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`
-    # (feature off). See AuthenticationService.token_expiration_minutes.
-    web_admin_expiration: int | None = None
+    # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`.
+    # See AuthenticationService.token_expiration_minutes.
+    web_admin_expiration: int | None = 15
 
     @field_validator("secret_key")
     @classmethod
@@ -23,9 +23,9 @@ class RefreshTokenSettings(BaseModel):
     secret_key: str
     # Set in minutes
     expiration: int = 540
-    # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`
-    # (feature off). See AuthenticationService.token_expiration_minutes.
-    web_admin_expiration: int | None = None
+    # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`.
+    # See AuthenticationService.token_expiration_minutes.
+    web_admin_expiration: int | None = 30
 
     transition_key: str | None = None
     transition_expire_date: datetime.date | None = None
