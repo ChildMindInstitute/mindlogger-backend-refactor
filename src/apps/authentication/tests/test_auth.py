@@ -638,3 +638,28 @@ class TestShortLivedWebAdminTokens(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         access = self._decode(resp.json()["result"]["accessToken"], settings.authentication.access_token.secret_key)
         self._assert_expires_in(access["exp"], self.SHORT_ACCESS, before, after)
+
+    async def test_logout_revokes_paired_refresh_token_under_short_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        login = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        token = login.json()["result"]["token"]
+
+        logout = await client.post(
+            auth_router.url_path_for("delete_access_token"),
+            headers={"Authorization": f"Bearer {token['accessToken']}"},
+        )
+        assert logout.status_code == http.HTTPStatus.OK
+
+        # Revoking the access token must also revoke its paired refresh token.
+        resp = await client.post(
+            self.refresh_access_token_url,
+            data={"refresh_token": token["refreshToken"]},
+        )
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == AuthenticationError.message

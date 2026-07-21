@@ -176,9 +176,27 @@ class AuthenticationService:
         if not token.payload.rjti:
             return None
 
+        # Reconstruct the paired refresh token's exp from the access token's exp. The
+        # deltas must match the per-client lifetimes the tokens were actually minted with
+        # (via the `client` claim), otherwise a short web/admin token would under-estimate
+        # the refresh exp and its blacklist entry could be purged before the refresh token
+        # truly expires — letting a revoked token be used again.
+        client = token.payload.client
         access_exp = datetime.fromtimestamp(token.payload.exp, timezone.utc)
-        refresh_expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
-        access_expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
+        refresh_expires_delta = timedelta(
+            minutes=self.token_expiration_minutes(
+                client,
+                settings.authentication.refresh_token.expiration,
+                settings.authentication.refresh_token.web_admin_expiration,
+            )
+        )
+        access_expires_delta = timedelta(
+            minutes=self.token_expiration_minutes(
+                client,
+                settings.authentication.access_token.expiration,
+                settings.authentication.access_token.web_admin_expiration,
+            )
+        )
         expire = access_exp - access_expires_delta + refresh_expires_delta
         refresh_token = InternalToken(
             payload=TokenPayload(
