@@ -18,13 +18,34 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.password_validation import PasswordValidator
 from config import settings
+from infrastructure.http.domain import MindloggerContentSource
 
 __all__ = ["AuthenticationService"]
+
+_WEB_ADMIN_CLIENTS = (MindloggerContentSource.web, MindloggerContentSource.admin)
 
 
 class AuthenticationService:
     def __init__(self, session) -> None:
         self.session = session
+
+    @staticmethod
+    def token_expiration_minutes(
+        client: MindloggerContentSource | None,
+        default_minutes: int,
+        web_admin_minutes: int | None,
+    ) -> int:
+        """Resolve a token lifetime for a client.
+
+        Web/admin clients get ``web_admin_minutes`` when it is configured;
+        everything else (mobile, or an unknown/legacy client with no `client`
+        claim) keeps ``default_minutes``. An unset ``web_admin_minutes`` means
+        the per-client shortening is off, so all clients fall back to the
+        default — this is what keeps the feature a no-op until ops opts in.
+        """
+        if client in _WEB_ADMIN_CLIENTS and web_admin_minutes is not None:
+            return web_admin_minutes
+        return default_minutes
 
     @staticmethod
     def create_access_token(data: dict) -> str:
