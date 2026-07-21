@@ -2,7 +2,7 @@
 
 import http
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, patch
 
 import jwt
@@ -308,6 +308,42 @@ class TestMFATOTPVerification(BaseTest):
         )
         assert access_payload["client"] == "admin"
         assert refresh_payload["client"] == "admin"
+
+    async def test_verify_mfa_applies_short_lifetime_for_web_admin(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
+    ):
+        """Tokens issued via MFA verification honor the short web/admin lifetime."""
+        short_access = 15
+        mocker.patch.object(settings.authentication.access_token, "web_admin_expiration", short_access)
+
+        login_response = await client.post(
+            url=self.get_token_url,
+            data=dict(email=user_with_mfa.email_encrypted, password=TEST_PASSWORD),
+        )
+        mfa_token = login_response.json()["result"]["mfaToken"]
+
+        crud = UsersCRUD(session)
+        fresh_user = await crud.get_by_id(user_with_mfa.id)
+        assert fresh_user is not None
+        assert fresh_user.mfa_secret is not None
+        valid_code = totp_service.get_current_code(totp_service.decrypt_secret(fresh_user.mfa_secret))
+
+        mocker.patch("apps.authentication.api.auth.log")
+        before = datetime.now(timezone.utc)
+        verify_response = await client.post(
+            url=self.verify_mfa_url,
+            data=dict(mfaToken=mfa_token, totpCode=valid_code),
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        after = datetime.now(timezone.utc)
+        assert verify_response.status_code == http.HTTPStatus.OK
+        access_payload = jwt.decode(
+            verify_response.json()["result"]["token"]["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        delta = timedelta(minutes=short_access)
+        assert int((before + delta).timestamp()) <= access_payload["exp"] <= int((after + delta).timestamp()) + 1
 
     async def test_verify_mfa_with_invalid_code_fails(
         self, client: TestClient, user_with_mfa: User, mocker: MockerFixture

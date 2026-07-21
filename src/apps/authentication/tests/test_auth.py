@@ -552,3 +552,89 @@ class TestLoginClientClaim(BaseTest):
         assert "client" not in access_payload
         assert "client" not in refresh_payload
         self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
+
+
+class TestShortLivedWebAdminTokens(BaseTest):
+    """Web/admin clients get shorter token lifetimes when configured; others are unchanged."""
+
+    get_token_url = auth_router.url_path_for("get_token")
+    refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
+
+    SHORT_ACCESS = 15
+    SHORT_REFRESH = 120
+
+    @pytest.fixture
+    def short_lifetimes(self, mocker: MockerFixture):
+        mocker.patch.object(settings.authentication.access_token, "web_admin_expiration", self.SHORT_ACCESS)
+        mocker.patch.object(settings.authentication.refresh_token, "web_admin_expiration", self.SHORT_REFRESH)
+
+    @staticmethod
+    def _decode(token: str, secret: str) -> dict:
+        return jwt.decode(token, secret, algorithms=[settings.authentication.algorithm])
+
+    @staticmethod
+    def _assert_expires_in(exp: int, minutes: int, before: datetime.datetime, after: datetime.datetime):
+        delta = datetime.timedelta(minutes=minutes)
+        assert int((before + delta).timestamp()) <= exp <= int((after + delta).timestamp()) + 1
+
+    @pytest.mark.parametrize("content_source", ("web", "admin"))
+    async def test_web_admin_get_short_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, content_source: str
+    ):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": content_source},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        token = resp.json()["result"]["token"]
+        access = self._decode(token["accessToken"], settings.authentication.access_token.secret_key)
+        refresh = self._decode(token["refreshToken"], settings.authentication.refresh_token.secret_key)
+        self._assert_expires_in(access["exp"], self.SHORT_ACCESS, before, after)
+        self._assert_expires_in(refresh["exp"], self.SHORT_REFRESH, before, after)
+
+    @pytest.mark.parametrize(
+        "headers",
+        ({"Mindlogger-Content-Source": "mobile"}, None),
+        ids=("mobile", "no-header"),
+    )
+    async def test_mobile_and_unknown_keep_default_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, headers: dict | None
+    ):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers=headers,
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        token = resp.json()["result"]["token"]
+        access = self._decode(token["accessToken"], settings.authentication.access_token.secret_key)
+        refresh = self._decode(token["refreshToken"], settings.authentication.refresh_token.secret_key)
+        self._assert_expires_in(access["exp"], settings.authentication.access_token.expiration, before, after)
+        self._assert_expires_in(refresh["exp"], settings.authentication.refresh_token.expiration, before, after)
+
+    async def test_refresh_preserves_short_access_lifetime(
+        self, client: TestClient, user: User, short_lifetimes, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        login = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        refresh_token = login.json()["result"]["token"]["refreshToken"]
+
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.refresh_access_token_url,
+            data={"refresh_token": refresh_token},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access = self._decode(resp.json()["result"]["accessToken"], settings.authentication.access_token.secret_key)
+        self._assert_expires_in(access["exp"], self.SHORT_ACCESS, before, after)

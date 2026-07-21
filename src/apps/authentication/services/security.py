@@ -50,8 +50,12 @@ class AuthenticationService:
     @staticmethod
     def create_access_token(data: dict) -> str:
         to_encode = data.copy()
-        expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
-        expire = datetime.now(timezone.utc) + expires_delta
+        minutes = AuthenticationService.token_expiration_minutes(
+            to_encode.get(JWTClaim.client),
+            settings.authentication.access_token.expiration,
+            settings.authentication.access_token.web_admin_expiration,
+        )
+        expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
@@ -130,8 +134,12 @@ class AuthenticationService:
     @staticmethod
     def create_refresh_token(data: dict) -> str:
         to_encode = data.copy()
-        expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
-        expire = datetime.now(timezone.utc) + expires_delta
+        minutes = AuthenticationService.token_expiration_minutes(
+            to_encode.get(JWTClaim.client),
+            settings.authentication.refresh_token.expiration,
+            settings.authentication.refresh_token.web_admin_expiration,
+        )
+        expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
         to_encode.setdefault(JWTClaim.exp, expire)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
