@@ -665,6 +665,7 @@ async def refresh_access_token(
     """Refresh access token."""
     user_id: uuid.UUID | None = None
     reuse_family: str | None = None
+    refresh_outcome = "reused"
     try:
         async with atomic(session):
             try:
@@ -713,6 +714,7 @@ async def refresh_access_token(
                     # Within the grace window: hand back the same replacement pair.
                     access_token = replacement.access_token
                     refresh_token = replacement.refresh_token
+                    refresh_outcome = "grace_redeemed"
                 elif await AuthenticationService(session).is_revoked(InternalToken(payload=token_data)):
                     # Old token replayed after its grace window -> treat as theft. Defer the
                     # family revocation to its own committed transaction (raising here would roll
@@ -744,6 +746,7 @@ async def refresh_access_token(
                         token_data.jti,
                         Token(access_token=access_token, refresh_token=refresh_token),
                     )
+                    refresh_outcome = "rotated"
             else:
                 # Mobile / unknown / legacy: reuse the same refresh token (unchanged behavior).
                 revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
@@ -778,6 +781,7 @@ async def refresh_access_token(
 
         if reuse_family is not None:
             # Commit the family revocation in its own transaction, then reject the request.
+            logger.warning(f"Refresh token reuse detected; revoking family user_id={user_id} family={reuse_family}")
             async with atomic(session):
                 await TokenRotationService(session).revoke_family(reuse_family, user_id)
             raise AuthenticationError
@@ -791,6 +795,7 @@ async def refresh_access_token(
         )
         raise
 
+    logger.info(f"Token refresh succeeded user_id={user_id} outcome={refresh_outcome}")
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_REFRESH,

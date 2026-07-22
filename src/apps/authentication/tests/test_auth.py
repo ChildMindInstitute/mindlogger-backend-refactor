@@ -821,3 +821,31 @@ class TestRefreshTokenRotation(BaseTest):
 
         after = await self._refresh(client, r2)
         assert after.status_code == http.HTTPStatus.UNAUTHORIZED
+
+    async def test_refresh_logs_rotated_outcome(self, client: TestClient, user: User, mocker: MockerFixture):
+        mocker.patch("apps.authentication.api.auth.log")
+        logger_mock = mocker.patch("apps.authentication.api.auth.logger")
+        r1 = (await self._login(client, user))["refreshToken"]
+
+        resp = await self._refresh(client, r1)
+        assert resp.status_code == http.HTTPStatus.OK
+        info_messages = " ".join(str(call) for call in logger_mock.info.call_args_list)
+        assert "outcome=rotated" in info_messages
+
+    async def test_reuse_logs_warning(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        logger_mock = mocker.patch("apps.authentication.api.auth.logger")
+        r1 = (await self._login(client, user))["refreshToken"]
+        j1 = self._refresh_payload(r1)["jti"]
+        await self._refresh(client, r1)
+
+        rotation = TokenRotationService(session)
+        await rotation.redis_client.delete(rotation._grace_key(j1))
+
+        reuse = await self._refresh(client, r1)
+        assert reuse.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert logger_mock.warning.called
+        warnings = " ".join(str(call) for call in logger_mock.warning.call_args_list)
+        assert "reuse detected" in warnings
