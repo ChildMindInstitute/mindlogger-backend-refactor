@@ -801,3 +801,23 @@ class TestRefreshTokenRotation(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         rotated = resp.json()["result"]["refreshToken"]
         assert self._refresh_payload(rotated)["family"] == legacy_jti
+
+    async def test_logout_with_stale_access_token_revokes_family(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        token = await self._login(client, user)
+        original_access = token["accessToken"]
+
+        # Rotate the refresh token so the original access token's paired refresh is superseded.
+        r2 = (await self._refresh(client, token["refreshToken"])).json()["result"]["refreshToken"]
+
+        # Logging out with the (now stale) original access token must kill the whole family.
+        logout = await client.post(
+            auth_router.url_path_for("delete_access_token"),
+            headers={"Authorization": f"Bearer {original_access}"},
+        )
+        assert logout.status_code == http.HTTPStatus.OK
+
+        after = await self._refresh(client, r2)
+        assert after.status_code == http.HTTPStatus.UNAUTHORIZED

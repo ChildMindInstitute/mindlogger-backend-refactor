@@ -58,6 +58,16 @@ def client_token_claims(content_source: MindloggerContentSource | None) -> dict:
     return {JWTClaim.client: content_source} if content_source else {}
 
 
+async def revoke_token_family_if_web_admin(session, token: InternalToken) -> None:
+    """On logout of a rotating (web/admin) token, revoke its whole family so a superseded
+    refresh token in the same chain cannot keep the session alive."""
+    if token.payload.family and token.payload.client in (
+        MindloggerContentSource.web,
+        MindloggerContentSource.admin,
+    ):
+        await TokenRotationService(session).revoke_family(token.payload.family, token.payload.sub)
+
+
 async def get_token(
     request: Request,
     user_login_schema: UserLoginRequest = Body(...),
@@ -802,6 +812,7 @@ async def delete_access_token(
     try:
         async with atomic(session):
             await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
+            await revoke_token_family_if_web_admin(session, token)
         async with atomic(session):
             if schema and schema.device_id:
                 await UserDeviceService(session, user.id).remove_device(schema.device_id)
@@ -833,6 +844,7 @@ async def delete_refresh_token(
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(token, TokenPurpose.REFRESH)
+        await revoke_token_family_if_web_admin(session, token)
     if schema and schema.device_id:
         async with atomic(session):
             await UserDeviceService(session, token.payload.sub).remove_device(schema.device_id)
