@@ -2121,6 +2121,7 @@ class AnswerService:
             results.append(
                 AnswerReview(
                     id=schema.id,
+                    answer_id=schema.answer_id,
                     reviewer_public_key=schema.user_public_key if can_view else None,
                     answer=schema.answer if can_view else None,
                     item_ids=schema.item_ids,

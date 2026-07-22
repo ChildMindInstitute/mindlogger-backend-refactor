@@ -1,9 +1,11 @@
 from typing import cast
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
 from apps.shared.test.client import TestClient
@@ -17,7 +19,7 @@ from apps.users.tests.factories import UserUpdateRequestFactory
 @pytest.fixture
 def request_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test12345!",
@@ -40,19 +42,38 @@ class TestUser:
 
     user_update_request = UserUpdateRequestFactory.build()
 
-    async def test_user_create(self, client: TestClient, request_data: UserCreateRequest):
+    async def test_user_create(self, client: TestClient, request_data: UserCreateRequest, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.users.api.users.log")
         response = await client.post(self.user_create_url, data=request_data.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is not None
+        assert event.user_target_id == event.user_id
+        assert event.event_action == EventAction.USER_CREATE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_201_CREATED
         result = response.json()["result"]
+        assert str(event.user_id) == result["id"]
         for k, v in request_data:
             if k != "password":
                 assert v == result[to_camelcase(k)]
 
     async def test_user_create_exist(
-        self, client: TestClient, request_data: UserCreateRequest, user_create: UserCreate
+        self,
+        client: TestClient,
+        request_data: UserCreateRequest,
+        user_create: UserCreate,
+        mocker: MockerFixture,
     ):
+        audit_log = mocker.patch("apps.users.api.users.log")
         request_data.email = user_create.email
         response = await client.post(self.user_create_url, data=request_data.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == request_data.email
+        assert event.event_action == EventAction.USER_CREATE
+        assert event.event_outcome == EventOutcome.FAILURE
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     async def test_user_retrieve(self, client: TestClient, user: User):
@@ -65,11 +86,18 @@ class TestUser:
         response = await client.put(self.user_update_url, data=self.user_update_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
 
-    async def test_user_delete(self, session: AsyncSession, client: TestClient, user: User):
+    async def test_user_delete(self, session: AsyncSession, client: TestClient, user: User, mocker: MockerFixture):
         client.login(user)
+        audit_log = mocker.patch("apps.users.api.users.log")
         response = await client.delete(
             self.user_delete_url,
         )
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_DELETE
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == status.HTTP_204_NO_CONTENT
         with pytest.raises(UserIsDeletedError):
             user.email_encrypted = cast(str, user.email_encrypted)
@@ -86,7 +114,7 @@ class TestUser:
 
     async def test_create_user_not_valid_email(self, client: TestClient, request_data: UserCreateRequest):
         data = request_data.model_dump()
-        data["email"] = "tom2@mindlogger@com"
+        data["email"] = "tom2@gettingcurious@com"
         response = await client.post(self.user_create_url, data=data)
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         result = response.json()["result"]

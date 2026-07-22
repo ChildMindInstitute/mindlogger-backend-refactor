@@ -1,8 +1,10 @@
 import pyotp
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from apps.audit import EventAction, EventOutcome
 from apps.shared.test.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
@@ -74,7 +76,9 @@ class TestMFAEndpoints:
         # URIs should be different (new secret generated)
         assert uri1 != uri2
 
-    async def test_mfa_totp_verify_success(self, client: TestClient, user: User, session: AsyncSession):
+    async def test_mfa_totp_verify_success(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
         """Test successful TOTP verification and MFA activation."""
         client.login(user)
 
@@ -91,7 +95,15 @@ class TestMFAEndpoints:
         valid_code = totp.now()
 
         # Step 2: Verify TOTP code
+        audit_log = mocker.patch("apps.users.api.users.log")
         verify_response = await client.post(self.totp_verify_url, data={"code": valid_code})
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_ENABLE
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         assert verify_response.status_code == status.HTTP_200_OK
         result = verify_response.json()["result"]
@@ -108,7 +120,7 @@ class TestMFAEndpoints:
         assert updated_user.pending_mfa_secret is None
         assert updated_user.pending_mfa_created_at is None
 
-    async def test_mfa_totp_verify_invalid_code(self, client: TestClient, user: User):
+    async def test_mfa_totp_verify_invalid_code(self, client: TestClient, user: User, mocker: MockerFixture):
         """Test verification fails with invalid TOTP code."""
         client.login(user)
 
@@ -116,7 +128,15 @@ class TestMFAEndpoints:
         await client.post(self.totp_initiate_url)
 
         # Try to verify with invalid code
+        audit_log = mocker.patch("apps.users.api.users.log")
         response = await client.post(self.totp_verify_url, data={"code": "000000"})
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_ENABLE
+        assert event.event_outcome == EventOutcome.FAILURE
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         error = response.json()["result"][0]
@@ -209,14 +229,24 @@ class TestMFAEndpoints:
         result = response.json()["result"]
         assert result["mfaEnabled"] is True
 
-    async def test_mfa_totp_verify_requires_authentication(self, client: TestClient):
+    async def test_mfa_totp_verify_requires_authentication(self, client: TestClient, mocker: MockerFixture):
         """Test that MFA endpoints require authentication."""
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+
         # Try without login
         response = await client.post(self.totp_initiate_url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
         response = await client.post(self.totp_verify_url, data={"code": "123456"})
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+        # Each unauthenticated request emits user:session:invalid
+        assert audit_log.await_count == 2
+        for call in audit_log.await_args_list:
+            event = call.args[0]
+            assert event.user_id is None
+            assert event.event_action == EventAction.USER_SESSION_INVALID
+            assert event.event_outcome == EventOutcome.FAILURE
 
     async def test_mfa_encrypted_secret_storage(self, client: TestClient, user: User, session: AsyncSession):
         """Test that secrets are stored encrypted in database."""

@@ -4,10 +4,12 @@ from contextlib import asynccontextmanager
 from copy import deepcopy
 
 from fastapi import Body, Depends
+from starlette.requests import Request
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, preprocess_arbitrary_url
 from apps.answers.service import AnswerService
 from apps.applets.service import AppletService
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_user
 from apps.invitations.domain import (
     InvitationDetailForReviewer,
@@ -31,7 +33,7 @@ from apps.invitations.errors import (
 from apps.invitations.filters import InvitationQueryParams
 from apps.invitations.services import InvitationsService, PrivateInvitationService
 from apps.shared.domain import Response, ResponseMulti
-from apps.shared.exception import NotFoundError, ValidationError
+from apps.shared.exception import BaseError, NotFoundError, ValidationError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.domain import SubjectCreate
 from apps.subjects.errors import SecretIDUniqueViolationError
@@ -88,6 +90,7 @@ async def private_invitation_retrieve(
 
 async def invitation_respondent_send(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationRespondentRequest = Body(...),
     session=Depends(get_session),
@@ -97,33 +100,70 @@ async def invitation_respondent_send(
     for the concrete user giving him a role "respondent".
     """
 
-    async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
-        invitation_service = InvitationsService(session, user)
-        try:
-            invited_user = await UserService(session).get_by_email(invitation_schema.email)
-            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
-            if is_role_exist:
-                raise RespondentInvitationExist()
-        except UserNotFound:
-            pass
+    invited_user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
+            try:
+                # Resolve invited user first so failure audit events carry user ID
+                invited_user = await UserService(session).get_by_email(invitation_schema.email)
+                invited_user_id = invited_user.id
+            except UserNotFound:
+                # Inviting an email that is not yet associated with a user is valid.
+                # Continue flow to create subject and send invitation.
+                pass
 
-        subject_service = SubjectsService(session, user.id)
-        try:
-            subject = await subject_service.create(
-                SubjectCreate(creator_id=user.id, applet_id=applet_id, **invitation_schema.model_dump(by_alias=False))
+            await AppletService(session, user.id).exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+            invitation_service = InvitationsService(session, user)
+            if invited_user_id:
+                is_role_exist = await UserAppletAccessService(session, invited_user_id, applet_id).has_role(
+                    Role.RESPONDENT
+                )
+                if is_role_exist:
+                    raise RespondentInvitationExist()
+
+            subject_service = SubjectsService(session, user.id)
+            try:
+                subject = await subject_service.create(
+                    SubjectCreate(
+                        creator_id=user.id, applet_id=applet_id, **invitation_schema.model_dump(by_alias=False)
+                    )
+                )
+            except SecretIDUniqueViolationError:
+                raise NonUniqueValue(loc=("body", InvitationRespondentRequest.field_alias("secret_user_id")))
+
+            invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_INITIATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                user_target_id=invited_user_id,
+                user_target_email=None if invited_user_id else invitation_schema.email,
+                user_target_roles=[Role.RESPONDENT],
+                **http_audit_fields(request, e),
             )
-        except SecretIDUniqueViolationError:
-            raise NonUniqueValue(loc=("body", InvitationRespondentRequest.field_alias("secret_user_id")))
+        )
+        raise
 
-        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
-
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_INITIATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=invited_user_id,
+            user_target_email=None if invited_user_id else invitation_schema.email,
+            user_target_roles=[Role.RESPONDENT],
+            **http_audit_fields(request),
+        )
+    )
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.model_dump()))
 
 
 async def invitation_reviewer_send(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationReviewerRequest = Body(...),
     session=Depends(get_session),
@@ -133,27 +173,62 @@ async def invitation_reviewer_send(
     for the concrete user giving him role "reviewer" for specific respondents.
     """
 
-    async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
-        invitation_srv = InvitationsService(session, user)
-        try:
-            invited_user = await UserService(session).get_by_email(invitation_schema.email)
-            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.REVIEWER)
-            if is_role_exist:
-                raise ManagerInvitationExist()
-        except UserNotFound:
-            pass
+    invited_user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
+            try:
+                # Resolve invited user first so failure audit events carry user ID
+                invited_user = await UserService(session).get_by_email(invitation_schema.email)
+                invited_user_id = invited_user.id
+            except UserNotFound:
+                # Inviting by email is allowed even if the user does not exist yet.
+                # Continue so the invitation can be created for later acceptance/registration.
+                pass
 
-        invitation: InvitationDetailForReviewer = await invitation_srv.send_reviewer_invitation(
-            applet_id, invitation_schema
+            await AppletService(session, user.id).exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+            invitation_srv = InvitationsService(session, user)
+            if invited_user_id:
+                is_role_exist = await UserAppletAccessService(session, invited_user_id, applet_id).has_role(
+                    Role.REVIEWER
+                )
+                if is_role_exist:
+                    raise ManagerInvitationExist()
+
+            invitation: InvitationDetailForReviewer = await invitation_srv.send_reviewer_invitation(
+                applet_id, invitation_schema
+            )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_INITIATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                user_target_id=invited_user_id,
+                user_target_email=None if invited_user_id else invitation_schema.email,
+                user_target_roles=[Role.REVIEWER],
+                **http_audit_fields(request, e),
+            )
         )
+        raise
 
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_INITIATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=invited_user_id,
+            user_target_email=None if invited_user_id else invitation_schema.email,
+            user_target_roles=[Role.REVIEWER],
+            **http_audit_fields(request),
+        )
+    )
     return Response[InvitationReviewerResponse](result=InvitationReviewerResponse(**invitation.model_dump()))
 
 
 async def invitation_managers_send(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     invitation_schema: InvitationManagersRequest = Body(...),
     session=Depends(get_session),
@@ -164,121 +239,284 @@ async def invitation_managers_send(
     "manager", "coordinator", "editor".
     """
 
-    async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
-        invitation_srv = InvitationsService(session, user)
-        try:
-            invited_user = await UserService(session).get_by_email(invitation_schema.email)
-            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(
-                invitation_schema.role
+    invited_user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
+            try:
+                # Resolve invited user first so failure audit events carry user ID
+                invited_user = await UserService(session).get_by_email(invitation_schema.email)
+                invited_user_id = invited_user.id
+            except UserNotFound:
+                # Inviting emails that are not yet associated with a user is allowed.
+                # In this case there is no existing user-role assignment to validate.
+                pass
+
+            await AppletService(session, user.id).exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+            invitation_srv = InvitationsService(session, user)
+            if invited_user_id:
+                is_role_exist = await UserAppletAccessService(session, invited_user_id, applet_id).has_role(
+                    invitation_schema.role
+                )
+                if is_role_exist:
+                    raise ManagerInvitationExist()
+
+            invitation = await invitation_srv.send_managers_invitation(applet_id, invitation_schema)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_INITIATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                user_target_id=invited_user_id,
+                user_target_email=None if invited_user_id else invitation_schema.email,
+                user_target_roles=[invitation_schema.role],
+                **http_audit_fields(request, e),
             )
-            if is_role_exist:
-                raise ManagerInvitationExist()
-        except UserNotFound:
-            pass
+        )
+        raise
 
-        invitation = await invitation_srv.send_managers_invitation(applet_id, invitation_schema)
-
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_INITIATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=invited_user_id,
+            user_target_email=None if invited_user_id else invitation_schema.email,
+            user_target_roles=[invitation_schema.role],
+            **http_audit_fields(request),
+        )
+    )
     return Response[InvitationManagersResponse](result=InvitationManagersResponse(**invitation.model_dump()))
 
 
 async def invitation_accept(
     key: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     """General endpoint to approve the applet invitation."""
+    applet_id = None
+    invitation_role = None
     try:
-        async with atomic(session):
-            await InvitationsService(session, user).accept(key)
-    except InvitationSubjectAcceptError as e:
-        # subject applet_id-user_id exists. Check for deleted record
-        invitation = e.invitation
-        assert isinstance(invitation, InvitationDetailRespondent)
-        service = SubjectsService(session, user.id)
-        subject, existing_subject = await asyncio.gather(
-            service.get(uuid.UUID(invitation.meta.subject_id)),
-            service.get_by_user_and_applet(user.id, invitation.applet_id),
-        )
-        assert subject
-        if not existing_subject or existing_subject.is_deleted is not True:
-            raise
+        invitation_service = InvitationsService(session, user)
+        invitation = await invitation_service.get(key)
+        if invitation:
+            applet_id = invitation.applet_id
+            invitation_role = invitation.role
 
-        info = await preprocess_arbitrary_url(applet_id=invitation.applet_id, session=session)
-        async with asynccontextmanager(get_answer_session)(info) as answer_session:
+        try:
             async with atomic(session):
-                # remove existing pin of this user
-                await UserAppletAccessService(session, user.id, existing_subject.applet_id).unpin(
-                    pinned_user_id=existing_subject.user_id, pinned_subject_id=None
-                )
-                # remove user_id from deleted subject, accept invitation
-                await service.update(existing_subject.id, user_id=None)
-                await InvitationsService(session, user).accept(key)
+                await invitation_service.accept(key)
+        except InvitationSubjectAcceptError as e:
+            # subject applet_id-user_id exists. Check for deleted record
+            invitation_detail = e.invitation
+            assert isinstance(invitation_detail, InvitationDetailRespondent)
+            service = SubjectsService(session, user.id)
+            subject, existing_subject = await asyncio.gather(
+                service.get(uuid.UUID(invitation_detail.meta.subject_id)),
+                service.get_by_user_and_applet(user.id, invitation_detail.applet_id),
+            )
+            assert subject
+            if not existing_subject or existing_subject.is_deleted is not True:
+                raise
 
-                # move answers from deleted subject to the new one
-                async with atomic(answer_session):
-                    await AnswerService(
-                        session, user_id=user.id, arbitrary_session=answer_session
-                    ).replace_answer_subject(existing_subject.id, subject.id)
+            info = await preprocess_arbitrary_url(applet_id=invitation_detail.applet_id, session=session)
+            async with asynccontextmanager(get_answer_session)(info) as answer_session:
+                async with atomic(session):
+                    # remove existing pin of this user
+                    await UserAppletAccessService(session, user.id, existing_subject.applet_id).unpin(
+                        pinned_user_id=existing_subject.user_id, pinned_subject_id=None
+                    )
+                    # remove user_id from deleted subject, accept invitation
+                    await service.update(existing_subject.id, user_id=None)
+                    await invitation_service.accept(key)
+
+                    # move answers from deleted subject to the new one
+                    async with atomic(answer_session):
+                        await AnswerService(
+                            session, user_id=user.id, arbitrary_session=answer_session
+                        ).replace_answer_subject(existing_subject.id, subject.id)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_ACCEPT,
+                user_id=user.id,
+                curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
+                user_target_roles=[invitation_role] if invitation_role else None,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_ACCEPT,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            user_target_roles=[invitation_role] if invitation_role else None,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def private_invitation_accept(
     key: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
-    async with atomic(session):
-        await PrivateInvitationService(session).accept_invitation(user, key)
+    applet_id = None
+    invitation_role = None
+    try:
+        private_service = PrivateInvitationService(session)
+        invitation = await private_service.get_invitation(key)
+        if invitation:
+            applet_id = invitation.applet_id
+            invitation_role = invitation.role
+
+        async with atomic(session):
+            await private_service.accept_invitation(user, key)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_ACCEPT,
+                user_id=user.id,
+                curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
+                user_target_roles=[invitation_role] if invitation_role else None,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_ACCEPT,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            user_target_roles=[invitation_role] if invitation_role else None,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def invitation_decline(
     key: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     session=Depends(get_session),
 ):
     """General endpoint to decline the applet invitation."""
-    async with atomic(session):
-        await InvitationsService(session, user).decline(key)
+    applet_id = None
+    try:
+        invitation_service = InvitationsService(session, user)
+        invitation = await invitation_service.get(key)
+        if invitation:
+            applet_id = invitation.applet_id
+
+        async with atomic(session):
+            await invitation_service.decline(key)
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_DECLINE,
+                user_id=user.id,
+                curious_applet_id=[applet_id] if applet_id else None,
+                user_target_id=user.id,
+                **http_audit_fields(request, e),
+            )
+        )
+        raise
+
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_DECLINE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=user.id,
+            **http_audit_fields(request),
+        )
+    )
 
 
 async def invitation_subject_send(
     applet_id: uuid.UUID,
+    request: Request,
     user: User = Depends(get_current_user),
     schema: ShellAccountInvitation = Body(...),
     session=Depends(get_session),
 ) -> Response[InvitationRespondentResponse]:
-    async with atomic(session):
-        await AppletService(session, user.id).exist_by_id(applet_id)
-        await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
+    invited_user_id: uuid.UUID | None = None
+    try:
+        async with atomic(session):
+            try:
+                # Resolve invited user first so failure audit events carry user ID
+                invited_user = await UserService(session).get_by_email(schema.email)
+                invited_user_id = invited_user.id
+            except UserNotFound:
+                # Expected: invitee may not have an account yet; proceed with invitation flow.
+                pass
 
-        subject_service = SubjectsService(session, user.id)
-        subject = await subject_service.get_if_soft_exist(schema.subject_id)
-        if not subject:
-            raise NotFoundError()
-        if subject.user_id:
-            raise ValidationError("Subject already assigned.")
+            await AppletService(session, user.id).exist_by_id(applet_id)
+            await CheckAccessService(session, user.id).check_applet_invite_access(applet_id)
 
-        # check role exists
-        invitation_service = InvitationsService(session, user)
-        try:
-            invited_user = await UserService(session).get_by_email(schema.email)
-            is_role_exist = await UserAppletAccessService(session, invited_user.id, applet_id).has_role(Role.RESPONDENT)
-            if is_role_exist:
-                raise RespondentInvitationExist()
-        except UserNotFound:
-            pass
+            subject_service = SubjectsService(session, user.id)
+            subject = await subject_service.get_if_soft_exist(schema.subject_id)
+            if not subject:
+                raise NotFoundError()
+            if subject.user_id:
+                raise ValidationError("Subject already assigned.")
 
-        invitation_schema = InvitationRespondentRequest(
-            email=schema.email,
-            first_name=subject.first_name,
-            last_name=subject.last_name,
-            language=schema.language or subject.language,
-            secret_user_id=subject.secret_user_id,
-            nickname=subject.nickname,
+            # check role exists
+            invitation_service = InvitationsService(session, user)
+            if invited_user_id:
+                is_role_exist = await UserAppletAccessService(session, invited_user_id, applet_id).has_role(
+                    Role.RESPONDENT
+                )
+                if is_role_exist:
+                    raise RespondentInvitationExist()
+
+            invitation_schema = InvitationRespondentRequest(
+                email=schema.email,
+                first_name=subject.first_name,
+                last_name=subject.last_name,
+                language=schema.language or subject.language,
+                secret_user_id=subject.secret_user_id,
+                nickname=subject.nickname,
+            )
+            invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
+            if subject.email != schema.email:
+                await subject_service.update(
+                    subject.id, email=schema.email, language=schema.language or subject.language
+                )
+    except BaseError as e:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_INVITE_INITIATE,
+                user_id=user.id,
+                curious_applet_id=[applet_id],
+                user_target_id=invited_user_id,
+                user_target_email=None if invited_user_id else schema.email,
+                user_target_roles=[Role.RESPONDENT],
+                **http_audit_fields(request, e),
+            )
         )
-        invitation = await invitation_service.send_respondent_invitation(applet_id, invitation_schema, subject)
-        if subject.email != schema.email:
-            await subject_service.update(subject.id, email=schema.email, language=schema.language or subject.language)
+        raise
 
+    await log(
+        AuditEvent(
+            event_action=EventAction.APPLET_INVITE_INITIATE,
+            user_id=user.id,
+            curious_applet_id=[applet_id],
+            user_target_id=invited_user_id,
+            user_target_email=None if invited_user_id else schema.email,
+            user_target_roles=[Role.RESPONDENT],
+            **http_audit_fields(request),
+        )
+    )
     return Response[InvitationRespondentResponse](result=InvitationRespondentResponse(**invitation.model_dump()))

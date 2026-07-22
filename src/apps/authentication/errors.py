@@ -1,9 +1,10 @@
+import uuid
 from gettext import gettext as _
 
 from starlette import status
 
 from apps.authentication.constants import AuthErrorCode
-from apps.shared.exception import AccessDeniedError, BaseError, ValidationError
+from apps.shared.exception import AccessDeniedError, UnauthorizedError, ValidationError
 
 
 class BadCredentials(ValidationError):
@@ -19,55 +20,46 @@ class WeakPassword(ValidationError):
     message = _("Weak password.")
 
 
-class AuthenticationError(BaseError):
+class AuthenticationError(UnauthorizedError):
     message = _("Could not validate credentials.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.AUTHENTICATION_ERROR
 
 
-class PermissionsError(AccessDeniedError):
-    message = _("Not enough permissions.")
-    error_code = AuthErrorCode.PERMISSIONS_ERROR
-
-
-class EmailDoesNotExist(AccessDeniedError):
-    message = _("That email is not associated with a Curious account.")
-    error_code = AuthErrorCode.EMAIL_DOES_NOT_EXIST
-
-
-class InvalidCredentials(AccessDeniedError):
+class InvalidCredentials(AuthenticationError):
     message = _("Incorrect email or password")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.INVALID_CREDENTIALS
+
+
+class SessionTokenInvalidError(AuthenticationError):
+    """Indicates auth error due to invalid session token."""
+
+    def __init__(self, user_id: uuid.UUID | None = None, **kwargs) -> None:
+        self.user_id = user_id
+        super().__init__(**kwargs)
 
 
 class MFATokenInvalidError(AuthenticationError):
     message = _("MFA token is invalid or expired")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_INVALID
 
 
 class MFATokenExpiredError(AuthenticationError):
     message = _("MFA token has expired. Please log in again.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_EXPIRED
 
 
 class MFATokenMalformedError(AuthenticationError):
     message = _("MFA token is malformed or invalid.")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_TOKEN_MALFORMED
 
 
 class MFASessionNotFoundError(AuthenticationError):
     message = _("MFA session not found or expired")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_SESSION_NOT_FOUND
 
 
 class InvalidTOTPCodeError(AuthenticationError):
     message = _("Invalid TOTP code")
-    status_code = status.HTTP_401_UNAUTHORIZED
     error_code = AuthErrorCode.MFA_INVALID_TOTP_CODE
 
     def __init__(
@@ -82,6 +74,11 @@ class InvalidTOTPCodeError(AuthenticationError):
         if global_attempts_remaining is not None:
             metadata["global_attempts_remaining"] = global_attempts_remaining
         super().__init__(metadata=metadata if metadata else None, **kwargs)
+
+
+class PermissionsError(AccessDeniedError):
+    message = _("Not enough permissions.")
+    error_code = AuthErrorCode.PERMISSIONS_ERROR
 
 
 class TooManyTOTPAttemptsError(AuthenticationError):

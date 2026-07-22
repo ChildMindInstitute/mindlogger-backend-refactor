@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class FrontendUrlsSettings(BaseModel):
-    web_base: str = "web.mindlogger.org"
+    web_base: str = "web.gettingcurious.com"
     admin_base: str = "admin.frontend.com"
     invitation_send: str = "invitation"
     web_password_recovery_send: str = "password-recovery"
@@ -28,7 +28,7 @@ class ServiceUrlsSettings(BaseModel):
 class ServiceSettings(BaseModel):
     """Configure public service settings."""
 
-    name: str = "mindlogger-service"
+    name: str = "curious-backend"
     port: int = 8000
     urls: ServiceUrlsSettings = ServiceUrlsSettings()
     result_limit: Annotated[int, Field(gt=0)] = 10000

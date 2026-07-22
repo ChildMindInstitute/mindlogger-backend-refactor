@@ -1,4 +1,4 @@
-DOMAIN = "testing.mindlogger.org"
+DOMAIN = "testing.gettingcurious.com"
 
 ANSWER_BUCKET_NAME = "test-answer-bucket"
 MEDIA_BUCKET_NAME = "test-media-bucket"

@@ -1,10 +1,14 @@
 from asyncpg import InvalidPasswordError
 from fastapi.encoders import jsonable_encoder
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from starlette import status
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, Response
 
+from apps.audit import AuditEvent, EventAction, http_audit_fields, log
+from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.domain import ErrorResponse, ErrorResponseMulti
 from apps.shared.exception import BaseError
 from infrastructure.logger import logger
@@ -39,6 +43,31 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
         response_dict,
         status_code=error.status_code,
     )
+
+
+async def session_token_invalid_error_handler(request: Request, error: SessionTokenInvalidError) -> JSONResponse:
+    """user:session:invalid audit event on 401 from invalid session token in `Authorization` header."""
+    await log(
+        AuditEvent(
+            event_action=EventAction.USER_SESSION_INVALID,
+            user_id=error.user_id,
+            **http_audit_fields(request, error),
+        )
+    )
+    return custom_base_errors_handler(request, error)
+
+
+async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPException) -> Response:
+    """user:session:invalid audit event on 401 from missing session token in `Authorization` header."""
+    if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+        await log(
+            AuditEvent(
+                event_action=EventAction.USER_SESSION_INVALID,
+                user_id=None,
+                **http_audit_fields(request, exc),
+            )
+        )
+    return await http_exception_handler(request, exc)
 
 
 def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:

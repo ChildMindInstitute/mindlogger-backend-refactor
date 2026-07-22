@@ -136,6 +136,7 @@ settings = Settings(
         "authentication",
         "job",
         "subjects",
+        "audit",
         "integrations",
         "integrations.loris",
     ],

@@ -35,7 +35,7 @@ def user_create() -> UserCreate:
 @pytest.fixture(scope="session", autouse=True)
 def tom_create() -> UserCreate:
     return UserCreate(
-        email="tom@mindlogger.com",
+        email="tom@gettingcurious.com",
         password="Test12345!",
         first_name="Tom",
         last_name="Isaak",

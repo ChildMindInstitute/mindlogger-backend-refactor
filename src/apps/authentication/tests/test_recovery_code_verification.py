@@ -6,8 +6,10 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.router import router as auth_router
 from apps.authentication.services.recovery_codes import generate_recovery_codes
@@ -83,7 +85,11 @@ class TestRecoveryCodeVerification(BaseTest):
     verify_recovery_url = auth_router.url_path_for("verify_mfa_recovery_code")
 
     async def test_valid_recovery_code_returns_tokens(
-        self, client: TestClient, user_with_mfa_and_codes: tuple[User, list[str]], session: AsyncSession
+        self,
+        client: TestClient,
+        user_with_mfa_and_codes: tuple[User, list[str]],
+        session: AsyncSession,
+        mocker: MockerFixture,
     ):
         """Test that valid recovery code returns tokens and marks code as used."""
         user, codes = user_with_mfa_and_codes
@@ -101,6 +107,7 @@ class TestRecoveryCodeVerification(BaseTest):
         mfa_token = login_response.json()["result"]["mfaToken"]
 
         # Step 2: Verify with valid recovery code
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         valid_code = codes[0]
         response = await client.post(
             url=self.verify_recovery_url,
@@ -110,6 +117,19 @@ class TestRecoveryCodeVerification(BaseTest):
                 deviceId="test-device",
             ),
         )
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.SUCCESS
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.SUCCESS
 
         # Assert: Success response
         assert response.status_code == http.HTTPStatus.OK
@@ -128,7 +148,7 @@ class TestRecoveryCodeVerification(BaseTest):
         assert used_codes[0].used_at is not None
 
     async def test_invalid_recovery_code_returns_error(
-        self, client: TestClient, user_with_mfa_and_codes: tuple[User, list[str]]
+        self, client: TestClient, user_with_mfa_and_codes: tuple[User, list[str]], mocker: MockerFixture
     ):
         """Test that invalid recovery code returns 400 Bad Request."""
         user, codes = user_with_mfa_and_codes
@@ -145,6 +165,7 @@ class TestRecoveryCodeVerification(BaseTest):
         mfa_token = login_response.json()["result"]["mfaToken"]
 
         # Verify with invalid code
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         response = await client.post(
             url=self.verify_recovery_url,
             data=dict(
@@ -153,6 +174,19 @@ class TestRecoveryCodeVerification(BaseTest):
                 deviceId="test-device",
             ),
         )
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.FAILURE
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.FAILURE
 
         # Assert: Error response (400 Bad Request for invalid code)
         assert response.status_code == http.HTTPStatus.BAD_REQUEST
@@ -358,7 +392,9 @@ class TestRecoveryCodeVerification(BaseTest):
         warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
         assert any("Replay attack detected" in msg for msg in warning_messages)
 
-    async def test_no_recovery_codes_returns_not_found(self, client: TestClient, user_with_mfa_no_codes: User):
+    async def test_no_recovery_codes_returns_not_found(
+        self, client: TestClient, user_with_mfa_no_codes: User, mocker: MockerFixture
+    ):
         """Test that verification fails with 404 when user has no recovery codes."""
         user = user_with_mfa_no_codes
 
@@ -375,6 +411,7 @@ class TestRecoveryCodeVerification(BaseTest):
         mfa_token = login_response.json()["result"]["mfaToken"]
 
         # Try to verify with any code
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         response = await client.post(
             url=self.verify_recovery_url,
             data=dict(
@@ -383,6 +420,19 @@ class TestRecoveryCodeVerification(BaseTest):
                 deviceId="test-device",
             ),
         )
+
+        assert audit_log.await_count == 2
+
+        event = audit_log.call_args_list[0].args[0]
+        assert event.user_id == user.id
+        assert event.user_target_id == user.id
+        assert event.event_action == EventAction.USER_MFA_RECOVERY_USE
+        assert event.event_outcome == EventOutcome.FAILURE
+
+        event = audit_log.call_args_list[1].args[0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.FAILURE
 
         # Assert: Not found error (404)
         assert response.status_code == http.HTTPStatus.NOT_FOUND

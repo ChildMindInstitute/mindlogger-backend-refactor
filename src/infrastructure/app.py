@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
 from fastapi.routing import APIRouter
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import apps.activities.router as activities
 import apps.activity_assignments.router as activity_assignments
@@ -14,6 +15,7 @@ import apps.alerts.router as alerts
 import apps.alerts.ws_router as ws_alerts
 import apps.answers.router as answers
 import apps.applets.router as applets
+import apps.audit.router as audit
 import apps.authentication.router as auth
 import apps.file.router as files
 import apps.folders.router as folders
@@ -33,6 +35,7 @@ import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
 import middlewares as middlewares_
+from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.exception import BaseError
 from config import settings
 from infrastructure.dependency.structured_logs import StructuredLoggingMiddleware
@@ -40,9 +43,11 @@ from infrastructure.http.exceptions import (
     custom_base_errors_handler,
     pydantic_validation_errors_handler,
     python_base_error_handler,
+    session_token_invalid_error_handler,
     sqlalchemy_database_error_handler,
+    starlette_http_exception_handler,
 )
-from infrastructure.lifespan import shutdown, startup
+from infrastructure.lifespan import lifespan
 from infrastructure.logger import logger
 
 # Declare your routers here
@@ -78,6 +83,7 @@ routers: Iterable[APIRouter] = (
     prolific.router,
     integrations.router,
     oneup_health.router,
+    audit.router,
 )
 
 # Declare your middlewares here
@@ -102,10 +108,8 @@ def create_app():
         description=f"Commit id: <b>{settings.commit_id}</b><br>Version: <b>{settings.version}</b>",
         default_response_class=ORJSONResponse,
         debug=settings.debug,
+        lifespan=lifespan,
     )
-
-    app.add_event_handler("startup", startup(app))
-    app.add_event_handler("shutdown", shutdown(app))
 
     if settings.sentry.dsn:
         sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
@@ -119,6 +123,8 @@ def create_app():
         app.add_middleware(middleware, **options)
 
     app.add_exception_handler(RequestValidationError, pydantic_validation_errors_handler)
+    app.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
+    app.add_exception_handler(SessionTokenInvalidError, session_token_invalid_error_handler)
     app.add_exception_handler(BaseError, custom_base_errors_handler)
     app.add_exception_handler(TimeoutError, sqlalchemy_database_error_handler)
     app.add_exception_handler(ConnectionRefusedError, sqlalchemy_database_error_handler)

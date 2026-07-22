@@ -14,6 +14,7 @@ from apps.applets.domain import ManagersRole, Role
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.service.applet import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
@@ -95,7 +96,7 @@ async def applet_one_lucy_roles(
 @pytest.fixture
 def user_create_data() -> UserCreateRequest:
     return UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password="Test12345!",
@@ -154,6 +155,7 @@ def shell_create_data():
         secretUserId="secretUserId",
         nickname="nickname",
         tag="tag",
+        email="shell@example.com",
     )
 
 
@@ -1461,3 +1463,245 @@ class TestInvite(BaseTest):
         key = f"{email}_{applet_one.id}"
         assert key in results
         assert results[key].key == pending_key
+
+    async def test_invite_respondent_audit_event(
+        self,
+        client: TestClient,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(tom)
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
+            invitation_respondent_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [Role.RESPONDENT]
+
+    async def test_invite_respondent_audit_event_email_fallback(
+        self,
+        client: TestClient,
+        tom: User,
+        applet_one: AppletFull,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        invitation_respondent_data.email = "respondent@example.com"
+        client.login(tom)
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
+            invitation_respondent_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_target_id is None
+        assert event.user_target_email == "respondent@example.com"
+        assert event.user_target_roles == [Role.RESPONDENT]
+
+    async def test_invite_reviewer_audit_event(
+        self,
+        client: TestClient,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        invitation_reviewer_data: InvitationReviewerRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(tom)
+        response = await client.post(
+            self.invite_reviewer_url.format(applet_id=str(applet_one.id)),
+            invitation_reviewer_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [Role.REVIEWER]
+
+    async def test_invite_manager_audit_event(
+        self,
+        client: TestClient,
+        tom: User,
+        user: User,
+        applet_one: AppletFull,
+        invitation_manager_data: InvitationManagersRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(tom)
+        response = await client.post(
+            self.invite_manager_url.format(applet_id=str(applet_one.id)),
+            invitation_manager_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == user.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [invitation_manager_data.role]
+
+    async def test_invite_respondent_audit_event_failure(
+        self,
+        client: TestClient,
+        lucy: User,
+        user: User,
+        applet_one: AppletFull,
+        invitation_respondent_data: InvitationRespondentRequest,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(lucy)
+        response = await client.post(
+            self.invite_respondent_url.format(applet_id=str(applet_one.id)),
+            invitation_respondent_data,
+        )
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == lucy.id
+        assert event.user_target_id == user.id  # failure inviting regsitered user should carry user ID
+        assert event.user_target_email is None
+
+    async def test_invitation_accept_audit_event(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        lucy: User,
+        applet_one_lucy_roles: AppletFull,
+        applet_one: AppletFull,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(lucy)
+        response = await client.post(self.accept_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"))
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_ACCEPT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.MANAGER]
+
+    async def test_invitation_accept_audit_event_failure(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(tom)
+        response = await client.post(self.accept_url.format(key=str(uuid.uuid4())))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_ACCEPT
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
+        # The key did not resolve to an invitation, so the role is unknown.
+        assert event.user_target_roles is None
+
+    async def test_private_invitation_accept_audit_event(
+        self,
+        client: TestClient,
+        lucy: User,
+        applet_one_with_link: AppletFull,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(lucy)
+        response = await client.post(self.accept_private_url.format(key=applet_one_with_link.link))
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_ACCEPT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == lucy.id
+        assert event.curious_applet_id == [applet_one_with_link.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.RESPONDENT]
+
+    async def test_invitation_decline_audit_event(
+        self,
+        client: TestClient,
+        lucy: User,
+        applet_one: AppletFull,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(lucy)
+        response = await client.delete(self.decline_url.format(key="6a3ab8e6-f2fa-49ae-b2db-197136677da6"))
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_DECLINE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+
+    async def test_invitation_decline_audit_event_failure(
+        self,
+        client: TestClient,
+        tom: User,
+        mocker,
+    ):
+        audit_log = mocker.patch("apps.invitations.api.log")
+        client.login(tom)
+        response = await client.delete(self.decline_url.format(key=str(uuid.uuid4())))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_DECLINE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id
+        assert event.user_target_id == tom.id
+
+    async def test_shell_create_account_audit_event(
+        self, client: TestClient, shell_create_data: dict, bob: User, applet_four: AppletFull, mocker
+    ):
+        audit_log = mocker.patch("apps.invitations.router.log")
+        client.login(bob)
+        response = await client.post(
+            self.shell_acc_create_url.format(applet_id=str(applet_four.id)),
+            shell_create_data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_INVITE_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == bob.id
+        assert event.curious_applet_id == [applet_four.id]
+        assert event.user_target_email == "shell@example.com"
+        assert event.user_target_roles is None  # shell account grants no role

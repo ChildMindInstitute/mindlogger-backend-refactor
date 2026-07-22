@@ -10,6 +10,7 @@ from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletReportConfiguration
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service import AppletService
+from apps.audit.enums import EventAction, EventOutcome
 from apps.authentication.errors import PermissionsError
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
@@ -453,7 +454,7 @@ class TestTransfer(BaseTest):
 
     async def test_init_transfer_owner_invite_themself(self, client: TestClient, applet_one: AppletFull, tom: User):
         client.login(tom)
-        data = {"email": "tom@mindlogger.com"}
+        data = {"email": "tom@gettingcurious.com"}
         applet_id = applet_one.id
         resp = await client.post(
             self.transfer_url.format(applet_id=applet_id),
@@ -612,3 +613,100 @@ class TestTransfer(BaseTest):
         resp = await client.post(self.transfer_url.format(applet_id=applet_one_bob_coordinator_reviewer.id), data=data)
         assert resp.status_code == http.HTTPStatus.FORBIDDEN
         assert resp.json()["result"][0]["message"] == TransferOwnershipAccessDenied.message
+
+    # ── Audit event tests ──
+
+    async def test_initiate_transfer_audit_event(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        tom: User,
+        lucy: User,
+        mailbox: TestMail,
+        mocker: MockerFixture,
+    ):
+        audit_log = mocker.patch("apps.transfer_ownership.api.log")
+        client.login(tom)
+        data = {"email": "lucy@gmail.com"}
+        response = await client.post(
+            self.transfer_url.format(applet_id=applet_one.id),
+            data=data,
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_TRANSFER_INITIATE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_email is None
+        assert event.user_target_roles == [Role.OWNER]
+
+    async def test_initiate_transfer_audit_event_failure(self, client: TestClient, tom: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.transfer_ownership.api.log")
+        client.login(tom)
+        data = {"email": "aloevdamirkhon@gmail.com"}
+        response = await client.post(
+            self.transfer_url.format(applet_id="00000000-0000-0000-0000-000000000012"),
+            data=data,
+        )
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_TRANSFER_INITIATE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id
+        assert event.user_target_id is None
+        assert event.user_target_email == "aloevdamirkhon@gmail.com"
+        assert event.user_target_roles == [Role.OWNER]
+
+    async def test_accept_transfer_audit_event(
+        self,
+        client: TestClient,
+        mocker: MockerFixture,
+        applet_one: AppletFull,
+        lucy: User,
+        tom: User,
+        session: AsyncSession,
+    ):
+        audit_log = mocker.patch("apps.transfer_ownership.api.log")
+        client.login(lucy)
+        mocker.patch("apps.transfer_ownership.crud.TransferCRUD.approve_by_key")
+        response = await client.post(
+            self.response_url.format(
+                applet_id=applet_one.id,
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_TRANSFER_ACCEPT
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles == [Role.OWNER]
+
+    async def test_decline_transfer_audit_event(
+        self, client: TestClient, mocker: MockerFixture, applet_one: AppletFull, lucy: User
+    ):
+        audit_log = mocker.patch("apps.transfer_ownership.api.log")
+        client.login(lucy)
+        mocker.patch("apps.transfer_ownership.crud.TransferCRUD.decline_by_key")
+        response = await client.delete(
+            self.response_url.format(
+                applet_id=applet_one.id,
+                key="6a3ab8e6-f2fa-49ae-b2db-197136677da7",
+            ),
+        )
+        assert response.status_code == http.HTTPStatus.NO_CONTENT
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_TRANSFER_DECLINE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == lucy.id
+        assert event.curious_applet_id == [applet_one.id]
+        assert event.user_target_id == lucy.id
+        assert event.user_target_roles is None

@@ -8,9 +8,15 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import RefreshAccessTokenRequest, TokenPayload
-from apps.authentication.errors import AuthenticationError, InvalidCredentials, InvalidRefreshToken
+from apps.authentication.errors import (
+    AuthenticationError,
+    InvalidCredentials,
+    InvalidRefreshToken,
+    SessionTokenInvalidError,
+)
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
@@ -30,29 +36,96 @@ class TestAuthentication(BaseTest):
     delete_refresh_token_url = auth_router.url_path_for("delete_refresh_token")
 
     create_request_user = UserCreateRequest(
-        email="tom2@mindlogger.com",
+        email="tom2@gettingcurious.com",
         first_name="Tom",
         last_name="Isaak",
         password=TEST_PASSWORD,
     )
     create_request_logout_user = UserLogoutRequestFactory.build()
 
-    async def test_get_token(self, client: TestClient, user: User):
+    async def test_get_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         response = await client.post(
             url=self.get_token_url,
             data=dict(email=user.email_encrypted, password=TEST_PASSWORD, deviceId="test#device"),
         )
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == http.HTTPStatus.OK
         data = response.json()["result"]
         assert set(data.keys()) == {"user", "token"}
         assert data["user"]["id"] == str(user.id)
 
-    async def test_delete_access_token(self, client: TestClient, user: User):
+    async def test_malformed_token(self, client: TestClient, mocker: MockerFixture):
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+        resp = await client.post(
+            self.delete_token_url,
+            headers={"Authorization": f"{settings.authentication.token_type} not-a-jwt"},
+        )
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.event_action == EventAction.USER_SESSION_INVALID
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
+
+    async def test_expired_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.authentication.access_token, "expiration", -1)
+        client.login(user)
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+        resp = await client.post(self.delete_token_url)
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_INVALID
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
+
+    async def test_revoked_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        client.login(user)
+        logout_resp = await client.post(self.delete_token_url)
+        assert logout_resp.status_code == http.HTTPStatus.OK
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+        resp = await client.post(self.delete_token_url)
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_INVALID
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
+
+    async def test_user_not_found(self, client: TestClient, mocker: MockerFixture):
+        unknown_user_id = uuid.uuid4()
+        client.login(unknown_user_id)
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+        resp = await client.post(self.delete_token_url)
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == unknown_user_id
+        assert event.event_action == EventAction.USER_SESSION_INVALID
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
+
+    async def test_delete_access_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         client.login(user)
         response = await client.post(url=self.delete_token_url)
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_LOGOUT
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == http.HTTPStatus.OK
 
-    async def test_refresh_access_token(self, client: TestClient, user: User):
+    async def test_refresh_access_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         refresh_access_token_request = RefreshAccessTokenRequest(
             refresh_token=AuthenticationService.create_refresh_token(
                 {
@@ -62,6 +135,11 @@ class TestAuthentication(BaseTest):
             )
         )
         response = await client.post(url=self.refresh_access_token_url, data=refresh_access_token_request.model_dump())
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id == user.id
+        assert event.event_action == EventAction.USER_SESSION_REFRESH
+        assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == http.HTTPStatus.OK
 
     async def test_login_and_logout_device(self, client: TestClient, user: User):
@@ -164,11 +242,18 @@ class TestAuthentication(BaseTest):
 
     @pytest.mark.parametrize("field_name,value", (("email", "notfound@example.com"), ("password", "1234")))
     async def test_get_token_credentials_are_not_valid(
-        self, client: TestClient, user: User, field_name: str, value: str
+        self, client: TestClient, user: User, field_name: str, value: str, mocker: MockerFixture
     ):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         data = dict(email=user.email_encrypted, password=TEST_PASSWORD)
         data[field_name] = value
         resp = await client.post(self.get_token_url, data=data)
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.user_email == data["email"]
+        assert event.event_action == EventAction.USER_SESSION_LOGIN
+        assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
         result = resp.json()["result"]
         assert len(result) == 1
@@ -217,12 +302,20 @@ class TestAuthentication(BaseTest):
         assert resp.status_code == http.HTTPStatus.OK
         mock_.assert_awaited_once_with(device_id)
 
-    async def test_refresh_access_token__refresh_token_is_expired(self, client: TestClient, user: User):
+    async def test_refresh_access_token__refresh_token_is_expired(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
         settings.authentication.refresh_token.expiration = -1
         resp = await client.post(self.get_token_url, data={"email": user.email_encrypted, "password": TEST_PASSWORD})
         assert resp.status_code == http.HTTPStatus.OK
         refresh_token = resp.json()["result"]["token"]["refreshToken"]
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
         resp = await client.post(self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.user_id is None
+        assert event.event_action == EventAction.USER_SESSION_REFRESH
+        assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == http.HTTPStatus.BAD_REQUEST
         result = resp.json()["result"]
         assert len(result) == 1

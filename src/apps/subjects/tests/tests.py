@@ -17,6 +17,7 @@ from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.domain import AppletAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
+from apps.audit.enums import EventAction, EventOutcome
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
 from apps.subjects.crud import SubjectsCrud
@@ -1445,3 +1446,30 @@ class TestSubjects(BaseTest):
         assert shell_account_result["submissionCount"] == 1
         assert shell_account_result["currentlyAssigned"] is False
         assert shell_account_result["teamMemberCanViewData"] is False
+
+    async def test_delete_subject_audit_event(
+        self, client, tom: User, tom_applet_one_subject, applet_one: AppletFull, mocker
+    ):
+        audit_log = mocker.patch("apps.subjects.api.log")
+        client.login(tom)
+        delete_url = self.subject_detail_url.format(subject_id=tom_applet_one_subject.id)
+        response = await client.delete(delete_url, data=dict(deleteAnswers=False))
+        assert response.status_code == http.HTTPStatus.OK
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.SUCCESS
+        assert event.user_id == tom.id
+        assert event.curious_applet_id == [applet_one.id]
+
+    async def test_delete_subject_audit_event_failure(self, client, tom: User, mocker):
+        audit_log = mocker.patch("apps.subjects.api.log")
+        client.login(tom)
+        delete_url = self.subject_detail_url.format(subject_id=str(uuid.uuid4()))
+        response = await client.delete(delete_url, data=dict(deleteAnswers=False))
+        assert response.status_code == http.HTTPStatus.NOT_FOUND
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.APPLET_ACCESS_REVOKE
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == tom.id

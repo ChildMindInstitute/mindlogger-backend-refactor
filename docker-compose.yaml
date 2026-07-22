@@ -183,8 +183,6 @@ services:
       - './compose/minio:/etc/minio'
     entrypoint: /etc/minio/create_bucket.sh
 
-
-
 volumes:
   pg_data: {}
   pg_arb_data: {}
