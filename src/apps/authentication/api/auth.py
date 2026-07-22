@@ -113,13 +113,14 @@ async def get_token(
 
     rjti = str(uuid.uuid4())
     refresh_token = AuthenticationService.create_refresh_token(
-        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, JWTClaim.family: rjti, **client_token_claims(content_source)}
     )
 
     access_token = AuthenticationService.create_access_token(
         {
             JWTClaim.sub: str(user.id),
             JWTClaim.rjti: rjti,
+            JWTClaim.family: rjti,
             **client_token_claims(content_source),
         }
     )
@@ -308,13 +309,19 @@ async def verify_mfa_totp(
             # Issue refresh and access tokens
             rjti = str(uuid.uuid4())
             refresh_token = AuthenticationService.create_refresh_token(
-                {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+                {
+                    JWTClaim.sub: str(user.id),
+                    JWTClaim.jti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
+                }
             )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user.id),
                     JWTClaim.rjti: rjti,
+                    JWTClaim.family: rjti,
                     **client_token_claims(content_source),
                 }
             )
@@ -585,13 +592,19 @@ async def verify_mfa_recovery_code(
             # Step 6: Issue refresh and access tokens
             rjti = str(uuid.uuid4())
             refresh_token = AuthenticationService.create_refresh_token(
-                {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, **client_token_claims(content_source)}
+                {
+                    JWTClaim.sub: str(user_id),
+                    JWTClaim.jti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
+                }
             )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user_id),
                     JWTClaim.rjti: rjti,
+                    JWTClaim.family: rjti,
                     **client_token_claims(content_source),
                 }
             )

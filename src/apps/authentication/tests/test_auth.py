@@ -490,6 +490,17 @@ class TestLoginClientClaim(BaseTest):
         self._assert_expires_in(access_payload["exp"], expected_access, before, after)
         self._assert_expires_in(refresh_payload["exp"], expected_refresh, before, after)
 
+    async def test_login_stamps_matching_family_claim(self, client: TestClient, user: User):
+        """Both tokens carry the same family claim, equal to the login refresh token's jti."""
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
+        assert access_payload["family"] == refresh_payload["family"] == refresh_payload["jti"]
+
     async def test_login_audit_event_records_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.authentication.api.auth.log")
         resp = await client.post(
