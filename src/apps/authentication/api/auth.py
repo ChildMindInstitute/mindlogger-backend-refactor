@@ -35,6 +35,7 @@ from apps.authentication.services.mfa_helpers import extract_request_metadata
 from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
+from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
@@ -653,6 +654,7 @@ async def refresh_access_token(
 ) -> Response[Token]:
     """Refresh access token."""
     user_id: uuid.UUID | None = None
+    reuse_family: str | None = None
     try:
         async with atomic(session):
             try:
@@ -684,37 +686,91 @@ async def refresh_access_token(
                 raise InvalidRefreshToken() from e
 
             user_id = token_data.sub
+            family = token_data.family or token_data.jti
+            is_web_admin = token_data.client in (MindloggerContentSource.web, MindloggerContentSource.admin)
 
-            # Check if the token is in the blacklist
-            revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
-            if revoked:
-                raise AuthenticationError
+            if is_web_admin:
+                # Rotating clients: slide the refresh window by issuing a fresh token each time,
+                # with a grace window that idempotently redeems the old token, and reuse detection
+                # that revokes the whole family.
+                rotation = TokenRotationService(session)
 
-            rjti = token_data.jti
-            refresh_token = schema.refresh_token
-            if regenerate_refresh_token:
-                # blacklist current refresh token
-                await AuthenticationService(session).revoke_token(
-                    InternalToken(payload=token_data), TokenPurpose.REFRESH
-                )
+                if await rotation.is_family_revoked(family):
+                    raise AuthenticationError
 
-                rjti = str(uuid.uuid4())
-                refresh_token = AuthenticationService.create_refresh_token(
+                replacement = await rotation.get_rotation_replacement(token_data.jti)
+                if replacement is not None:
+                    # Within the grace window: hand back the same replacement pair.
+                    access_token = replacement.access_token
+                    refresh_token = replacement.refresh_token
+                elif await AuthenticationService(session).is_revoked(InternalToken(payload=token_data)):
+                    # Old token replayed after its grace window -> treat as theft. Defer the
+                    # family revocation to its own committed transaction (raising here would roll
+                    # back this atomic block and undo it).
+                    reuse_family = family
+                else:
+                    new_rjti = str(uuid.uuid4())
+                    refresh_token = AuthenticationService.create_refresh_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.jti: new_rjti,
+                            JWTClaim.family: family,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+                    access_token = AuthenticationService.create_access_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.rjti: new_rjti,
+                            JWTClaim.family: family,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+                    # Mark the old refresh token used, and record the replacement for the grace window.
+                    await AuthenticationService(session).revoke_token(
+                        InternalToken(payload=token_data), TokenPurpose.REFRESH
+                    )
+                    await rotation.store_rotation_record(
+                        token_data.jti,
+                        Token(access_token=access_token, refresh_token=refresh_token),
+                    )
+            else:
+                # Mobile / unknown / legacy: reuse the same refresh token (unchanged behavior).
+                revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
+                if revoked:
+                    raise AuthenticationError
+
+                rjti = token_data.jti
+                refresh_token = schema.refresh_token
+                if regenerate_refresh_token:
+                    # blacklist current refresh token
+                    await AuthenticationService(session).revoke_token(
+                        InternalToken(payload=token_data), TokenPurpose.REFRESH
+                    )
+
+                    rjti = str(uuid.uuid4())
+                    refresh_token = AuthenticationService.create_refresh_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.jti: rjti,
+                            JWTClaim.exp: token_data.exp,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+
+                access_token = AuthenticationService.create_access_token(
                     {
                         JWTClaim.sub: str(user_id),
-                        JWTClaim.jti: rjti,
-                        JWTClaim.exp: token_data.exp,
+                        JWTClaim.rjti: rjti,
                         **client_token_claims(token_data.client),
                     }
                 )
 
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.rjti: rjti,
-                    **client_token_claims(token_data.client),
-                }
-            )
+        if reuse_family is not None:
+            # Commit the family revocation in its own transaction, then reject the request.
+            async with atomic(session):
+                await TokenRotationService(session).revoke_family(reuse_family, user_id)
+            raise AuthenticationError
     except BaseError as e:
         await log(
             AuditEvent(

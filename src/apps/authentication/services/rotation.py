@@ -29,6 +29,13 @@ class TokenRotationService:
     def _grace_key(old_jti: str) -> str:
         return f"token_rotation:{old_jti}"
 
+    @staticmethod
+    def _family_blacklist_jti(family_id: str) -> str:
+        # Namespaced so a family-revocation row never collides with a real token jti
+        # (the family id equals the login refresh token's jti, which itself gets
+        # blacklisted on its first rotation).
+        return f"family:{family_id}"
+
     async def get_rotation_replacement(self, old_jti: str) -> Token | None:
         raw = await self.redis_client.get(self._grace_key(old_jti))
         if not raw:
@@ -44,11 +51,13 @@ class TokenRotationService:
         )
 
     async def is_family_revoked(self, family_id: str) -> bool:
-        return await TokenBlacklistCRUD(self.session).exist_by_key("jti", family_id)
+        return await TokenBlacklistCRUD(self.session).exist_by_key("jti", self._family_blacklist_jti(family_id))
 
     async def revoke_family(self, family_id: str, user_id: uuid.UUID) -> None:
-        # Blacklist a synthetic token whose jti is the family id, retained comfortably past
+        # Blacklist a synthetic row under the namespaced family jti, retained comfortably past
         # any live token in the family (refresh lifetime is the longest a token can survive).
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.authentication.refresh_token.expiration)
-        family_token = InternalToken(payload=TokenPayload(sub=user_id, exp=int(expire.timestamp()), jti=family_id))
+        family_token = InternalToken(
+            payload=TokenPayload(sub=user_id, exp=int(expire.timestamp()), jti=self._family_blacklist_jti(family_id))
+        )
         await TokensService(self.session).revoke(family_token, TokenPurpose.REFRESH)

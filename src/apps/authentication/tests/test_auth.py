@@ -21,6 +21,7 @@ from apps.authentication.errors import (
 )
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
+from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.tests.factories import UserLogoutRequestFactory
 from apps.shared.test import BaseTest
 from apps.shared.test.client import TestClient
@@ -203,7 +204,8 @@ class TestAuthentication(BaseTest):
         response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": refresh_token})
         assert response.status_code == http.HTTPStatus.OK
         result = response.json()["result"]
-        assert result["refreshToken"] == refresh_token
+        # admin is a rotating client: refresh issues a new refresh token, claim preserved.
+        assert result["refreshToken"] != refresh_token
         access_payload = jwt.decode(
             result["accessToken"],
             settings.authentication.access_token.secret_key,
@@ -249,6 +251,8 @@ class TestAuthentication(BaseTest):
             token_settings_mock.transition_key = token_key
             token_settings_mock.transition_expire_date = transition_expire_date
             token_settings_mock.expiration = 540
+            token_settings_mock.web_admin_expiration = 30
+            token_settings_mock.rotation_grace_seconds = 60
 
             _status_code, new_refresh_token = await self._request_refresh_token(client, refresh_token)
             assert _status_code == http.HTTPStatus.OK
@@ -673,3 +677,127 @@ class TestShortLivedWebAdminTokens(BaseTest):
         )
         assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
         assert resp.json()["result"][0]["message"] == AuthenticationError.message
+
+
+class TestRefreshTokenRotation(BaseTest):
+    """Web/admin refresh tokens rotate with an idempotent grace window and reuse detection."""
+
+    get_token_url = auth_router.url_path_for("get_token")
+    refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
+
+    @staticmethod
+    def _refresh_payload(refresh_token: str) -> dict:
+        return jwt.decode(
+            refresh_token,
+            settings.authentication.refresh_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+    @staticmethod
+    def _access_payload(access_token: str) -> dict:
+        return jwt.decode(
+            access_token,
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+
+    async def _login(self, client: TestClient, user: User, source: str = "admin") -> dict:
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": source},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        return resp.json()["result"]["token"]
+
+    async def _refresh(self, client: TestClient, refresh_token: str, source: str = "admin"):
+        return await client.post(
+            self.refresh_access_token_url,
+            data={"refresh_token": refresh_token},
+            headers={"Mindlogger-Content-Source": source},
+        )
+
+    async def test_web_admin_refresh_rotates_and_preserves_family(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        token = await self._login(client, user)
+        r1 = token["refreshToken"]
+        family = self._refresh_payload(r1)["family"]
+
+        resp = await self._refresh(client, r1)
+        assert resp.status_code == http.HTTPStatus.OK
+        result = resp.json()["result"]
+
+        assert result["refreshToken"] != r1
+        r2_payload = self._refresh_payload(result["refreshToken"])
+        assert r2_payload["family"] == family
+        assert r2_payload["jti"] != self._refresh_payload(r1)["jti"]
+        access_payload = self._access_payload(result["accessToken"])
+        assert access_payload["family"] == family
+        assert access_payload["client"] == "admin"
+
+    async def test_web_admin_refresh_idempotent_within_grace(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        r1 = (await self._login(client, user))["refreshToken"]
+
+        first = (await self._refresh(client, r1)).json()["result"]
+        second = (await self._refresh(client, r1)).json()["result"]
+
+        # Same old token within the grace window -> identical replacement pair.
+        assert first["refreshToken"] == second["refreshToken"]
+        assert first["accessToken"] == second["accessToken"]
+
+        # And the replacement itself works (rotates again).
+        third = await self._refresh(client, first["refreshToken"])
+        assert third.status_code == http.HTTPStatus.OK
+        assert third.json()["result"]["refreshToken"] != first["refreshToken"]
+
+    async def test_web_admin_reuse_after_grace_revokes_family(
+        self, client: TestClient, user: User, session: AsyncSession, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        r1 = (await self._login(client, user))["refreshToken"]
+        j1 = self._refresh_payload(r1)["jti"]
+
+        r2 = (await self._refresh(client, r1)).json()["result"]["refreshToken"]
+
+        # Simulate the grace window elapsing.
+        rotation = TokenRotationService(session)
+        await rotation.redis_client.delete(rotation._grace_key(j1))
+
+        # Replaying the old token now looks like theft -> whole family revoked.
+        reuse = await self._refresh(client, r1)
+        assert reuse.status_code == http.HTTPStatus.UNAUTHORIZED
+
+        # The newest (legitimate) token is dead too.
+        after = await self._refresh(client, r2)
+        assert after.status_code == http.HTTPStatus.UNAUTHORIZED
+
+    async def test_mobile_refresh_reuses_same_token(self, client: TestClient, user: User, mocker: MockerFixture):
+        mocker.patch("apps.authentication.api.auth.log")
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "mobile"},
+        )
+        r1 = resp.json()["result"]["token"]["refreshToken"]
+
+        out = await self._refresh(client, r1, source="mobile")
+        assert out.status_code == http.HTTPStatus.OK
+        assert out.json()["result"]["refreshToken"] == r1
+
+    async def test_legacy_web_admin_token_adopts_family(self, client: TestClient, user: User, mocker: MockerFixture):
+        mocker.patch("apps.authentication.api.auth.log")
+        legacy = AuthenticationService.create_refresh_token(
+            {"sub": str(user.id), "jti": str(uuid.uuid4()), "client": "admin"}
+        )
+        legacy_jti = self._refresh_payload(legacy)["jti"]
+        assert "family" not in self._refresh_payload(legacy)
+
+        resp = await self._refresh(client, legacy)
+        assert resp.status_code == http.HTTPStatus.OK
+        rotated = resp.json()["result"]["refreshToken"]
+        assert self._refresh_payload(rotated)["family"] == legacy_jti
