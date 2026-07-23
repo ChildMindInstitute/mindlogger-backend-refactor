@@ -187,9 +187,11 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
 
         try:
             response = await call_next(request)
-        except Exception:
+        except Exception as exc:
             structlog.stdlib.get_logger("api.error").exception("Unhandled exception")
-
+            span = tracer.current_span()
+            if span:
+                span.set_exc_info(type(exc), exc, exc.__traceback__)
         finally:
             access_logger = structlog.stdlib.get_logger("api.access")
             process_time = time.perf_counter_ns() - start_time
