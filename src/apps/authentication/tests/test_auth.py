@@ -7,6 +7,8 @@ import jwt
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.types import Message
+from starlette.websockets import WebSocket
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
@@ -25,6 +27,7 @@ from apps.shared.test.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from config import settings
+from infrastructure.http.exceptions import session_token_invalid_error_handler
 
 TEST_PASSWORD = "Test12345!"
 
@@ -112,6 +115,50 @@ class TestAuthentication(BaseTest):
         assert event.event_outcome == EventOutcome.FAILURE
         assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
         assert resp.json()["result"][0]["message"] == SessionTokenInvalidError.message
+
+    async def test_ws_session_invalid_audit_event(self, mocker: MockerFixture):
+        """A `SessionTokenInvalidError` raised from a WebSocket connection (e.g. `/ws/alerts`) must
+
+        log the `user:session:invalid` audit event without crashing. `http_audit_fields` used to
+        read the HTTP-only `request.method`, which a `WebSocket` lacks.
+        """
+        audit_log = mocker.patch("infrastructure.http.exceptions.log")
+        user_id = uuid.uuid4()
+
+        async def receive() -> Message:
+            return {"type": "websocket.connect"}
+
+        async def send(message: Message) -> None:
+            return None
+
+        websocket = WebSocket(
+            {
+                "type": "websocket",
+                "scheme": "ws",
+                "server": ("test.com", 80),
+                "path": "/ws/alerts",
+                "query_string": b"",
+                "root_path": "",
+                "headers": [(b"host", b"test.com"), (b"user-agent", b"pytest-ws-client")],
+                "client": ("10.1.2.3", 54321),
+            },
+            receive=receive,
+            send=send,
+        )
+        error = SessionTokenInvalidError(user_id=user_id)
+
+        resp = await session_token_invalid_error_handler(websocket, error)
+
+        audit_log.assert_awaited_once()
+        event = audit_log.call_args[0][0]
+        assert event.event_action == EventAction.USER_SESSION_INVALID
+        assert event.event_outcome == EventOutcome.FAILURE
+        assert event.user_id == user_id
+        assert event.http_request_method is None  # WebSocket has no HTTP method
+        assert event.url_path == "/ws/alerts"
+        assert event.client_ip == "10.1.2.3"
+        assert event.user_agent == "pytest-ws-client"
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
 
     async def test_delete_access_token(self, client: TestClient, user: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.authentication.api.auth.log")
