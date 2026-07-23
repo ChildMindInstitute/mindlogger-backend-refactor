@@ -5,7 +5,7 @@ from fastapi.exception_handlers import http_exception_handler
 from fastapi.exceptions import RequestValidationError
 from starlette import status
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.requests import Request
+from starlette.requests import HTTPConnection, Request
 from starlette.responses import JSONResponse, Response
 
 from apps.audit import AuditEvent, EventAction, http_audit_fields, log
@@ -21,7 +21,7 @@ def _set_trace_exception(exc: Exception) -> None:
         span.set_exc_info(type(exc), exc, exc.__traceback__)
 
 
-def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
+def custom_base_errors_handler(_: HTTPConnection, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
 
     logger.error(error.error, exc_info=error)
@@ -53,8 +53,12 @@ def custom_base_errors_handler(_: Request, error: BaseError) -> JSONResponse:
     )
 
 
-async def session_token_invalid_error_handler(request: Request, error: SessionTokenInvalidError) -> JSONResponse:
-    """user:session:invalid audit event on 401 from invalid session token in `Authorization` header."""
+async def session_token_invalid_error_handler(request: HTTPConnection, error: SessionTokenInvalidError) -> JSONResponse:
+    """user:session:invalid audit event on 401 from invalid session token.
+
+    ``request`` may be a ``WebSocket`` (e.g. the `/ws/alerts` handshake) as well as an HTTP
+    ``Request``, so only fields common to both connection types may be used here.
+    """
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_INVALID,
