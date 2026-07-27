@@ -23,7 +23,6 @@ from config.prolific_respondent import ProlificRespondent
 from config.rabbitmq import RabbitMQSettings
 from config.redis import RedisSettings
 from config.secret import SecretSettings
-from config.sentry import SentrySettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
 from config.task import AnswerEncryption, AudioFileConvert, ImageConvert
@@ -70,9 +69,6 @@ class Settings(BaseSettings):
 
     # CDN configs
     cdn: CDNSettings = CDNSettings()
-
-    # Sentry stuff
-    sentry: SentrySettings = SentrySettings()
 
     # FCM Notification configs
     fcm: FirebaseCloudMessagingSettings = FirebaseCloudMessagingSettings()

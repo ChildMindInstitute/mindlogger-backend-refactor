@@ -58,7 +58,6 @@ jobs:
           environment-variables: |
             VERSION=${{ inputs.image-tag }}
             DD_VERSION=${{ inputs.image-tag }}
-            SENTRY_RELEASE=${{ inputs.image-tag }}
           docker-labels: |
             com.datadoghq.tags.version=${{ inputs.image-tag }}
 

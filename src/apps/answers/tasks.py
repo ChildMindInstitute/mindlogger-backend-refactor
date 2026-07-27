@@ -1,9 +1,7 @@
 import base64
 import io
-import traceback
 import uuid
 
-import sentry_sdk
 from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +11,7 @@ from apps.mailing.domain import MessageSchema
 from apps.mailing.services import MailingService
 from broker import broker
 from infrastructure.database import session_manager
+from infrastructure.logger import logger
 
 # moved from previous implementation
 
@@ -64,5 +63,4 @@ async def create_report(
                 )
             )
     except Exception as e:
-        traceback.print_exception(e)
-        sentry_sdk.capture_exception(e)
+        logger.exception(str(e))
