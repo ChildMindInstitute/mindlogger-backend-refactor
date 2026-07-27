@@ -109,7 +109,7 @@ def pydantic_validation_errors_handler(request: Request, error: RequestValidatio
     response = ErrorResponseMulti(result=errors)
     return JSONResponse(
         content=jsonable_encoder(response.model_dump(by_alias=True)),
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
     )
 
 

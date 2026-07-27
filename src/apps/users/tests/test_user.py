@@ -116,7 +116,7 @@ class TestUser:
         data = request_data.model_dump()
         data["email"] = "tom2@gettingcurious@com"
         response = await client.post(self.user_create_url, data=data)
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         result = response.json()["result"]
         assert len(result) == 1
         assert (

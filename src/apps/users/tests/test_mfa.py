@@ -201,7 +201,7 @@ class TestMFAEndpoints:
             data={"code": "12345"},  # Only 5 digits
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     async def test_mfa_status_in_user_retrieve(self, client: TestClient, user: User, session: AsyncSession):
         """Test that /users/me returns mfaEnabled status."""
