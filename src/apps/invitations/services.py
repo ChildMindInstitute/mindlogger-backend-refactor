@@ -8,7 +8,7 @@ from apps.applets.db.schemas import AppletSchema
 from apps.applets.domain import ManagersRole, Role
 from apps.applets.service import UserAppletAccessService
 from apps.applets.service.applet import PublicAppletService
-from apps.invitations.constants import InvitationStatus
+from apps.invitations.constants import INVITATION_ROLE_TRANSLATIONS, InvitationStatus
 from apps.invitations.crud import InvitationCRUD
 from apps.invitations.db import InvitationSchema
 from apps.invitations.domain import (
@@ -153,7 +153,7 @@ class InvitationsService:
                 first_name=subject.first_name,
                 last_name=subject.last_name,
                 applet_name=applet.display_name,
-                role=invitation_internal.role,
+                role=self._get_localized_role(invitation_internal.role, schema.language),
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
             ),
@@ -229,7 +229,7 @@ class InvitationsService:
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
-                role=invitation_internal.role,
+                role=self._get_localized_role(invitation_internal.role, schema.language),
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
             ),
@@ -304,7 +304,7 @@ class InvitationsService:
                 first_name=schema.first_name,
                 last_name=schema.last_name,
                 applet_name=applet.display_name,
-                role=invitation_internal.role,
+                role=self._get_localized_role(invitation_internal.role, schema.language),
                 link=self._get_invitation_url_by_role(invitation_internal.role),
                 key=invitation_internal.key,
             ),
@@ -326,6 +326,10 @@ class InvitationsService:
             tag=invitation_internal.tag,
             title=invitation_internal.title,
         )
+
+    @staticmethod
+    def _get_localized_role(role: Role, language: str) -> str:
+        return INVITATION_ROLE_TRANSLATIONS.get(role, {}).get(language, role)
 
     def _get_invitation_url_by_role(self, role: Role):
         domain = settings.service.urls.frontend.web_base
