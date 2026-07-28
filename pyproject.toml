@@ -31,7 +31,6 @@ dependencies = [
   "python-multipart>=0.0.31",
   "python-slugify==8.0.4",
   "redis==5.2.*",
-  "sentry-sdk~=2.13",
   "sqlalchemy[asyncio]~=1.4.53",
   "sqlalchemy-utils~=0.41.2",
   "structlog~=25.4.0",

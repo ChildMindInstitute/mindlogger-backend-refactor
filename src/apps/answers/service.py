@@ -12,7 +12,6 @@ from operator import attrgetter
 from typing import Callable, List, Mapping
 
 import aiohttp
-import sentry_sdk
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -1727,7 +1726,7 @@ class AnswerService:
                     ).model_dump(),
                 )
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                logger.exception(str(e))
                 break
         await self.send_alert_mail(persons)
 
