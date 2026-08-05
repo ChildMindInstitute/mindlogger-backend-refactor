@@ -66,7 +66,7 @@ class NotFoundError(BaseError):
 
 class FieldError(BaseError):
     message = _("Invalid value.")
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     type = ExceptionTypes.INVALID_VALUE
     zero_path: str | None = "body"
 
