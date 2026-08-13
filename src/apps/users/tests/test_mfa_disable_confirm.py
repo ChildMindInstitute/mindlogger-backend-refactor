@@ -104,7 +104,7 @@ class TestMFADisableConfirm:
 
         # Try to confirm without token
         response = await client.post(self.disable_confirm_url, data={})
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     async def test_confirm_with_invalid_token_fails(self, client: TestClient, user_with_mfa: User):
         """Confirmation with invalid token returns error."""

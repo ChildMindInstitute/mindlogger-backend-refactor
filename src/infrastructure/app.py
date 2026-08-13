@@ -1,6 +1,5 @@
 from typing import Iterable, Type
 
-import sentry_sdk
 from asgi_correlation_id import CorrelationIdMiddleware
 from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
@@ -110,9 +109,6 @@ def create_app():
         debug=settings.debug,
         lifespan=lifespan,
     )
-
-    if settings.sentry.dsn:
-        sentry_sdk.init(dsn=settings.sentry.dsn, traces_sample_rate=1.0)
 
     # Include routers
     for router in routers:

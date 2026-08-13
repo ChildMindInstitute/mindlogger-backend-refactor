@@ -116,7 +116,7 @@ class TestMFADisableVerify:
         verify_data = {"code": "123456"}
         response = await client.post(self.disable_verify_url, data=verify_data)
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     async def test_disable_verify_with_valid_recovery_code_emits_recovery_use_audit(
         self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture

@@ -7,7 +7,6 @@ import uuid
 from collections import defaultdict
 
 import aiohttp
-import sentry_sdk
 from pydantic.json import pydantic_encoder
 
 from apps.activities.crud.activity_history import ActivityHistoriesCRUD
@@ -890,7 +889,7 @@ class LorisIntegrationService:
                 )
 
             except Exception as e:
-                sentry_sdk.capture_exception(e)
+                logger.exception(str(e))
                 break
 
     async def create_loris_integration(self, hostname, username, project, password) -> LorisIntegration:

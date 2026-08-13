@@ -397,7 +397,7 @@ class TestRecoveryCodesView:
         resp = await client.get(self.recovery_codes_download_url)
 
         # Assertions - Should fail due to missing required parameter
-        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
     async def test_download_with_invalid_token_fails(self, client: TestClient, user: User, session: AsyncSession):
         """Test that download fails with invalid download_token."""

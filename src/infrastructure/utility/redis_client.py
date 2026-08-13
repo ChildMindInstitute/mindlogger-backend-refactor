@@ -5,9 +5,9 @@ import typing
 
 import redis.asyncio as redis
 from redis.typing import EncodableT
-from sentry_sdk import capture_exception
 
 from config import settings
+from infrastructure.logger import logger
 
 
 class RedisCacheTest:
@@ -139,11 +139,8 @@ class RedisCache:
                 db=self.db,
                 **self.configuration,
             )
-        except redis.exceptions.ConnectionError as e:
-            try:
-                capture_exception(e)
-            except ImportError:
-                print(e)
+        except redis.ConnectionError as e:
+            logger.exception(str(e))
 
     async def get(self, key: str) -> typing.Optional[str]:
         if not self._cache:
