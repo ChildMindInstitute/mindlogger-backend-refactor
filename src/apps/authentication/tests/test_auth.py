@@ -462,7 +462,7 @@ class TestLoginClientClaim(BaseTest):
         return access_payload, refresh_payload
 
     @staticmethod
-    def _assert_lifetimes_unchanged(
+    def _assert_default_lifetimes(
         access_payload: dict, refresh_payload: dict, before: datetime.datetime, after: datetime.datetime
     ):
         access_delta = datetime.timedelta(minutes=settings.authentication.access_token.expiration)
@@ -491,7 +491,7 @@ class TestLoginClientClaim(BaseTest):
         access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
         assert access_payload["client"] == content_source
         assert refresh_payload["client"] == content_source
-        self._assert_lifetimes_unchanged(access_payload, refresh_payload, before, after)
+        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
 
     async def test_login_audit_event_records_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.authentication.api.auth.log")
@@ -551,4 +551,4 @@ class TestLoginClientClaim(BaseTest):
         access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
         assert "client" not in access_payload
         assert "client" not in refresh_payload
-        self._assert_lifetimes_unchanged(access_payload, refresh_payload, before, after)
+        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
