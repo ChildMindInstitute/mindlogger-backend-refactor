@@ -9,7 +9,8 @@ class AccessTokenSettings(BaseModel):
     expiration: int = 30
     # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`.
     # See AuthenticationService.token_expiration_minutes.
-    web_admin_expiration: int | None = 15
+    # TEST BRANCH ONLY - shortened from 15 for QA. Do not merge.
+    web_admin_expiration: int | None = 5
 
     @field_validator("secret_key")
     @classmethod
@@ -25,7 +26,8 @@ class RefreshTokenSettings(BaseModel):
     expiration: int = 540
     # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`.
     # See AuthenticationService.token_expiration_minutes.
-    web_admin_expiration: int | None = 30
+    # TEST BRANCH ONLY - shortened from 30 for QA. Do not merge.
+    web_admin_expiration: int | None = 10
     # Grace period (seconds) after a web/admin refresh token is rotated during which
     # the old token still redeems for the same replacement pair (absorbs tab races /
     # dropped responses). After it, presenting the old token is treated as reuse.
