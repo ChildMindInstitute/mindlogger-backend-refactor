@@ -4,7 +4,8 @@ import pytest
 import pytz
 from fastapi import HTTPException, Request
 
-from infrastructure.http import get_local_tz, get_tz_utc_offset
+from infrastructure.http import get_local_tz, get_optional_mindlogger_content_source, get_tz_utc_offset
+from infrastructure.http.domain import MindloggerContentSource
 
 
 @pytest.mark.parametrize(
@@ -43,6 +44,27 @@ def test_get_local_tz__exception(headers: list, required: bool, details: str):
     with pytest.raises(HTTPException) as e:
         get_local_tz(required=required)(request)
     assert e.value.detail == details
+
+
+@pytest.mark.parametrize(
+    "headers,expected",
+    (
+        ([(b"mindlogger-content-source", b"web")], MindloggerContentSource.web),
+        ([(b"mindlogger-content-source", b"admin")], MindloggerContentSource.admin),
+        ([(b"mindlogger-content-source", b"mobile")], MindloggerContentSource.mobile),
+        ([], None),
+        ([(b"mindlogger-content-source", b"")], None),
+        ([(b"mindlogger-content-source", b"invalid-content-source")], None),
+    ),
+)
+async def test_get_optional_mindlogger_content_source(headers: list, expected: MindloggerContentSource | None):
+    request = Request(
+        {
+            "type": "http",
+            "headers": headers,
+        }
+    )
+    assert await get_optional_mindlogger_content_source(request) == expected
 
 
 @pytest.mark.parametrize(

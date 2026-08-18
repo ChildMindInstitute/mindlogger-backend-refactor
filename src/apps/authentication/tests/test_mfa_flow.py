@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+import jwt
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,6 +18,7 @@ from apps.shared.test.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
+from config import settings
 
 TEST_PASSWORD = "Test12345!"
 
@@ -261,6 +263,51 @@ class TestMFATOTPVerification(BaseTest):
         # Should have access and refresh tokens
         assert "accessToken" in verify_data["token"]
         assert "refreshToken" in verify_data["token"]
+
+    async def test_verify_mfa_embeds_client_claim(
+        self, client: TestClient, user_with_mfa: User, session: AsyncSession, mocker: MockerFixture
+    ):
+        """Tokens issued via MFA TOTP verification carry the client claim from the header."""
+        login_response = await client.post(
+            url=self.get_token_url,
+            data=dict(
+                email=user_with_mfa.email_encrypted,
+                password=TEST_PASSWORD,
+            ),
+        )
+        mfa_token = login_response.json()["result"]["mfaToken"]
+
+        crud = UsersCRUD(session)
+        fresh_user = await crud.get_by_id(user_with_mfa.id)
+        assert fresh_user is not None
+        assert fresh_user.mfa_secret is not None
+        decrypted_secret = totp_service.decrypt_secret(fresh_user.mfa_secret)
+        valid_code = totp_service.get_current_code(decrypted_secret)
+
+        mocker.patch("apps.authentication.api.auth.log")
+        verify_response = await client.post(
+            url=self.verify_mfa_url,
+            data=dict(
+                mfaToken=mfa_token,
+                totpCode=valid_code,
+            ),
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+
+        assert verify_response.status_code == http.HTTPStatus.OK
+        token = verify_response.json()["result"]["token"]
+        access_payload = jwt.decode(
+            token["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        refresh_payload = jwt.decode(
+            token["refreshToken"],
+            settings.authentication.refresh_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert access_payload["client"] == "admin"
+        assert refresh_payload["client"] == "admin"
 
     async def test_verify_mfa_with_invalid_code_fails(
         self, client: TestClient, user_with_mfa: User, mocker: MockerFixture

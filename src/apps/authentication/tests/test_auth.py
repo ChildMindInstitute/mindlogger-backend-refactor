@@ -189,6 +189,78 @@ class TestAuthentication(BaseTest):
         assert event.event_outcome == EventOutcome.SUCCESS
         assert response.status_code == http.HTTPStatus.OK
 
+    async def test_refresh_access_token__propagates_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "admin",
+            }
+        )
+        response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        assert response.status_code == http.HTTPStatus.OK
+        result = response.json()["result"]
+        assert result["refreshToken"] == refresh_token
+        access_payload = jwt.decode(
+            result["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert access_payload["client"] == "admin"
+
+    async def test_refresh_access_token__legacy_token_without_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+            }
+        )
+        response = await client.post(url=self.refresh_access_token_url, data={"refresh_token": refresh_token})
+        assert response.status_code == http.HTTPStatus.OK
+        access_payload = jwt.decode(
+            response.json()["result"]["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert "client" not in access_payload
+
+    async def test_refresh_token_key_transition__preserves_client_claim(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        token_key = settings.authentication.refresh_token.secret_key
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "web",
+            }
+        )
+        new_token_key = "new token key"
+        transition_expire_date = datetime.datetime.now(datetime.timezone.utc).date() + datetime.timedelta(days=1)
+
+        with mock.patch("config.settings.authentication.refresh_token") as token_settings_mock:
+            token_settings_mock.secret_key = new_token_key
+            token_settings_mock.transition_key = token_key
+            token_settings_mock.transition_expire_date = transition_expire_date
+            token_settings_mock.expiration = 540
+
+            _status_code, new_refresh_token = await self._request_refresh_token(client, refresh_token)
+            assert _status_code == http.HTTPStatus.OK
+            assert new_refresh_token
+            assert new_refresh_token != refresh_token
+            refresh_payload = jwt.decode(
+                new_refresh_token,
+                new_token_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+            assert refresh_payload["client"] == "web"
+
     async def test_login_and_logout_device(self, client: TestClient, user: User):
         device_id = str(uuid.uuid4())
 
@@ -368,3 +440,115 @@ class TestAuthentication(BaseTest):
         assert len(result) == 1
         assert result[0]["message"] == InvalidRefreshToken.message
         settings.authentication.refresh_token.expiration = 540
+
+
+class TestLoginClientClaim(BaseTest):
+    """The client claim records which client tokens were issued to, without changing lifetimes."""
+
+    get_token_url = auth_router.url_path_for("get_token")
+
+    @staticmethod
+    def _decode_tokens(result: dict) -> tuple[dict, dict]:
+        access_payload = jwt.decode(
+            result["token"]["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        refresh_payload = jwt.decode(
+            result["token"]["refreshToken"],
+            settings.authentication.refresh_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        return access_payload, refresh_payload
+
+    @staticmethod
+    def _assert_default_lifetimes(
+        access_payload: dict, refresh_payload: dict, before: datetime.datetime, after: datetime.datetime
+    ):
+        access_delta = datetime.timedelta(minutes=settings.authentication.access_token.expiration)
+        refresh_delta = datetime.timedelta(minutes=settings.authentication.refresh_token.expiration)
+        assert (
+            int((before + access_delta).timestamp())
+            <= access_payload["exp"]
+            <= int((after + access_delta).timestamp()) + 1
+        )
+        assert (
+            int((before + refresh_delta).timestamp())
+            <= refresh_payload["exp"]
+            <= int((after + refresh_delta).timestamp()) + 1
+        )
+
+    @pytest.mark.parametrize("content_source", ("web", "admin", "mobile"))
+    async def test_login_embeds_client_claim(self, client: TestClient, user: User, content_source: str):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": content_source},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
+        assert access_payload["client"] == content_source
+        assert refresh_payload["client"] == content_source
+        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
+
+    async def test_login_audit_event_records_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source == "admin"
+
+    async def test_login_audit_event_without_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source is None
+
+    async def test_refresh_audit_event_records_client_source(
+        self, client: TestClient, user: User, mocker: MockerFixture
+    ):
+        audit_log = mocker.patch("apps.authentication.api.auth.log")
+        refresh_token = AuthenticationService.create_refresh_token(
+            {
+                "sub": str(user.id),
+                "jti": str(uuid.uuid4()),
+                "client": "web",
+            }
+        )
+        resp = await client.post(
+            auth_router.url_path_for("refresh_access_token"),
+            data={"refresh_token": refresh_token},
+            headers={"Mindlogger-Content-Source": "web"},
+        )
+        assert resp.status_code == http.HTTPStatus.OK
+        event = audit_log.call_args[0][0]
+        assert event.client_source == "web"
+
+    @pytest.mark.parametrize(
+        "headers",
+        (None, {"Mindlogger-Content-Source": "invalid-content-source"}),
+        ids=("missing-header", "invalid-header"),
+    )
+    async def test_login_without_client_claim(self, client: TestClient, user: User, headers: dict | None):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers=headers,
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
+        assert "client" not in access_payload
+        assert "client" not in refresh_payload
+        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
