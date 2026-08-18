@@ -6,6 +6,7 @@ from pytest import FixtureRequest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.authentication.crud import TokenBlacklistCRUD
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken
 from apps.authentication.domain.token.internal import TokenPayload, TokenPurpose
@@ -149,6 +150,16 @@ class TestTokenService:
         mock = mocker.patch("apps.authentication.crud.TokenBlacklistCRUD.create")
         await token_blacklist_service.revoke(access_token_internal, TokenPurpose.ACCESS)
         mock.assert_not_awaited()
+
+    async def test_token_revoke__concurrent_revocations_of_same_token(
+        self, session: AsyncSession, access_token_internal: InternalToken
+    ):
+        """Two requests revoking the same token both pass the is_revoked check before either
+        inserts, so the second insert must not violate the unique constraint on jti."""
+        crud = TokenBlacklistCRUD(session)
+        await crud.create(access_token_internal, TokenPurpose.ACCESS)
+        await crud.create(access_token_internal, TokenPurpose.ACCESS)
+        assert await crud.exists(access_token_internal)
 
     async def test_token_revoke__ttl_less_than_one(
         self, token_blacklist_service: TokensService, access_token_internal: InternalToken, mocker: MockerFixture
