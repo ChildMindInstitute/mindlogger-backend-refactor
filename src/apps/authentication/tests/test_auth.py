@@ -462,21 +462,9 @@ class TestLoginClientClaim(BaseTest):
         return access_payload, refresh_payload
 
     @staticmethod
-    def _assert_default_lifetimes(
-        access_payload: dict, refresh_payload: dict, before: datetime.datetime, after: datetime.datetime
-    ):
-        access_delta = datetime.timedelta(minutes=settings.authentication.access_token.expiration)
-        refresh_delta = datetime.timedelta(minutes=settings.authentication.refresh_token.expiration)
-        assert (
-            int((before + access_delta).timestamp())
-            <= access_payload["exp"]
-            <= int((after + access_delta).timestamp()) + 1
-        )
-        assert (
-            int((before + refresh_delta).timestamp())
-            <= refresh_payload["exp"]
-            <= int((after + refresh_delta).timestamp()) + 1
-        )
+    def _assert_expires_in(exp: int, minutes: int, before: datetime.datetime, after: datetime.datetime):
+        delta = datetime.timedelta(minutes=minutes)
+        assert int((before + delta).timestamp()) <= exp <= int((after + delta).timestamp()) + 1
 
     @pytest.mark.parametrize("content_source", ("web", "admin", "mobile"))
     async def test_login_embeds_client_claim(self, client: TestClient, user: User, content_source: str):
@@ -491,7 +479,16 @@ class TestLoginClientClaim(BaseTest):
         access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
         assert access_payload["client"] == content_source
         assert refresh_payload["client"] == content_source
-        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
+        # web/admin get the short lifetimes; mobile keeps the defaults.
+        if content_source in ("web", "admin"):
+            expected_access = settings.authentication.access_token.web_admin_expiration
+            expected_refresh = settings.authentication.refresh_token.web_admin_expiration
+            assert expected_access is not None and expected_refresh is not None
+        else:
+            expected_access = settings.authentication.access_token.expiration
+            expected_refresh = settings.authentication.refresh_token.expiration
+        self._assert_expires_in(access_payload["exp"], expected_access, before, after)
+        self._assert_expires_in(refresh_payload["exp"], expected_refresh, before, after)
 
     async def test_login_audit_event_records_client_source(self, client: TestClient, user: User, mocker: MockerFixture):
         audit_log = mocker.patch("apps.authentication.api.auth.log")
@@ -551,4 +548,117 @@ class TestLoginClientClaim(BaseTest):
         access_payload, refresh_payload = self._decode_tokens(resp.json()["result"])
         assert "client" not in access_payload
         assert "client" not in refresh_payload
-        self._assert_default_lifetimes(access_payload, refresh_payload, before, after)
+        # No client claim -> default (mobile) lifetimes.
+        self._assert_expires_in(access_payload["exp"], settings.authentication.access_token.expiration, before, after)
+        self._assert_expires_in(refresh_payload["exp"], settings.authentication.refresh_token.expiration, before, after)
+
+
+class TestShortLivedWebAdminTokens(BaseTest):
+    """Web/admin clients get shorter token lifetimes when configured; others are unchanged."""
+
+    get_token_url = auth_router.url_path_for("get_token")
+    refresh_access_token_url = auth_router.url_path_for("refresh_access_token")
+
+    SHORT_ACCESS = 15
+    SHORT_REFRESH = 120
+
+    @pytest.fixture
+    def short_lifetimes(self, mocker: MockerFixture):
+        mocker.patch.object(settings.authentication.access_token, "web_admin_expiration", self.SHORT_ACCESS)
+        mocker.patch.object(settings.authentication.refresh_token, "web_admin_expiration", self.SHORT_REFRESH)
+
+    @staticmethod
+    def _decode(token: str, secret: str) -> dict:
+        return jwt.decode(token, secret, algorithms=[settings.authentication.algorithm])
+
+    @staticmethod
+    def _assert_expires_in(exp: int, minutes: int, before: datetime.datetime, after: datetime.datetime):
+        delta = datetime.timedelta(minutes=minutes)
+        assert int((before + delta).timestamp()) <= exp <= int((after + delta).timestamp()) + 1
+
+    @pytest.mark.parametrize("content_source", ("web", "admin"))
+    async def test_web_admin_get_short_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, content_source: str
+    ):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": content_source},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        token = resp.json()["result"]["token"]
+        access = self._decode(token["accessToken"], settings.authentication.access_token.secret_key)
+        refresh = self._decode(token["refreshToken"], settings.authentication.refresh_token.secret_key)
+        self._assert_expires_in(access["exp"], self.SHORT_ACCESS, before, after)
+        self._assert_expires_in(refresh["exp"], self.SHORT_REFRESH, before, after)
+
+    @pytest.mark.parametrize(
+        "headers",
+        ({"Mindlogger-Content-Source": "mobile"}, None),
+        ids=("mobile", "no-header"),
+    )
+    async def test_mobile_and_unknown_keep_default_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, headers: dict | None
+    ):
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers=headers,
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        token = resp.json()["result"]["token"]
+        access = self._decode(token["accessToken"], settings.authentication.access_token.secret_key)
+        refresh = self._decode(token["refreshToken"], settings.authentication.refresh_token.secret_key)
+        self._assert_expires_in(access["exp"], settings.authentication.access_token.expiration, before, after)
+        self._assert_expires_in(refresh["exp"], settings.authentication.refresh_token.expiration, before, after)
+
+    async def test_refresh_preserves_short_access_lifetime(
+        self, client: TestClient, user: User, short_lifetimes, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        login = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        refresh_token = login.json()["result"]["token"]["refreshToken"]
+
+        before = datetime.datetime.now(datetime.timezone.utc)
+        resp = await client.post(
+            self.refresh_access_token_url,
+            data={"refresh_token": refresh_token},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        after = datetime.datetime.now(datetime.timezone.utc)
+        assert resp.status_code == http.HTTPStatus.OK
+        access = self._decode(resp.json()["result"]["accessToken"], settings.authentication.access_token.secret_key)
+        self._assert_expires_in(access["exp"], self.SHORT_ACCESS, before, after)
+
+    async def test_logout_revokes_paired_refresh_token_under_short_lifetimes(
+        self, client: TestClient, user: User, short_lifetimes, mocker: MockerFixture
+    ):
+        mocker.patch("apps.authentication.api.auth.log")
+        login = await client.post(
+            self.get_token_url,
+            data={"email": user.email_encrypted, "password": TEST_PASSWORD},
+            headers={"Mindlogger-Content-Source": "admin"},
+        )
+        token = login.json()["result"]["token"]
+
+        logout = await client.post(
+            auth_router.url_path_for("delete_access_token"),
+            headers={"Authorization": f"Bearer {token['accessToken']}"},
+        )
+        assert logout.status_code == http.HTTPStatus.OK
+
+        # Revoking the access token must also revoke its paired refresh token.
+        resp = await client.post(
+            self.refresh_access_token_url,
+            data={"refresh_token": token["refreshToken"]},
+        )
+        assert resp.status_code == http.HTTPStatus.UNAUTHORIZED
+        assert resp.json()["result"][0]["message"] == AuthenticationError.message

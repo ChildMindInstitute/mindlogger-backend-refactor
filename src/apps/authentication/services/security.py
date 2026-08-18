@@ -18,8 +18,11 @@ from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.password_validation import PasswordValidator
 from config import settings
+from infrastructure.http.domain import MindloggerContentSource
 
 __all__ = ["AuthenticationService"]
+
+_WEB_ADMIN_CLIENTS = (MindloggerContentSource.web, MindloggerContentSource.admin)
 
 
 class AuthenticationService:
@@ -27,11 +30,33 @@ class AuthenticationService:
         self.session = session
 
     @staticmethod
+    def token_expiration_minutes(
+        client: MindloggerContentSource | None,
+        default_minutes: int,
+        web_admin_minutes: int | None,
+    ) -> int:
+        """Resolve a token lifetime for a client.
+
+        Web/admin clients get ``web_admin_minutes`` when it is configured;
+        everything else (mobile, or an unknown/legacy client with no `client`
+        claim) keeps ``default_minutes``. An unset ``web_admin_minutes`` means
+        the per-client shortening is off, so all clients fall back to the
+        default — this is what keeps the feature a no-op until ops opts in.
+        """
+        if client in _WEB_ADMIN_CLIENTS and web_admin_minutes is not None:
+            return web_admin_minutes
+        return default_minutes
+
+    @staticmethod
     def create_access_token(data: dict) -> str:
         to_encode = data.copy()
-        expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
-        expire = datetime.now(timezone.utc) + expires_delta
-        to_encode.setdefault(JWTClaim.exp, expire)
+        if JWTClaim.exp not in to_encode:
+            minutes = AuthenticationService.token_expiration_minutes(
+                to_encode.get(JWTClaim.client),
+                settings.authentication.access_token.expiration,
+                settings.authentication.access_token.web_admin_expiration,
+            )
+            to_encode[JWTClaim.exp] = datetime.now(timezone.utc) + timedelta(minutes=minutes)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
             to_encode,
@@ -109,9 +134,13 @@ class AuthenticationService:
     @staticmethod
     def create_refresh_token(data: dict) -> str:
         to_encode = data.copy()
-        expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
-        expire = datetime.now(timezone.utc) + expires_delta
-        to_encode.setdefault(JWTClaim.exp, expire)
+        if JWTClaim.exp not in to_encode:
+            minutes = AuthenticationService.token_expiration_minutes(
+                to_encode.get(JWTClaim.client),
+                settings.authentication.refresh_token.expiration,
+                settings.authentication.refresh_token.web_admin_expiration,
+            )
+            to_encode[JWTClaim.exp] = datetime.now(timezone.utc) + timedelta(minutes=minutes)
         to_encode.setdefault(JWTClaim.jti, str(uuid.uuid4()))
         encoded_jwt = jwt.encode(
             to_encode,
@@ -147,9 +176,27 @@ class AuthenticationService:
         if not token.payload.rjti:
             return None
 
+        # Reconstruct the paired refresh token's exp from the access token's exp. The
+        # deltas must match the per-client lifetimes the tokens were actually minted with
+        # (via the `client` claim), otherwise a short web/admin token would under-estimate
+        # the refresh exp and its blacklist entry could be purged before the refresh token
+        # truly expires — letting a revoked token be used again.
+        client = token.payload.client
         access_exp = datetime.fromtimestamp(token.payload.exp, timezone.utc)
-        refresh_expires_delta = timedelta(minutes=settings.authentication.refresh_token.expiration)
-        access_expires_delta = timedelta(minutes=settings.authentication.access_token.expiration)
+        refresh_expires_delta = timedelta(
+            minutes=self.token_expiration_minutes(
+                client,
+                settings.authentication.refresh_token.expiration,
+                settings.authentication.refresh_token.web_admin_expiration,
+            )
+        )
+        access_expires_delta = timedelta(
+            minutes=self.token_expiration_minutes(
+                client,
+                settings.authentication.access_token.expiration,
+                settings.authentication.access_token.web_admin_expiration,
+            )
+        )
         expire = access_exp - access_expires_delta + refresh_expires_delta
         refresh_token = InternalToken(
             payload=TokenPayload(
