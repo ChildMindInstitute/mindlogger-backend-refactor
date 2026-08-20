@@ -129,9 +129,9 @@ cp .env.default .env
 | ADMIN_DOMAIN                                                 | -                          | Admin panel domain                                                                                                                                                                                                                                                                                                                     |
 | RABBITMQ\_\_URL                                              | rabbitmq                   | Rabbitmq service URL                                                                                                                                                                                                                                                                                                                   |
 | RABBITMQ\_\_USE_SSL                                          | True                       | Rabbitmq ssl setting, turn false to local development                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_USERNAME                                  | mailhog                    | Mail service username                                                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_PASSWORD                                  | mailhog                    | Mail service password                                                                                                                                                                                                                                                                                                                  |
-| MAILING\_\_MAIL\_\_SERVER                                    | mailhog                    | Mail service URL                                                                                                                                                                                                                                                                                                                       |
+| MAILING\_\_MAIL\_\_USERNAME                                  | mailpit                    | Mail service username                                                                                                                                                                                                                                                                                                                  |
+| MAILING\_\_MAIL\_\_PASSWORD                                  | mailpit                    | Mail service password                                                                                                                                                                                                                                                                                                                  |
+| MAILING\_\_MAIL\_\_SERVER                                    | mailpit                    | Mail service URL                                                                                                                                                                                                                                                                                                                       |
 | MULTI\_INFORMANT\_\_TEMP\_RELATION\_EXPIRY\_SECS             | 86400                      | Expiry (sec) of temporary multi-informant participant take now relation                                                                                                                                                                                                                                                                |
 | SECRETS\_\_SECRET\_KEY                                       | -                          | Secret key for data encryption. Use this key only for local development                                                                                                                                                                                                                                                                |
 | ONEUP\_HEALTH\_\_CLIENT\_ID                                  | -                          | OneUpHealth API Client ID                                                                                                                                                                                                                                                                                                              |
@@ -150,7 +150,7 @@ cp .env.default .env
 The application requires Postgres, Redis, and RabbitMQ to be running to start up and serve requests
 (as well as running the test suite).
 
-If mail services are needed, mailhog is required and is provided via docker compose.
+If mail services are needed, mailpit is required and is provided via docker compose.
 
 If uploading media files to applets or answers, then an S3 compatible service is needed. MinIO is provided
 via docker compose.
@@ -164,7 +164,7 @@ To run all services required for the backend:
 
 If you also need mail and S3 storage service
   ```bash
-  docker-compose up postgres redis rabbitmq mailhog minio
+  docker-compose up postgres redis rabbitmq mailpit minio
   ```
 
 Also, services can be run individually:
@@ -217,7 +217,7 @@ done with elevated privileges (ex: `sudo vi /etc/hosts`).
   127.0.0.1 postgres
   127.0.0.1 rabbitmq
   127.0.0.1 redis
-  127.0.0.1 mailhog
+  127.0.0.1 mailpit
   ```
 
 ---

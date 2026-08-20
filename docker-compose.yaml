@@ -1,5 +1,4 @@
 services:
-
   postgres:
     build:
       context: .
@@ -61,13 +60,13 @@ services:
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     depends_on:
       - postgres
       - redis
       - rabbitmq
-      - mailhog
+      - mailpit
     ports:
       - "8000:80"
     develop:
@@ -83,7 +82,6 @@ services:
         - action: rebuild
           path: ./pyproject.toml
 
-
   worker:
     build:
       context: .
@@ -91,12 +89,12 @@ services:
     image: mindlogger_worker
     container_name: mindlogger_worker
     entrypoint: /fastapi-entrypoint
-    command: ['/start-worker']
+    command: ["/start-worker"]
     env_file: .env
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     develop:
       watch:
@@ -114,7 +112,7 @@ services:
       - postgres
       - redis
       - rabbitmq
-      - mailhog
+      - mailpit
 
   scheduler:
     build:
@@ -123,12 +121,12 @@ services:
     image: mindlogger_scheduler
     container_name: mindlogger_scheduler
     entrypoint: /fastapi-entrypoint
-    command: ['/start-scheduler']
+    command: ["/start-scheduler"]
     env_file: .env
     environment:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
-      MAILING__MAIL__SERVER: mailhog
+      MAILING__MAIL__SERVER: mailpit
       RABBITMQ__URL: rabbitmq
     develop:
       watch:
@@ -147,12 +145,15 @@ services:
       - redis
       - rabbitmq
 
-  mailhog:
-    image: mailhog/mailhog:v1.0.0
-    container_name: mindlogger_mailhog
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mindlogger_mailpit
     ports:
       - "8025:8025"
       - "1025:1025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
 
   minio:
     image: minio/minio
@@ -180,7 +181,7 @@ services:
     depends_on:
       - minio
     volumes:
-      - './compose/minio:/etc/minio'
+      - "./compose/minio:/etc/minio"
     entrypoint: /etc/minio/create_bucket.sh
 
 volumes:
