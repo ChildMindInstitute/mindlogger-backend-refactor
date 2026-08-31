@@ -47,7 +47,7 @@ jobs:
         run: npm install
 
       - name: Get Secrets by Name and by ARN
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        uses: aws-actions/aws-secretsmanager-get-secrets@v3
         with:
           secret-ids: |
             ,taf/feature
