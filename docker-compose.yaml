@@ -16,6 +16,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
 
+
   postgres-arb:
     build:
       context: .
@@ -61,7 +62,7 @@ services:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
       MAILING__MAIL__SERVER: mailpit
-      RABBITMQ__URL: rabbitmq
+      RABBITMQ__HOST: rabbitmq
     depends_on:
       - postgres
       - redis
@@ -95,7 +96,7 @@ services:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
       MAILING__MAIL__SERVER: mailpit
-      RABBITMQ__URL: rabbitmq
+      RABBITMQ__HOST: rabbitmq
     develop:
       watch:
         - action: sync
@@ -127,7 +128,7 @@ services:
       DATABASE__HOST: postgres
       REDIS__HOST: redis
       MAILING__MAIL__SERVER: mailpit
-      RABBITMQ__URL: rabbitmq
+      RABBITMQ__HOST: rabbitmq
     develop:
       watch:
         - action: sync
@@ -188,3 +189,6 @@ volumes:
   pg_data: {}
   pg_arb_data: {}
   datastore: {}
+
+networks:
+  curious:
