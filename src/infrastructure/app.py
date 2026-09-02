@@ -98,6 +98,7 @@ middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
     (middlewares_.CORSMiddleware, middlewares_.cors_options),
     (StructuredLoggingMiddleware, {}),
     (CorrelationIdMiddleware, {}),
+    (middlewares_.CacheControlMiddleware, {}),
 )
 
 
