@@ -25,7 +25,9 @@ class RefreshTokenSettings(BaseModel):
     expiration: int = 540
     # Shorter lifetime (minutes) for web/admin clients. None = same as `expiration`.
     # See AuthenticationService.token_expiration_minutes.
-    web_admin_expiration: int | None = 30
+    # Must outlast the clients' idle limit plus one rotation interval, or the token dies before
+    # the deadline it is meant to match: 30 min idle + 13.5 min between rotations.
+    web_admin_expiration: int | None = 45
     # Grace period (seconds) after a web/admin refresh token is rotated during which
     # the old token still redeems for the same replacement pair (absorbs tab races /
     # dropped responses). After it, presenting the old token is treated as reuse.
