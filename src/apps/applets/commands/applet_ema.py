@@ -36,7 +36,7 @@ from infrastructure.database import atomic, session_manager
 from infrastructure.storage.storage import get_operations_storage
 from infrastructure.storage.storage_client import ObjectNotFoundError, StorageClient
 
-app = typer.Typer()
+app = typer.Typer(short_help="Applet EMA commands")
 
 
 APPLET_ID = settings.applet_ema.id

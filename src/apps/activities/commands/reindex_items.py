@@ -17,7 +17,7 @@ from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
-app = typer.Typer()
+app = typer.Typer(short_help="Reindex applets")
 
 
 def print_results(applets: list[tuple[uuid.UUID, str]]):

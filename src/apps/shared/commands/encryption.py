@@ -15,7 +15,7 @@ from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 from infrastructure.database.base import Base
 
-app = typer.Typer()
+app = typer.Typer(short_help="Encryption commands (encrypt, decrypt, show, reencrypt)")
 
 
 ARBITRARY_TABLES_LIST = ("answers", "answers_items")
