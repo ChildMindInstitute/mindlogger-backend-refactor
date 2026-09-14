@@ -16,7 +16,7 @@ from apps.workspaces.service.check_access import CheckAccessService
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
-app = typer.Typer()
+app = typer.Typer(short_help="Manage applets")
 
 
 def error_msg(msg: str):

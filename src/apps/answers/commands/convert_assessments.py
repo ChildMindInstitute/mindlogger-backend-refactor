@@ -7,7 +7,7 @@ from apps.answers.crud.assessment_crud import AssessmentCRUD
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
-app = typer.Typer()
+app = typer.Typer(short_help="Convert assessments")
 
 
 @app.command(short_help="Convert current assessments to version agnostic")
