@@ -132,10 +132,10 @@ class StorageClient:
             if int(e.response.get("Error", {}).get("Code", "0")) == 404:
                 logger.warning(f"Trying to download not existing file {key}")
                 raise ObjectNotFoundError()
-            logger.error(f"Error when trying to download file {key}: {e}")
+            logger.warning(f"Error when trying to download file {key}: {e}")
             raise
         except EndpointConnectionError as e:
-            logger.error(f"Error when trying to download file {key}: {e}")
+            logger.warning(f"Error when trying to download file {key}: {e}")
             raise FileNotFoundError
 
         file.seek(0)
@@ -259,9 +259,9 @@ class StorageClient:
                         return True  # Bucket policy allows public access
         except ClientError as e:
             if e.response["Error"]["Code"] != "NoSuchBucketPolicy":
-                logger.error(f"Error getting bucket policy: {e}")
+                logger.warning(f"Error getting bucket policy: {e}")
         except Exception as e:
-            logger.error(f"Error getting bucket policy: {e}")
+            logger.warning(f"Error getting bucket policy: {e}")
 
         return False  # No public access found
 
@@ -284,7 +284,7 @@ class StorageClient:
                 ):
                     return True  # Object is publicly accessible
         except (ClientError, Exception) as e:
-            logger.error(f"Error getting object ACL: {e}")
+            logger.warning(f"Error getting object ACL: {e}")
             return False
 
         return False  # No public access found

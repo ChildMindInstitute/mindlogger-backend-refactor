@@ -51,7 +51,7 @@ async def reencrypt_answers(
                 base = json.loads(applet.encryption.base)
                 applet_pub_key = json.loads(applet.encryption.public_key)
             except JSONDecodeError as e:
-                logger.error(f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip")
+                logger.warning(f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip")
                 logger.exception(str(e))
                 continue
 
@@ -82,8 +82,7 @@ async def reencrypt_answers(
 
             except Exception as e:
                 msg = f"Reencryption {user_id}: cannot process applet {applet.applet_id}, skip"
-                logger.error(msg)
-                logger.exception(str(e))
+                logger.warning(msg, exc_info=True)
                 async with default_session_maker() as session:
                     async with atomic(session):
                         details = dict(errors=[msg, str(e)])

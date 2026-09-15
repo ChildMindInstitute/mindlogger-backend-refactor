@@ -9,6 +9,7 @@ from collections import defaultdict
 from itertools import chain, groupby
 from json import JSONDecodeError
 from operator import attrgetter
+from sys import exc_info
 from typing import Callable, List, Mapping
 
 import aiohttp
@@ -1902,20 +1903,19 @@ class AnswerService:
     @classmethod
     def _is_public_key_match(cls, answer_id, stored_public_key, generated_public_key) -> bool:
         if not stored_public_key:
-            logger.error(
+            logger.warning(
                 f'Reencryption:  Answer item "{answer_id}": wrong public key, skip'  # noqa: E501
             )
         try:
             stored_public_key = json.loads(stored_public_key)
         except JSONDecodeError as e:
-            logger.error(
-                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip'  # noqa: E501
+            logger.warning(
+                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip', exc_info=True  # noqa: E501
             )
-            logger.exception(str(e))
             return False
 
         if stored_public_key != generated_public_key:
-            logger.error(
+            logger.warning(
                 f'Reencryption: Answer item "{answer_id}": public key doesn\'t match, skip'  # noqa: E501
             )
             return False
@@ -1966,10 +1966,9 @@ class AnswerService:
                     )
                 )
             except EncryptionError as e:
-                logger.error(
-                    f'Reencryption: Skip answer item "{answer.id}": cannot decrypt answer'  # noqa: E501
+                logger.warning(
+                    f'Reencryption: Skip answer item "{answer.id}": cannot decrypt answer', exc_info=True  # noqa: E501
                 )
-                logger.exception(str(e))
                 continue
 
         if data_to_update:
@@ -2426,7 +2425,7 @@ class ReportServerService:
                     response_data = await resp.json()
                     return ReportServerResponse(**response_data)
                 else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    logger.warning(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
 
@@ -2535,7 +2534,7 @@ class ReportServerService:
                     # return ReportServerResponse(**response_data)
                     return response_data, answer_versions
                 else:
-                    logger.error(f"Failed request (for LORIS) in {duration:.1f}  seconds.")
+                    logger.warning(f"Failed request (for LORIS) in {duration:.1f}  seconds.")
                     error_message = await resp.text()
                     raise ReportServerError(message=error_message)
 
@@ -2722,7 +2721,7 @@ class AnswerTransferService:
         logger.info(f"Total size on source: {size_source}")
         logger.info(f"Total size on target: {size_target}")
         if size_source != size_target:
-            logger.error(f"!!!Applet '{applet_id}' size doesn't match!!!")
+            logger.warning(f"!!!Applet '{applet_id}' size doesn't match!!!")
 
     async def transfer(self, applet_id: uuid.UUID, *, copy_db: bool = True, copy_files: bool = True):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)

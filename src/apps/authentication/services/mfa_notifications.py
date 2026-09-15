@@ -78,7 +78,7 @@ class MFANotificationService:
 
         except Exception as e:
             # Log but don't raise - we don't want email queuing failures to break the main flow
-            logger.error(
+            logger.warning(
                 f"Failed to queue MFA notification type={notification_type} user_id={user.id} error={str(e)}",
                 exc_info=True,
             )
