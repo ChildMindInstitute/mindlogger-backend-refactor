@@ -1907,9 +1907,10 @@ class AnswerService:
             )
         try:
             stored_public_key = json.loads(stored_public_key)
-        except JSONDecodeError as e:
+        except JSONDecodeError:
             logger.warning(
-                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip', exc_info=True  # noqa: E501
+                f'Reencryption:  Answer item "{answer_id}": wrong public key, skip',
+                exc_info=True,  # noqa: E501
             )
             return False
 
@@ -1964,9 +1965,10 @@ class AnswerService:
                         identifier=encrypted_identifier,
                     )
                 )
-            except EncryptionError as e:
+            except EncryptionError:
                 logger.warning(
-                    f'Reencryption: Skip answer item "{answer.id}": cannot decrypt answer', exc_info=True  # noqa: E501
+                    f'Reencryption: Skip answer item "{answer.id}": cannot decrypt answer',
+                    exc_info=True,  # noqa: E501
                 )
                 continue
 
