@@ -16,6 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from ddtrace import tracer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
@@ -140,7 +141,15 @@ class AnswerService:
 
         return key_generator
 
+    @tracer.wrap(name="answer.create")
     async def create_answer(self, activity_answer: AppletAnswerCreate, device_id: str | None = None) -> AnswerSchema:
+        # Set some Datadog tags
+        span = tracer.current_span()
+        if span:
+            span.set_tag("applet_id", activity_answer.applet_id)
+            span.set_tag("activity_id", activity_answer.activity_id)
+            span.set_tag("flow_id", activity_answer.flow_id)
+
         # Check for prolific parameters in the answer helping to identify whether the respondent comes from prolific
         is_prolific_respondent = activity_answer.prolific_params is not None
         if self.user_id and not is_prolific_respondent:
@@ -542,6 +551,7 @@ class AnswerService:
             await self._validate_user_role_for_take_now(applet_id, respondent_subject)
             await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
+    @tracer.wrap(name="answer.create_report")
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
         # First check is flow single report or not, flow single report has

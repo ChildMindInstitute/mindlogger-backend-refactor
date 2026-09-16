@@ -1,6 +1,8 @@
 import asyncio
 import uuid
 
+from ddtrace import tracer
+
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
@@ -35,6 +37,7 @@ class ActivityService:
         self.user_id = user_id
         self.session = session
 
+    @tracer.wrap(name="activity.create")
     async def create(self, applet_id: uuid.UUID, activities_create: list[ActivityCreate]) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()

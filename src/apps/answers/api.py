@@ -7,6 +7,7 @@ import uuid
 import zipfile
 from typing import Annotated
 
+from ddtrace import tracer
 from fastapi import Body, Depends, Header, Query, Request
 from fastapi import Response as FastAPIResponse
 from fastapi.responses import Response as FastApiResponse
@@ -1219,9 +1220,15 @@ async def answers_existence_check(
     """Provides information whether the answer exists"""
     await AppletService(session, user.id).exist_by_id(schema.applet_id)
     await CheckAccessService(session, user.id).check_answer_check_access(schema.applet_id)
-    is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
-        schema.applet_id, schema.activity_id, schema.submit_id, schema.created_at
-    )
+
+    # Trace related to: https://mindlogger.atlassian.net/browse/M2-9483
+    with tracer.trace(name="answer.check_existence") as span:
+        span.set_tag("applet_id", schema.applet_id)
+        span.set_tag("activity_id", schema.activity_id)
+        is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
+            schema.applet_id, schema.activity_id, schema.submit_id, schema.created_at
+        )
+        span.set_tag("answer.exists", is_exist)
 
     logger.info(
         f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
