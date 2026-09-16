@@ -53,6 +53,13 @@ class UserCreateRequest(PublicModel):
             min_length=1,
         ),
     ]
+    organization_name: Annotated[
+        str | None,
+        Field(
+            description="This field represents the user organization name",
+            min_length=1,
+        ),
+    ] = None
     password: Annotated[
         str,
         Field(
@@ -69,6 +76,18 @@ class UserCreateRequest(PublicModel):
     @classmethod
     def lowercase_email(cls, value: EmailStr) -> EmailStr:
         return value.lower()
+
+    @field_validator("organization_name")
+    @classmethod
+    def validate_organization_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+
+        value = value.strip()
+        if not value:
+            raise ValueError("Organization name cannot be empty")
+
+        return value
 
 
 class UserCreate(UserCreateRequest):
