@@ -119,6 +119,8 @@ class SoftDeleteUserRequest(UserUpdateRequest):
 class User(InternalModel):
     """Internal user model."""
 
+    organization_name: str | None = None
+
     email: str
     first_name: str
     last_name: str
