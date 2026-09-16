@@ -9,7 +9,6 @@ from collections import defaultdict
 from itertools import chain, groupby
 from json import JSONDecodeError
 from operator import attrgetter
-from sys import exc_info
 from typing import Callable, List, Mapping
 
 import aiohttp
