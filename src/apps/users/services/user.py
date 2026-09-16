@@ -66,6 +66,7 @@ class UserService:
                 email=data.hashed_email,
                 first_name=data.first_name,
                 last_name=data.last_name,
+                organization_name=data.organization_name,
                 hashed_password=data.hashed_password,
                 email_encrypted=data.email,
             )
@@ -74,6 +75,7 @@ class UserService:
                 email=data.hashed_email,
                 first_name=data.first_name,
                 last_name=data.last_name,
+                organization_name=data.organization_name,
                 hashed_password=data.hashed_password,
                 email_encrypted=data.email,
             )

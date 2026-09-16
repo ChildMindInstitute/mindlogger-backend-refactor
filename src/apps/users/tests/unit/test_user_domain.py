@@ -237,3 +237,23 @@ def test_user_get_full_name__no_last_name(base_data: BaseData):
         hashed_password=base_data["password"],
     )
     assert user.get_full_name() == "John"
+
+
+@pytest.mark.parametrize("field_name", ["organizationName", "organization_name"])
+def test_organization_name_is_trimmed(base_data: BaseData, field_name: str):
+    base_data[field_name] = "  Example Organization  "
+    request = domain.UserCreateRequest(**base_data)
+    assert request.organization_name == "Example Organization"
+    assert domain.UserCreate(**request.model_dump()).organization_name == "Example Organization"
+
+
+@pytest.mark.parametrize("value", ["", "   ", "\t\n"])
+def test_organization_name_rejects_blank_values(base_data: BaseData, value: str):
+    base_data["organizationName"] = value
+    with pytest.raises(ValidationError, match="organizationName"):
+        domain.UserCreateRequest(**base_data)
+
+
+def test_organization_name_is_optional(base_data: BaseData):
+    assert domain.UserCreateRequest(**base_data).organization_name is None
+    assert domain.UserCreateRequest(**base_data, organization_name=None).organization_name is None

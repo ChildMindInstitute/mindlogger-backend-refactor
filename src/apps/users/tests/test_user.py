@@ -55,8 +55,24 @@ class TestUser:
         result = response.json()["result"]
         assert str(event.user_id) == result["id"]
         for k, v in request_data:
-            if k != "password":
+            if k not in {"password", "organization_name"}:
                 assert v == result[to_camelcase(k)]
+
+    @pytest.mark.parametrize("organization_name", [None, "  Example Organization  "])
+    async def test_user_create_persists_organization_name(
+        self,
+        client: TestClient,
+        request_data: UserCreateRequest,
+        session: AsyncSession,
+        organization_name: str | None,
+    ):
+        payload = request_data.model_dump(by_alias=True, exclude={"organization_name"})
+        if organization_name is not None:
+            payload["organizationName"] = organization_name
+        response = await client.post(self.user_create_url, data=payload)
+        assert response.status_code == status.HTTP_201_CREATED
+        user = await UsersCRUD(session).get_by_email(request_data.email)
+        assert user.organization_name == (organization_name.strip() if organization_name else None)
 
     async def test_user_create_exist(
         self,

@@ -183,3 +183,26 @@ async def test_create_user_with_test_id(session: AsyncSession):
     )
     user = await srv.create_user(data, test_id=id_)
     assert user.id == id_
+
+
+@pytest.mark.parametrize("organization_name", [None, "Example Organization"])
+@pytest.mark.parametrize("with_test_id", [False, True])
+async def test_create_user_persists_organization_name(
+    session: AsyncSession, organization_name: str | None, with_test_id: bool
+):
+    data = UserCreate(
+        email="organization@example.com",
+        first_name="Ann",
+        last_name="Smith",
+        password="TestPass123!",
+        organization_name=organization_name,
+    )
+    test_id = uuid.uuid4() if with_test_id else None
+    user = await UserService(session).create_user(data, test_id=test_id)
+    assert user.organization_name == organization_name
+    if test_id is not None:
+        assert user.id == test_id
+
+    session.expunge_all()
+    persisted = await UsersCRUD(session).get_by_id(user.id)
+    assert persisted.organization_name == organization_name
