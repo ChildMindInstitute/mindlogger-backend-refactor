@@ -1,6 +1,7 @@
 import uuid
 from typing import Any
 
+from ddtrace import tracer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.alerts.crud.alert import AlertCRUD
@@ -43,6 +44,7 @@ class SubjectsService:
             "tag": subject.tag if subject else None,
         }
 
+    @tracer.wrap(name="subject.create")
     async def create(self, schema: SubjectCreate) -> Subject:
         subject_with_secret = await self.get_by_secret_id(schema.applet_id, schema.secret_user_id)
         if subject_with_secret and not subject_with_secret.is_deleted:

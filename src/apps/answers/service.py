@@ -1932,6 +1932,7 @@ class AnswerService:
 
         return True
 
+    @tracer.wrap(name="answer.reencrypt_user_answers")
     async def reencrypt_user_answers(
         self,
         applet_id: uuid.UUID,
@@ -2024,6 +2025,7 @@ class AnswerService:
         schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
         return AssessmentItem.model_validate(schema) if schema else None
 
+    @tracer.wrap(name="answer.delete_assessment")
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
 
@@ -2372,6 +2374,7 @@ class ReportServerService:
 
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
+    @tracer.wrap(name="answer.create_report")
     async def create_report(
         self,
         submit_id: uuid.UUID,
@@ -2556,6 +2559,7 @@ class ReportServerEncryption:
     def __init__(self, key: str):
         self.encryption = load_pem_public_key(key.encode(), backend=default_backend())
 
+    @tracer.wrap(name="answer.report.encrypt")
     def encrypt(self, data: dict):
         str_data = json.dumps(data, default=str)
         key_size = getattr(self.encryption, "key_size", 0)

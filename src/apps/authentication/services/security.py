@@ -2,6 +2,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 import jwt
+from ddtrace import tracer
 
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken, JWTClaim, TokenPayload, TokenPurpose
@@ -166,6 +167,7 @@ class AuthenticationService:
         normalized = PasswordValidator.normalize(password)
         return get_password_hash(normalized)
 
+    @tracer.wrap(name="user.authenticate")
     async def authenticate_user(self, user_login_schema: UserLoginRequest) -> User:
         user: User = await UsersCRUD(self.session).get_by_email(email=user_login_schema.email)
         if not self.verify_password(user_login_schema.password, user.hashed_password, False):
@@ -310,6 +312,7 @@ class AuthenticationService:
     async def is_revoked(self, token: InternalToken):
         return await TokensService(self.session).is_revoked(token)
 
+    @tracer.wrap(name="user.update_last_seen_at")
     async def update_last_seen_at(self, user: User):
         """Update last seen at, but only every 15 minutes."""
 

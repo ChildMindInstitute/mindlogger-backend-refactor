@@ -63,7 +63,7 @@ class MailingService:
 
         self._initialized = True
 
-    @tracer.wrap(name="email.send", span_type="email")
+    @tracer.wrap(name="mail.send", span_type="email")
     async def send(self, message: MessageSchema) -> None:
         mailing_class = FastMail
         if settings.env == "testing":
@@ -71,7 +71,7 @@ class MailingService:
         fm = mailing_class(self._connection)
         await fm.send_message(message)
 
-    @tracer.wrap(name="email.text_template", span_type="email")
+    @tracer.wrap(name="mail.text_template", span_type="email")
     def get_localized_text_template(self, template_name: str, language: str, **kwargs) -> str:
         # Use the language exactly as given; only fallback is 'en'
         try:
@@ -81,7 +81,7 @@ class MailingService:
                 return self.env_text.get_template(f"{template_name}_en.txt").render(**kwargs).strip()
             raise
 
-    @tracer.wrap(name="email.html_template", span_type="email")
+    @tracer.wrap(name="mail.html_template", span_type="email")
     def get_localized_html_template(self, template_name: str, language: str, **kwargs) -> str:
         kwargs["language"] = language
         try:

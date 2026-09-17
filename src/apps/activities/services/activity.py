@@ -123,6 +123,7 @@ class ActivityService:
 
         return activities
 
+    @tracer.wrap(name="activity.update_create")
     async def update_create(self, applet_id: uuid.UUID, activities_create: list[ActivityUpdate]) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -325,6 +326,7 @@ class ActivityService:
 
         return activities
 
+    @tracer.wrap(name="activity.get_full_activities")
     async def get_full_activities(self, applet_id: uuid.UUID) -> list[ActivityFull]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(applet_id)
 
