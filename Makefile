@@ -2,6 +2,7 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = PYTHONPATH=src uv run pytest -s -vv --alluredir=allure-results
+NEW_TEST_COMMAND = PYTHONPATH=src uv run pytest
 COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
 REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 
@@ -66,6 +67,20 @@ build-all:
 .PHONY: test
 test:
 	${TEST_COMMAND} ./
+
+
+.PHONY: new-test-unit
+new-test-unit:
+	${NEW_TEST_COMMAND} tests/unit
+
+
+.PHONY: new-test-int
+new-test-int:
+	${NEW_TEST_COMMAND} tests/integration
+
+.PHONY: check-test-locations
+check-test-locations:
+	bash ci-check-test-locations.sh
 
 .PHONY: migrate
 migrate:

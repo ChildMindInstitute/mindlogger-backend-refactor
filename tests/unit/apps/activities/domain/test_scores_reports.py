@@ -1,0 +1,133 @@
+from typing import cast
+
+import pytest
+
+from apps.activities import errors
+from apps.activities.domain.scores_reports import (
+    Score,
+    ScoreConditionalLogic,
+    ScoresAndReports,
+    Section,
+    Subscale,
+    SubscaleSetting,
+)
+
+
+@pytest.mark.parametrize(
+    "fixture_name, error",
+    (
+        ("score", errors.DuplicateScoreNameError),
+        ("section", errors.DuplicateSectionNameError),
+    ),
+)
+def test_duplicated_name_is_not_allowed(scores_and_reports: ScoresAndReports, request, fixture_name: str, error):
+    model = request.getfixturevalue(fixture_name)
+    copy = model.model_copy(deep=True)
+    data = scores_and_reports.model_dump()
+    data["reports"].append(copy.model_dump())
+    with pytest.raises(error):
+        ScoresAndReports(**data)
+
+
+def test_duplicated_id_for_score_is_not_allowed(scores_and_reports: ScoresAndReports, score: Score):
+    copy = score.model_copy(deep=True)
+    # make name unique for test because we want to test the same ids not names
+    copy.name = score.name + "1"
+    data = scores_and_reports.model_dump()
+    data["reports"].append(copy.model_dump())
+    with pytest.raises(errors.DuplicateScoreIdError):
+        ScoresAndReports(**data)
+
+
+def test_score_and_reports_duplicated_name_in_conditional_logic_is_not_allowed_for_score(  # noqa: E501
+    scores_and_reports: ScoresAndReports,
+    score: Score,
+    score_conditional_logic: ScoreConditionalLogic,
+):
+    copy = score_conditional_logic.model_copy(deep=True)
+    copy.id = score_conditional_logic.id + "1"
+    score_data = score.model_dump()
+    score_data["conditional_logic"] = [
+        score_conditional_logic.model_dump(),
+        copy.model_dump(),
+    ]
+    data = scores_and_reports.model_dump()
+    data["reports"] = [score_data]
+    with pytest.raises(errors.DuplicateScoreConditionNameError):
+        ScoresAndReports(**data)
+
+
+def test_score_and_reports_duplicated_id_in_conditional_logic_is_not_allowed_for_score(  # noqa: E501
+    scores_and_reports: ScoresAndReports,
+    score: Score,
+    score_conditional_logic: ScoreConditionalLogic,
+):
+    copy = score_conditional_logic.model_copy(deep=True)
+    copy.name = score_conditional_logic.name + "1"
+    score_data = score.model_dump()
+    score_data["conditional_logic"] = [
+        score_conditional_logic.model_dump(),
+        copy.model_dump(),
+    ]
+    data = scores_and_reports.model_dump()
+    data["reports"] = [score_data]
+    with pytest.raises(errors.DuplicateScoreConditionIdError):
+        ScoresAndReports(**data)
+
+
+def test_duplicated_name_for_subscale_settings_is_not_allowed(subscale_setting: SubscaleSetting, subscale: Subscale):
+    copy = subscale.model_copy(deep=True)
+    subscale_setting.subscales = cast(list, subscale_setting.subscales)
+    subscale_setting.subscales.append(copy)
+    data = subscale_setting.model_dump()
+    with pytest.raises(errors.DuplicateSubscaleNameError):
+        SubscaleSetting(**data)
+
+
+def test_score_duplicated_item_score_are_not_allowed(score: Score):
+    data = score.model_dump()
+    data["items_score"] = ["duplicate", "duplicate"]
+    with pytest.raises(errors.DuplicateScoreItemNameError):
+        Score(**data)
+
+
+def test_score_conditional_logic_condition_item_name_is_not_the_same_with_score_id(  # noqa: E501
+    score: Score,
+    score_conditional_logic: ScoreConditionalLogic,
+):
+    data = score.model_dump()
+    conditional_logic_data = score_conditional_logic.model_dump()
+    conditional_logic_data["conditions"][0]["item_name"] = score.id + "1"
+    data["conditional_logic"] = [conditional_logic_data]
+    with pytest.raises(errors.ScoreConditionItemNameError):
+        Score(**data)
+
+
+def test_score_conditional_logic_sanitize_string(  # noqa: E501
+    score: Score,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    score.message = text_with_script_inside
+
+    assert score.message == sanitized_text
+
+
+def test_score_sanitize_string(  # noqa: E501
+    score_conditional_logic: ScoreConditionalLogic,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    score_conditional_logic.message = text_with_script_inside
+
+    assert score_conditional_logic.message == sanitized_text
+
+
+def test_section_sanitize_string(  # noqa: E501
+    section: Section,
+):
+    text_with_script_inside = "One <script>alert('test')</script> Two"
+    sanitized_text = "One  Two"
+    section.message = text_with_script_inside
+
+    assert section.message == sanitized_text

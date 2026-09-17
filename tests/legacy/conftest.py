@@ -102,7 +102,7 @@ class FakeTime(datetime.datetime):
         return cls.current_utc
 
 
-alembic_configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
+alembic_configs = [Config("../../alembic.ini"), Config("../../alembic_arbitrary.ini")]
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -206,6 +206,7 @@ def pytest_sessionfinish(session, exitstatus) -> None:
 
 @pytest.fixture(scope="session")
 def app() -> FastAPI:
+    app = create_app()
     return create_app()
 
 

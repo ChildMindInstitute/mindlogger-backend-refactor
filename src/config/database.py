@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from urllib.parse import urlparse, unquote
 
 
 class DatabaseSettings(BaseModel):
@@ -14,3 +15,17 @@ class DatabaseSettings(BaseModel):
     @property
     def url(self) -> str:
         return f"postgresql+asyncpg://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
+
+    @classmethod
+    def from_connection_string(cls, connection_string: str):
+        """Generate database settings from a connection string.  Useful for tests."""
+        parsed = urlparse(connection_string)
+
+        if not parsed.scheme:
+            raise ValueError("Connection string is missing a scheme")
+
+        if not parsed.hostname:
+            raise ValueError("Connection string is missing a host")
+
+        return cls(user=parsed.username, password=unquote(parsed.password), host=parsed.hostname, port=parsed.port, db=parsed.path.lstrip("/")
+        )
