@@ -74,5 +74,5 @@ async def send_audit_event(payload: dict, retries: int = 3) -> None:
             logger.info("audit_event_retry", retries_left=retries, error=str(e))
             await send_audit_event.kicker().with_labels(delay=5).kiq(payload, retries=retries - 1)
             return
-        logger.warning("audit_event_dropped", error=str(e), audit_event=payload)
+        logger.error("audit_event_dropped", error=str(e), audit_event=payload)
         raise
