@@ -50,9 +50,11 @@ async def reencrypt_answers(
                 prime = json.loads(applet.encryption.prime)
                 base = json.loads(applet.encryption.base)
                 applet_pub_key = json.loads(applet.encryption.public_key)
-            except JSONDecodeError as e:
-                logger.warning(f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip")
-                logger.exception(str(e))
+            except JSONDecodeError:
+                logger.warning(
+                    f"Reencryption {user_id}: Wrong applet {applet.applet_id} encryption format, skip",
+                    exc_info=True,
+                )
                 continue
 
             old_public_key = generate_dh_public_key(old_private_key, prime, base)
