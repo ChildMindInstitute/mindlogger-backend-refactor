@@ -47,7 +47,7 @@ async def send_mfa_email_task(
         )
 
     except Exception as e:
-        logger.error(
+        logger.warning(
             f"Failed to send MFA notification email in task type={notification_type} user_id={user_id} error={str(e)}",
             exc_info=True,
         )

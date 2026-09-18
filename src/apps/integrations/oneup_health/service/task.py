@@ -134,7 +134,7 @@ async def _schedule_retry(
         failed_attempts (int): The current error retry attempt count
     """
     if failed_attempts > settings.oneup_health.max_error_retries:
-        logger.error(f"Max error retries reached for {applet_id}.")
+        logger.warning(f"Max error retries reached for {applet_id}.")
         return False
 
     # In case of error, the retry mechanism will use progressive (linear) delay

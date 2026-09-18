@@ -129,7 +129,7 @@ async def create_answer(
             async with atomic(answer_session):
                 answer = await service.create_answer(schema, device.device_id if device else None)
         except Exception as e:
-            logger.error(
+            logger.warning(
                 f"Answer creation failed: applet_id={schema.applet_id}, user_id={user.id}, \
                     activity_id={schema.activity_id}, error={type(e).__name__}: {e}"
             )
