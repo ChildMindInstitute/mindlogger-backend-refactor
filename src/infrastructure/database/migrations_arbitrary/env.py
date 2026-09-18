@@ -27,8 +27,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Override alembic.ini option
-config.set_main_option("sqlalchemy.url", settings.database.url)
-arbitrary_data = []
+# config.set_main_option("sqlalchemy.url", settings.database.url)
+# arbitrary_data = []
 
 LOG_JSON_FORMAT = parse_obj_as(bool, os.getenv("LOG_JSON_FORMAT", False))
 setup_structured_logging(LOG_JSON_FORMAT)
@@ -36,8 +36,22 @@ setup_structured_logging(LOG_JSON_FORMAT)
 migration_log = getLogger("alembic.arbitrary")
 migration_log.level = logging.INFO
 
+def get_database_url() -> str:
+    # return settings.database.url
+    database_url = config.get_main_option("sqlalchemy.url")
+
+    if not database_url:
+        database_url = settings.database.url
+
+    return database_url
 
 async def get_all_servers(connection):
+    if os.environ.get("PYTEST_APP_TESTING"):
+        # arbitrary_db_name = os.environ["ARBITRARY_DB"]
+        # url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
+        url = os.environ["PYTEST_ARB_URL"]
+        return [(url, uuid.uuid4())]
+
     try:
         query = text(
             """
@@ -57,23 +71,21 @@ async def get_all_servers(connection):
     except Exception as ex:
         print(ex)
         data = []
-    if os.environ.get("PYTEST_APP_TESTING"):
-        arbitrary_db_name = os.environ["ARBITRARY_DB"]
-        url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
-        data.append((url, uuid.uuid4()))
+    
     return data
 
 
 async def get_urls():
-    global arbitrary_data
+    # global arbitrary_data
     connectable = create_async_engine(url=settings.database.url)
     async with connectable.connect() as connection:
         arbitrary_data = await get_all_servers(connection)
     await connectable.dispose()
 
+    return arbitrary_data
 
-async def migrate_arbitrary():
-    global arbitrary_data
+
+async def migrate_arbitrary(arbitrary_data):
     arbitrary_meta = MetaData()
     arbitrary_tables = [
         Base.metadata.tables["answers"],
@@ -147,8 +159,8 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    await get_urls()
-    await migrate_arbitrary()
+    arb_data = await get_urls()
+    await migrate_arbitrary(arb_data)
 
 
 if context.is_offline_mode():
