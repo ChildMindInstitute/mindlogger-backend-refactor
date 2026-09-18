@@ -146,9 +146,9 @@ class AnswerService:
         # Set some Datadog tags
         span = tracer.current_span()
         if span:
-            span.set_tag("applet_id", activity_answer.applet_id)
-            span.set_tag("activity_id", activity_answer.activity_id)
-            span.set_tag("flow_id", activity_answer.flow_id)
+            span.set_tag("applet_id", str(activity_answer.applet_id))
+            span.set_tag("activity_id", str(activity_answer.activity_id))
+            span.set_tag("flow_id", str(activity_answer.flow_id))
 
         # Check for prolific parameters in the answer helping to identify whether the respondent comes from prolific
         is_prolific_respondent = activity_answer.prolific_params is not None

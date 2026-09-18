@@ -1223,12 +1223,12 @@ async def answers_existence_check(
 
     # Trace related to: https://mindlogger.atlassian.net/browse/M2-9483
     with tracer.trace(name="answer.check_existence") as span:
-        span.set_tag("applet_id", schema.applet_id)
-        span.set_tag("activity_id", schema.activity_id)
+        span.set_tag("applet_id", str(schema.applet_id))
+        span.set_tag("activity_id", str(schema.activity_id))
         is_exist = await AnswerService(session, user.id, answer_session).is_answers_uploaded(
             schema.applet_id, schema.activity_id, schema.submit_id, schema.created_at
         )
-        span.set_tag("answer.exists", is_exist)
+        span.set_tag("answer.exists", str(is_exist))
 
     logger.info(
         f"check-existence: applet_id={schema.applet_id}, activity_id={schema.activity_id}, user_id={user.id}, "
