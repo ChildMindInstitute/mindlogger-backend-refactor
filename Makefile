@@ -68,14 +68,17 @@ build-all:
 test:
 	${TEST_COMMAND} ./
 
+.PHONY: test-legacy
+test-legacy:
+	${NEW_TEST_COMMAND} tests/legacy
 
-.PHONY: new-test-unit
-new-test-unit:
+.PHONY: test-unit
+test-unit:
 	${NEW_TEST_COMMAND} tests/unit
 
 
-.PHONY: new-test-int
-new-test-int:
+.PHONY: test-int
+test-int:
 	${NEW_TEST_COMMAND} tests/integration
 
 .PHONY: check-test-locations

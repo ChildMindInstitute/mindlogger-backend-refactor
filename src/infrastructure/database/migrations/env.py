@@ -46,6 +46,7 @@ def get_database_url() -> str:
 
     return database_url
 
+
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
@@ -85,7 +86,7 @@ async def run_migrations_online() -> None:
     """
     configuration = config.get_section(config.config_ini_section)
     # Override sqlalchemy.url with our Pydantic settings
-    configuration["sqlalchemy.url"] = get_database_url()
+    configuration["sqlalchemy.url"] = get_database_url()  # type: ignore[index]
 
     connectable = AsyncEngine(
         engine_from_config(

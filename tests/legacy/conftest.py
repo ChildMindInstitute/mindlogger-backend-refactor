@@ -102,7 +102,7 @@ class FakeTime(datetime.datetime):
         return cls.current_utc
 
 
-alembic_configs = [Config("../../alembic.ini"), Config("../../alembic_arbitrary.ini")]
+alembic_configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
 
 
 def pytest_addoption(parser: Parser) -> None:
@@ -206,7 +206,6 @@ def pytest_sessionfinish(session, exitstatus) -> None:
 
 @pytest.fixture(scope="session")
 def app() -> FastAPI:
-    app = create_app()
     return create_app()
 
 
@@ -238,7 +237,7 @@ async def session(engine: AsyncEngine) -> AsyncGenerator:
         conn = cast(AsyncConnection, conn)
         await conn.begin_nested()
         async with AsyncSession(bind=conn) as async_session:
-
+            # TODO: [AW] What is the point of this?  Does this rollback changes for each test?
             @event.listens_for(async_session.sync_session, "after_transaction_end")
             def end_savepoint(session: Session, transaction: SessionTransaction) -> None:
                 nonlocal conn
@@ -297,6 +296,7 @@ def arbitrary_client(
     app.dependency_overrides.pop(get_answer_session)
 
 
+# TODO: [AW] What does this do?
 def pytest_collection_modifyitems(items) -> None:
     pytest_asyncio_tests = (item for item in items if is_async_test(item))
     session_scope_marker = pytest.mark.asyncio(scope="session")

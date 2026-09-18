@@ -1,5 +1,5 @@
 import uuid
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
 
 import pytest
 from pytest_mock import MockerFixture
@@ -8,9 +8,11 @@ from pytest_mock import MockerFixture
 ## Shared Fixtures between unit and integration tests
 #####################################################
 
+
 @pytest.fixture
 def local_image_name() -> str:
     return "test.jpg"
+
 
 @pytest.fixture
 def remote_image(local_image_name: str) -> str:
