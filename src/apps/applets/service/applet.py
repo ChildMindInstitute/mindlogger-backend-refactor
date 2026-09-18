@@ -3,6 +3,8 @@ import re
 import uuid
 from typing import cast
 
+from ddtrace import tracer
+
 from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
 from apps.activities.services import ActivityHistoryService
@@ -89,6 +91,7 @@ class AppletService:
         if len(applet_ids_set) != len(set(applet_ids)):
             raise AppletNotFoundError(key="id", value=str(applet_ids))
 
+    @tracer.wrap(name="applet.get")
     async def get(self, applet_id: uuid.UUID) -> AppletSchema:
         return await AppletsCRUD(self.session).get_by_id(applet_id)
 
@@ -116,6 +119,7 @@ class AppletService:
 
             await UserAppletAccessService(self.session, owner_id, applet_id).add_role(manager_id, Role.RESPONDENT)
 
+    @tracer.wrap(name="applet.create")
     async def create(
         self,
         create_data: AppletCreate,
@@ -187,6 +191,7 @@ class AppletService:
         schema = await AppletsCRUD(self.session).save(data)
         return AppletFull.model_validate(schema)
 
+    @tracer.wrap(name="applet.update")
     async def update(self, applet_id: uuid.UUID, update_data: AppletUpdate) -> AppletFull:
         old_applet_schema = await AppletsCRUD(self.session).get_by_id(applet_id)
         old_applet_version = old_applet_schema.version
@@ -236,6 +241,7 @@ class AppletService:
 
         return applet
 
+    @tracer.wrap(name="applet.update_encryption")
     async def update_encryption(self, applet_id: uuid.UUID, encryption: Encryption):
         applet = await AppletsCRUD(self.session).get_by_id(applet_id)
         if applet.encryption is not None:
@@ -246,6 +252,7 @@ class AppletService:
         applt = await AppletsCRUD(self.session).get_by_id(applet_id)
         return applt
 
+    @tracer.wrap(name="applet.duplicate")
     async def duplicate(
         self,
         applet_exist: AppletDuplicate,
@@ -656,6 +663,7 @@ class AppletService:
         applet.activity_flows = await FlowService(self.session, self.user_id).get_by_applet_id_duplicate(applet_id)
         return applet
 
+    @tracer.wrap(name="applet.delete")
     async def delete_applet_by_id(self, applet_id: uuid.UUID):
         await AppletsCRUD(self.session).get_by_id(applet_id)
         await AnswersCRUD(self.session).delete_by_applet_user(applet_id)

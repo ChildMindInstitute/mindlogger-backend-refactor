@@ -1,5 +1,7 @@
 import uuid
 
+from ddtrace import tracer
+
 from apps.authentication.services import AuthenticationService
 from apps.shared.hashing import hash_sha224
 from apps.users import UserSchema, UsersCRUD
@@ -59,6 +61,7 @@ class UserService:
         return anonymous_respondent
 
     # TODO: remove test_id, when all JSON fixtures are deleted
+    @tracer.wrap(name="user.create")
     async def create_user(self, data: UserCreate, test_id: uuid.UUID | None = None) -> User:
         if test_id is not None:
             schema = UserSchema(
