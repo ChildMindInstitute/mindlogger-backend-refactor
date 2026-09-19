@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+import jwt
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -146,6 +147,50 @@ class TestRecoveryCodeVerification(BaseTest):
         used_codes = [code for code in stored_codes if code.used]
         assert len(used_codes) == 1
         assert used_codes[0].used_at is not None
+
+    async def test_valid_recovery_code_embeds_client_claim(
+        self,
+        client: TestClient,
+        user_with_mfa_and_codes: tuple[User, list[str]],
+        mocker: MockerFixture,
+    ):
+        """Tokens issued via recovery-code verification carry the client claim from the header."""
+        user, codes = user_with_mfa_and_codes
+
+        login_response = await client.post(
+            url=self.get_token_url,
+            data=dict(
+                email=user.email_encrypted,
+                password=TEST_PASSWORD,
+            ),
+        )
+        assert login_response.status_code == http.HTTPStatus.OK
+        mfa_token = login_response.json()["result"]["mfaToken"]
+
+        mocker.patch("apps.authentication.api.auth.log")
+        response = await client.post(
+            url=self.verify_recovery_url,
+            data=dict(
+                mfaToken=mfa_token,
+                code=codes[0],
+            ),
+            headers={"Mindlogger-Content-Source": "mobile"},
+        )
+
+        assert response.status_code == http.HTTPStatus.OK
+        token = response.json()["result"]["token"]
+        access_payload = jwt.decode(
+            token["accessToken"],
+            settings.authentication.access_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        refresh_payload = jwt.decode(
+            token["refreshToken"],
+            settings.authentication.refresh_token.secret_key,
+            algorithms=[settings.authentication.algorithm],
+        )
+        assert access_payload["client"] == "mobile"
+        assert refresh_payload["client"] == "mobile"
 
     async def test_invalid_recovery_code_returns_error(
         self, client: TestClient, user_with_mfa_and_codes: tuple[User, list[str]], mocker: MockerFixture

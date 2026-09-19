@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: develop
+      tag-latest:
+        description: Tag build as latest image
+        required: false
+        type: boolean
+        default: false
 
 # Safe to cancel builds in progress
 concurrency:
@@ -74,15 +79,26 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ needs.setup-vars.outputs.region }} | docker login --username AWS --password-stdin ${{ needs.setup-vars.outputs.ecr-repo }}
 
-      - name: Generate short sha
-        id: sha
-        run: |
-          SHORT_SHA=$(git rev-parse --short HEAD)
-          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "IMAGE_NAME=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+#      - name: Generate short sha
+#        id: sha
+#        run: |
+#          SHORT_SHA=$(git rev-parse --short HEAD)
+#          echo "SHORT_SHA=${SHORT_SHA}" >> $GITHUB_OUTPUT
+#          echo "IMAGE_NAME=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server
+          tags: |
+            type=sha
+            type=ref,event=pr
+            type=raw,value=${{ inputs.tag-name }}
+            type=raw,value=latest,enable=${{ inputs.tag-latest }}
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./compose/fastapi/Dockerfile
@@ -92,8 +108,9 @@ jobs:
             DD_GIT_COMMIT_SHA=${{ github.sha }}
           cache-to: mode=max,image-manifest=true,oci-mediatypes=true,type=registry,ref=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:cache
           cache-from: type=registry,ref=${{ needs.setup-vars.outputs.ecr-repo }}/api-server:cache
-          tags: |
-            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.tag-name }}
-            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:sha-${{ steps.sha.outputs.SHORT_SHA }}
+          tags: ${{ steps.meta.outputs.tags }}
+#          tags: |
+#            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:${{ inputs.tag-name }}
+#            ${{ needs.setup-vars.outputs.ecr-repo }}/api-server:sha-${{ steps.sha.outputs.SHORT_SHA }}
           platforms: linux/amd64,linux/arm64
 

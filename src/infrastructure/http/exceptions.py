@@ -24,7 +24,7 @@ def _set_trace_exception(exc: Exception) -> None:
 def custom_base_errors_handler(_: HTTPConnection, error: BaseError) -> JSONResponse:
     """This function is called if the BaseError was raised."""
 
-    logger.error(error.error, exc_info=error)
+    logger.warning(error.error, exc_info=error)
     _set_trace_exception(error)
 
     response = ErrorResponseMulti(
@@ -88,7 +88,7 @@ def python_base_error_handler(_: Request, error: Exception) -> JSONResponse:
     error_message = str(error)
     response = ErrorResponseMulti(result=[ErrorResponse(message=f"Unhandled error: {error_message}")])
 
-    logger.error(error_message, exc_info=error)
+    logger.warning(error_message, exc_info=error)
     _set_trace_exception(error)
 
     return JSONResponse(
@@ -133,7 +133,7 @@ def sqlalchemy_database_error_handler(
     _: Request, error: TimeoutError | InvalidPasswordError | ConnectionRefusedError
 ) -> JSONResponse:
     """This function is called if the SQLAlchemy database error was raised."""
-    logger.error(str(error), exc_info=error)
+    logger.warning(str(error), exc_info=error)
     _set_trace_exception(error)
 
     response = ErrorResponseMulti(result=[ErrorResponse(message="Internal server error")])
