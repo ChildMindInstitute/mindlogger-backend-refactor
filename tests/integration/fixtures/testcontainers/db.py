@@ -139,7 +139,7 @@ async def savepoint(connection: AsyncConnection) -> AsyncGenerator[AsyncConnecti
 
 
 @pytest.fixture
-async def session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
+async def db_session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
     """The session tests actually use. Owns the restart-savepoint listener."""
     async_session = AsyncSession(bind=savepoint)
 

@@ -1,10 +1,13 @@
+import json
 import uuid
+from pathlib import Path
 from typing import Callable
 
 import pytest
 import taskiq_fastapi
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.authentication.domain.token import JWTClaim
@@ -29,9 +32,9 @@ def app(apply_migrations) -> FastAPI:
 
 
 @pytest.fixture(autouse=True)
-def setup_app_session(app: FastAPI, session: AsyncSession):
+def setup_app_session(app: FastAPI, db_session: AsyncSession):
     """Override the get_session dependency with the test session."""
-    app.dependency_overrides[get_session] = lambda: session
+    app.dependency_overrides[get_session] = lambda: db_session
     # TODO Figure out what this does and document it
     taskiq_fastapi.populate_dependency_context(broker, app)
 
@@ -59,37 +62,40 @@ def create_authorized_client(app: FastAPI) -> Callable[[User | uuid.UUID], TestC
     return _create_client
 
 
-# FIXTURES_ROOT = Path("tests/integration")
-# # Tables to skip when loading db fixture data
-# SKIP_TABLES = {"users"}
-#
-# # Fixture helpers
-# async def _load_fixture_file(session, relative_path: str):
-#     data = json.loads((FIXTURES_ROOT / relative_path).read_text())
-#     for datum in data:
-#         if datum["table"] in SKIP_TABLES:
-#             continue
-#         columns = ", ".join(f'"{f}"' for f in datum["fields"])
-#         placeholders = ", ".join(f":{f}" for f in datum["fields"])
-#
-#         query = text(f'INSERT INTO "{datum["table"]}" ({columns}) VALUES ({placeholders})')
-#         await session.execute(query, datum["fields"])
-#
-#     await session.commit()
-#
-#
-# @pytest.fixture(autouse=True)
-# async def load_fixtures(request, db_session):
-#     """
-#     Fixture to load json data into the database.  To use, annotate a test function with:
-#
-#     @pytest.mark.db_fixtures(["orders.json", "customers.json"])
-#     async def test_order_flow(db_session): ...
-#
-#     All data is cleared after each test.
-#     """
-#     marker = request.node.get_closest_marker("fixtures")
-#     fixture_files = marker.args[0] if marker else []
-#     for f in fixture_files:
-#         await _load_fixture_file(db_session, f)
-#     yield
+FIXTURES_ROOT = Path("tests/integration")
+# Tables to skip when loading db fixture data
+SKIP_TABLES = {"users"}
+
+# Fixture helpers
+async def _load_fixture_file(session, relative_path: str):
+    data = json.loads((FIXTURES_ROOT / relative_path).read_text())
+    for datum in data:
+        if datum["table"] in SKIP_TABLES:
+            continue
+        columns = ", ".join(f'"{f}"' for f in datum["fields"])
+        placeholders = ", ".join(f":{f}" for f in datum["fields"])
+
+        query = text(f'INSERT INTO "{datum["table"]}" ({columns}) VALUES ({placeholders})')
+        await session.execute(query, datum["fields"])
+
+    await session.commit()
+
+
+@pytest.fixture(autouse=True)
+async def load_fixtures(request, db_session):
+    """
+    Fixture to load json data into the database.  This is a holdover/improved version of the
+    method used in the legacy tests without the BaseTest class.
+
+    To use, annotate a test function with:
+
+    @pytest.mark.db_fixtures(["orders.json", "customers.json"])
+    async def test_order_flow(db_session): ...
+
+    All data is cleared after each test.
+    """
+    marker = request.node.get_closest_marker("fixtures")
+    fixture_files = marker.args[0] if marker else []
+    for f in fixture_files:
+        await _load_fixture_file(db_session, f)
+    yield
