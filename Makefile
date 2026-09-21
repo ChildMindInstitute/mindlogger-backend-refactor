@@ -76,10 +76,32 @@ test-legacy:
 test-unit:
 	${NEW_TEST_COMMAND} tests/unit
 
+.PHONY: test-unit-cov
+test-unit-cov:
+	COVERAGE_FILE=.coverage.unit ${NEW_TEST_COMMAND} tests/unit --cov=src/ --cov-report= --alluredir=allure-results
+
 
 .PHONY: test-int
 test-int:
 	${NEW_TEST_COMMAND} tests/integration
+
+.PHONY: test-int-cov
+test-int-cov:
+	COVERAGE_FILE=.coverage.integration ${NEW_TEST_COMMAND} tests/integration --cov=src/ --cov-report= --alluredir=allure-results
+
+.PHONY: cov-combine
+cov-combine:
+	uv run coverage combine
+	uv run coverage xml
+	uv run coverage html
+
+.PHONY: cov-serve
+cov-serve:
+	uv run python -m http.server -d htmlcov/ 8000
+
+.PHONY: allure
+allure:
+	uv run allure generate allure-results --clean -o allure-report
 
 .PHONY: check-test-locations
 check-test-locations:

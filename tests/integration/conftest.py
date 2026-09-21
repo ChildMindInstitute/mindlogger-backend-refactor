@@ -62,20 +62,19 @@ def postgres_container():
             monkeypatch.setenv("DATABASE__DB", parsed.path.lstrip("/"))
         yield pg
 
+
 @pytest.fixture(scope="session", autouse=True)
 def arb_postgres_container():
     """Create a Postgres container for the test session."""
     with PostgresContainer("postgres:16") as pg:
         os.environ["PYTEST_ARB_URL"] = change_pycopg2_to_asyncpg(pg.get_connection_url())
         os.environ["PYTEST_APP_TESTING"] = "true"
-        # with pytest.MonkeyPatch.context() as monkeypatch:
-        #     monkeypatch.setenv("PYTEST_ARB_URL", pg.get_connection_url())
-        #     monkeypatch.setenv("PYTEST_APP_TESTING", "true")
         yield pg
 
 
 def change_pycopg2_to_asyncpg(url: str) -> str:
     return url.replace("psycopg2", "asyncpg")
+
 
 @pytest.fixture(scope="session")
 def db_url(postgres_container):
@@ -92,14 +91,11 @@ def arb_db_url(arb_postgres_container):
 def apply_migrations(postgres_container, db_url, arb_db_url):
     """Run alembic upgrade head against the test container once per session."""
 
-    cfg = Config("alembic.ini")
-    cfg.set_main_option("sqlalchemy.url", db_url)
-    command.upgrade(cfg, "head")
+    configs = [Config("alembic.ini"), Config("alembic_arbitrary.ini")]
+    for cfg in configs:
+        cfg.set_main_option("sqlalchemy.url", db_url)
+        command.upgrade(cfg, "head")
 
-    arb_cfg = Config("alembic_arbitrary.ini")
-    arb_cfg.set_main_option("sqlalchemy.url", db_url)
-    command.upgrade(arb_cfg, "head")
-    
     yield
     # no need to downgrade — container is thrown away after session
 
@@ -165,10 +161,6 @@ def rabbitmq_container():
 
         yield rmq
 
-
-@pytest.fixture(scope="session")
-def rabbitmq_connection_params(rabbitmq_container):
-    return rabbitmq_container.get_connection_params()
 
 
 ## Redis
