@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from apps.authentication.cruds import RecoveryCodeCRUD
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User

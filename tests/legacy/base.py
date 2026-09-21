@@ -6,8 +6,7 @@ import pytest
 from sqlalchemy import text
 
 from apps.mailing.services import TestMail
-from apps.shared.test.utils import truncate_tables
-from config import settings
+from tests.legacy.utils import truncate_tables
 from infrastructure.database.core import session_manager
 
 

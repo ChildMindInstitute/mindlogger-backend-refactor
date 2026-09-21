@@ -15,8 +15,8 @@ from apps.authentication.errors import PermissionsError
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.constants import SubjectTag
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD
@@ -66,8 +66,8 @@ async def applet_one_bob_coordinator_reviewer(session: AsyncSession, applet_one:
 
 class TestTransfer(BaseTest):
     fixtures = [
-        "fixtures/transfers.json",
-        "../invitations/fixtures/invitations.json",
+        "apps/transfer_ownership/fixtures/transfers.json",
+        "apps/invitations/fixtures/invitations.json",
     ]
 
     login_url = "/auth/login"

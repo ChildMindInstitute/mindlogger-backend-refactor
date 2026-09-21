@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from apps.audit import EventAction, EventOutcome
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.router import router as user_router

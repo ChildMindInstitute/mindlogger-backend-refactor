@@ -12,7 +12,8 @@ from infrastructure.storage.storage import (
     get_operations_storage,
     select_answer_storage,
 )
-from infrastructure.storage.tests import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
+# TODO These should be fixtures
+from tests.legacy.infrastructure.storage import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
 
 
 @register_fixture

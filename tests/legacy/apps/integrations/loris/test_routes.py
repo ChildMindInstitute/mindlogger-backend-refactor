@@ -4,7 +4,7 @@ import uuid
 import pytest
 
 from apps.integrations.loris.router import router as loris_router
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

@@ -1,8 +1,8 @@
 import json
 
 from apps.applets.domain.applet_full import AppletFull
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

@@ -1,6 +1,6 @@
 from pytest import fixture, mark
 
-from apps.shared.test import BaseTest
+from tests.legacy.base import BaseTest
 
 EMPTY_DESCRIPTIONS = [
     dict(

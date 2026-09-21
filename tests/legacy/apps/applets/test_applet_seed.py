@@ -28,7 +28,7 @@ from apps.authentication.services import AuthenticationService
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.schedule_history import ScheduleHistoryCRUD
 from apps.schedule.domain.constants import PeriodicityType
-from apps.shared.test import BaseTest
+from tests.legacy.base import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject
 from apps.users import User, UsersCRUD

@@ -5,7 +5,7 @@ import uuid
 import pytest
 
 from apps.answers.crud.answers import AnswersCRUD
-from apps.shared.test import BaseTest
+from tests.legacy.base import BaseTest
 from apps.subjects.crud import SubjectsCrud
 
 
@@ -51,7 +51,7 @@ def answer_create_payload():
 
 
 class TestSubjects(BaseTest):
-    fixtures = ["answers/fixtures/arbitrary_server_answers.json"]
+    fixtures = ["apps/answers/fixtures/arbitrary_server_answers.json"]
 
     login_url = "/auth/login"
     subject_list_url = "/subjects"

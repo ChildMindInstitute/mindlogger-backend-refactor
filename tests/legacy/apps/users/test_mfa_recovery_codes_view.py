@@ -12,7 +12,7 @@ from starlette import status
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.db.schemas import RecoveryCodeSchema
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
 

@@ -18,8 +18,8 @@ from apps.invitations.domain import InvitationManagersRequest, InvitationRespond
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService

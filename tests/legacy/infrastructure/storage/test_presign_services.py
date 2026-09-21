@@ -10,7 +10,8 @@ from apps.workspaces.domain.constants import Role
 from infrastructure.storage.presign_services import S3PresignService
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME
+# TODO This should be a fixture
+from tests.legacy.infrastructure.storage import ANSWER_BUCKET_NAME
 
 
 class TestS3PresignService:

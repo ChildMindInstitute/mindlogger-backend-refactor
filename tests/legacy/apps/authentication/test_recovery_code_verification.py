@@ -14,8 +14,8 @@ from apps.audit import EventAction, EventOutcome
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.router import router as auth_router
 from apps.authentication.services.recovery_codes import generate_recovery_codes
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service

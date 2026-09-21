@@ -1,11 +1,12 @@
 import pytest
 from fastapi import FastAPI
 
-from apps.file.tests import FILE_KEY
+from tests.legacy.apps.file import FILE_KEY
 from config import CDNSettings, Settings, get_settings
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests.conftest import (
+# TODO These should be moved into a higher level shared conftest or S3/storage pytest plugin
+from tests.legacy.infrastructure.storage.conftest import (
     answer_bucket,
     aws_credentials,
     cdn_override_settings,

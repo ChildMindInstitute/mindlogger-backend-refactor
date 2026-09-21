@@ -12,7 +12,7 @@ from apps.audit.crud import AuditLogCRUD
 from apps.audit.domain import AuditEvent
 from apps.audit.enums import EventAction
 from apps.audit.tasks import _build_schema
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 

@@ -33,8 +33,8 @@ from apps.invitations.errors import (
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService

@@ -2,7 +2,6 @@
 import os
 from typing import AsyncGenerator
 from urllib.parse import unquote, urlparse
-from warnings import deprecated
 
 import pytest
 import taskiq_fastapi
@@ -15,10 +14,10 @@ from testcontainers.postgres import PostgresContainer
 from testcontainers.rabbitmq import RabbitMqContainer
 from testcontainers.redis import RedisContainer
 
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from broker import broker
 from infrastructure.app import create_app
-from infrastructure.database import build_engine, session_manager
+from infrastructure.database import build_engine
 from infrastructure.database.deps import get_session
 
 

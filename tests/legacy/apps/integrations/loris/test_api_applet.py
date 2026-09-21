@@ -6,7 +6,7 @@ from fastapi import BackgroundTasks
 
 from apps.integrations.loris.api.applets import start_transmit_process
 from apps.integrations.loris.domain.domain import ActivitiesAndVisits, VisitsForUsers
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

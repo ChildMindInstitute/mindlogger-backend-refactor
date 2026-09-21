@@ -7,7 +7,7 @@ from starlette import status
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.services.mfa_session import MFASessionService
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.db.schemas import UserSchema
 from apps.users.domain import User

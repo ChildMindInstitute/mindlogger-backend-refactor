@@ -12,8 +12,8 @@ from apps.library.errors import (
     AppletVersionExistsError,
     LibraryItemDoesNotExistError,
 )
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 DictStrAny = dict[str, Any]
@@ -27,7 +27,7 @@ def applet_data(applet_two: AppletFull) -> DictStrAny:
 
 class TestLibrary(BaseTest):
     fixtures = [
-        "library/fixtures/libraries.json",
+        "apps/library/fixtures/libraries.json",
     ]
 
     login_url = "/auth/login"

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.integrations.oneup_health.service.oneup_health import get_unique_short_id
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.subjects.domain import SubjectFull
 from apps.subjects.services import SubjectsService
 from apps.users import User

@@ -18,8 +18,8 @@ from apps.answers.domain import AppletAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit.enums import EventAction, EventOutcome
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectCreateRequest, SubjectRelationCreate
@@ -287,7 +287,7 @@ async def applet_one_shell_account(session: AsyncSession, applet_one: AppletFull
 
 class TestSubjects(BaseTest):
     fixtures = [
-        "workspaces/fixtures/workspaces.json",
+        "apps/workspaces/fixtures/workspaces.json",
     ]
 
     login_url = "/auth/login"

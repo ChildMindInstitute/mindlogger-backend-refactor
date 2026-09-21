@@ -9,10 +9,10 @@ from apps.alerts.db.schemas import AlertSchema
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.db.schemas import AnswerSchema
 from apps.applets.domain.applet_full import AppletFull
-from apps.shared.test import BaseTest
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from tests.legacy.base import BaseTest
 
 
 @pytest.fixture()

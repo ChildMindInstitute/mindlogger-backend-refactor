@@ -29,7 +29,7 @@ from apps.applets.service.applet import AppletService
 from tests.legacy.apps.applets.fixtures.applets import _get_or_create_applet
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService

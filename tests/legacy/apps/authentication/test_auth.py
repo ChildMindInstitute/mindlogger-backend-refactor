@@ -22,9 +22,9 @@ from apps.authentication.errors import (
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.services.rotation import TokenRotationService
-from apps.authentication.tests.factories import UserLogoutRequestFactory
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.apps.authentication.factories import UserLogoutRequestFactory
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from config import settings

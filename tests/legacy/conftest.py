@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session, SessionTransaction
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
 from apps.mailing.services import TestMail
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from broker import broker
 from config import settings
 from infrastructure.app import create_app

@@ -1,4 +1,4 @@
-from apps.shared.test import BaseTest
+from tests.legacy.base import BaseTest
 
 
 class TestThemes(BaseTest):

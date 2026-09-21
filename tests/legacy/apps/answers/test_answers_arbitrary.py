@@ -18,8 +18,8 @@ from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User

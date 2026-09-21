@@ -38,7 +38,7 @@ from apps.schedule.errors import (
 )
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.shared.util import assert_not_none
 from apps.users.domain import User, UserDeviceCreate
 from apps.users.errors import UserNotFound

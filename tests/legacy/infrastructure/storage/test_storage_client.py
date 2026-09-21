@@ -2,7 +2,8 @@ import pytest
 
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests import ANSWER_BUCKET_NAME, ANSWER_OVERRIDE, MEDIA_BUCKET_NAME
+# TODO These should be fixtures
+from tests.legacy.infrastructure.storage import ANSWER_BUCKET_NAME, ANSWER_OVERRIDE, MEDIA_BUCKET_NAME
 
 FILE_KEY = "/some/file.jpg"
 DOMAIN = "test.gettingcurious.com"

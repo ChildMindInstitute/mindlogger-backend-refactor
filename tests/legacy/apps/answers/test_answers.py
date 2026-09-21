@@ -40,8 +40,8 @@ from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.mailing.services import TestMail
 from apps.schedule.domain.schedule import PublicEvent
 from apps.schedule.service import ScheduleService
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.subjects.constants import Relation
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate

@@ -6,7 +6,7 @@ from moto import mock_aws
 
 from config import CDNSettings, Settings, settings
 from infrastructure.storage.storage_config import StorageConfig
-from infrastructure.storage.tests import (
+from tests.legacy.infrastructure.storage import (
     ANSWER_BUCKET_NAME,
     ANSWER_OVERRIDE,
     DOMAIN,

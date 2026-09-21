@@ -14,8 +14,8 @@ from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError, SomethingWentWrongError
 from apps.file.services import LogFileService
 from apps.shared.exception import AccessDeniedError, NotFoundError
-from apps.shared.test import BaseTest
-from apps.shared.test.client import TestClient
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitrary, WorkspaceArbitraryCreate

@@ -13,7 +13,7 @@ from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import PasswordRecoveryRequest, User, UserCreate
 from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError

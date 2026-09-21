@@ -8,7 +8,7 @@ from starlette import status
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
-from apps.shared.test.client import TestClient
+from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import AppInfoOS, User, UserCreate, UserCreateRequest, UserDeviceCreate
 from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
