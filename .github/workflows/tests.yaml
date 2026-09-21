@@ -28,7 +28,7 @@ jobs:
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env
           docker compose up -d rabbitmq postgres redis mailpit
-          PYTHONPATH=src uv run pytest -s -vv --junit-xml=test-results.xml
+          make test-legacy-ci
 
       - name: Surface failing tests
         if: always()

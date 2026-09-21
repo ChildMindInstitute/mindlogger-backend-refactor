@@ -76,7 +76,12 @@ async def get_urls():
         if url := os.environ.get("PYTEST_ARB_URL", None):
             return [(url, uuid.uuid4())]
         else:
-            raise ValueError("PYTEST_ARB_URL environment variable is not set")
+            # raise ValueError("PYTEST_ARB_URL environment variable is not set")
+            # Legacy method.  Delete when legacy tests are removed
+            arbitrary_db_name = os.environ["ARBITRARY_DB"]
+            url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
+            return [(url, uuid.uuid4())]
+            
 
     connectable = create_async_engine(url=get_database_url())
     async with connectable.connect() as connection:
