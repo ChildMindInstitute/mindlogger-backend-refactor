@@ -9,7 +9,7 @@ from redis.typing import EncodableT
 from config import settings
 from infrastructure.logger import logger
 
-
+# TODO This should be somewhere else
 class RedisCacheTest:
     _storage: dict = {}
 

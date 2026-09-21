@@ -6,7 +6,7 @@ from jinja2 import Environment, PackageLoader, TemplateNotFound, select_autoesca
 from apps.mailing.domain import MessageSchema
 from config import settings
 
-
+# TODO This should be somewhere else
 class TestMail:
     """
     Mailing class for tests to mock and check emails
@@ -64,6 +64,7 @@ class MailingService:
 
     async def send(self, message: MessageSchema) -> None:
         mailing_class = FastMail
+        # TODO The mailing class or implementation should be a dependency
         if settings.env == "testing":
             mailing_class = cast(type[FastMail], TestMail)
         fm = mailing_class(self._connection)
