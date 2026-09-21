@@ -8,6 +8,7 @@ import pytest
 from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.client import TestClient
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.activity_update import ActivityItemUpdate
@@ -31,7 +32,6 @@ from apps.applets.service.applet import AppletService
 from apps.audit.enums import EventAction, EventOutcome
 from apps.shared.enums import Language
 from apps.shared.exception import NotFoundError
-from tests.legacy.client import TestClient
 from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role

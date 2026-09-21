@@ -1,9 +1,10 @@
 import http
 
-from apps.activities.errors import PeriodIsRequiredError
-from apps.applets.domain.applet_full import AppletFull
 from tests.legacy.base import BaseTest
 from tests.legacy.client import TestClient
+
+from apps.activities.errors import PeriodIsRequiredError
+from apps.applets.domain.applet_full import AppletFull
 from apps.users.domain import User
 
 

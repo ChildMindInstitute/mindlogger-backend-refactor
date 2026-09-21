@@ -5,10 +5,10 @@ from pytest_mock import MockerFixture
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.domain import Subject
 from apps.users import User
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 class TestWorkspacesAudit(BaseTest):

@@ -3,10 +3,10 @@ import uuid
 from unittest.mock import AsyncMock, patch
 
 from fastapi import BackgroundTasks
+from tests.legacy.client import TestClient
 
 from apps.integrations.loris.api.applets import start_transmit_process
 from apps.integrations.loris.domain.domain import ActivitiesAndVisits, VisitsForUsers
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

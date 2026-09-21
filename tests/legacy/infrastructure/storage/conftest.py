@@ -3,9 +3,6 @@ import os
 import boto3
 import pytest
 from moto import mock_aws
-
-from config import CDNSettings, Settings, settings
-from infrastructure.storage.storage_config import StorageConfig
 from tests.legacy.infrastructure.storage import (
     ANSWER_BUCKET_NAME,
     ANSWER_OVERRIDE,
@@ -16,6 +13,9 @@ from tests.legacy.infrastructure.storage import (
     OPERATIONS_BUCKET_NAME,
     OPERATIONS_OVERRIDE,
 )
+
+from config import CDNSettings, Settings, settings
+from infrastructure.storage.storage_config import StorageConfig
 
 
 @pytest.fixture(scope="function")

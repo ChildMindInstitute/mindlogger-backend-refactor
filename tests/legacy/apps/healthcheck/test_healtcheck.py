@@ -1,8 +1,8 @@
 import pytest
+from tests.legacy.base import BaseTest
 
 from apps.healthcheck.domain import EmergencyMessageType
 from apps.users import User
-from tests.legacy.base import BaseTest
 
 
 @pytest.fixture

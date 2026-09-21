@@ -5,14 +5,14 @@ from fastapi import FastAPI
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.file.enums import FileScopeEnum
-from tests.legacy.apps.file import FILE_KEY
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users import User
 from config import Settings, get_settings
 from infrastructure.storage.storage import get_media_storage
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
+from tests.legacy.apps.file import FILE_KEY
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 class TestAnswerActivityItemsDR(BaseTest):

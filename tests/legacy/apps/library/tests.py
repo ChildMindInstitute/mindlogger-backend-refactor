@@ -3,6 +3,8 @@ import uuid
 from typing import Any
 
 import pytest
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
@@ -12,8 +14,6 @@ from apps.library.errors import (
     AppletVersionExistsError,
     LibraryItemDoesNotExistError,
 )
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 DictStrAny = dict[str, Any]

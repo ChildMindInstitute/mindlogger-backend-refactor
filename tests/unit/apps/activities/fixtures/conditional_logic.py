@@ -1,10 +1,10 @@
 import datetime
 
 import pytest
+from tests.legacy.apps.activities.utils import DEFAULT_ITEM_NAME
 
 from apps.activities.domain import conditions as cnd
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
-from tests.legacy.apps.activities.utils import DEFAULT_ITEM_NAME
 
 
 @pytest.fixture

@@ -7,9 +7,9 @@ from pytest_mock import MockerFixture
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
 from apps.shared.exception import AccessDeniedError
+from apps.users.domain import User
 from tests.legacy.base import BaseTest
 from tests.legacy.client import TestClient
-from apps.users.domain import User
 
 
 @pytest.mark.usefixtures("cdn_settings", "override_app_settings", "s3_resource")

@@ -8,17 +8,21 @@ from httpx import Response as HttpResponse
 from pytest_mock import MockFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from tests.legacy.apps.users.factories import (
+    CacheEntryFactory,
+    PasswordRecoveryInfoFactory,
+    PasswordUpdateRequestFactory,
+)
+from tests.legacy.client import TestClient
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.router import router as auth_router
 from apps.mailing.services import TestMail
-from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import PasswordRecoveryRequest, User, UserCreate
 from apps.users.errors import PasswordHasSpacesError, ReencryptionInProgressError
 from apps.users.router import router as user_router
-from tests.legacy.apps.users.factories import CacheEntryFactory, PasswordRecoveryInfoFactory, PasswordUpdateRequestFactory
 from config import settings
 from infrastructure.cache import PasswordRecoveryHealthCheckNotValid
 from infrastructure.utility.redis_client import RedisCache

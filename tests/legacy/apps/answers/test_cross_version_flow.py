@@ -3,6 +3,8 @@ import http
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.answers.domain import AppletAnswerCreate
 from apps.answers.domain.answers import CompletedEntity
@@ -10,8 +12,6 @@ from apps.applets.domain.applet_create_update import AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service.applet import AppletService
 from apps.shared.enums import Language
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

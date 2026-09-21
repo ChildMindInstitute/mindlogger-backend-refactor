@@ -3,9 +3,9 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from tests.legacy.client import TestClient
 
 from apps.authentication.services.mfa_session import MFASessionService
-from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service

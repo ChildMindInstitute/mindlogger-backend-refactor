@@ -4,13 +4,13 @@ import uuid
 from unittest.mock import patch
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.answers.crud.answers import AnswersCRUD
 from apps.answers.domain import AppletAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users import User
 
 

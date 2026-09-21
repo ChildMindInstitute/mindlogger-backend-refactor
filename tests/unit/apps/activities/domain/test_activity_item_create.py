@@ -2,6 +2,7 @@ import uuid
 from typing import cast
 
 import pytest
+from tests.legacy.apps.activities.utils import BaseItemData
 
 from apps.activities import errors
 from apps.activities.domain.activity_create import ActivityItemCreate
@@ -24,7 +25,6 @@ from apps.activities.domain.response_values import (
     SliderValues,
     _MultiSelectionValue,
 )
-from tests.legacy.apps.activities.utils import BaseItemData
 from apps.shared.domain.custom_validations import InvalidImageError
 
 

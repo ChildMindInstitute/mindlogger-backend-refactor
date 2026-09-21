@@ -7,6 +7,7 @@ import pytest
 import yaml
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
 
 from apps.activities.crud import ActivitiesCRUD
 from apps.applets.commands.applet.applet import _seed
@@ -28,7 +29,6 @@ from apps.authentication.services import AuthenticationService
 from apps.schedule.crud.events import EventCRUD
 from apps.schedule.crud.schedule_history import ScheduleHistoryCRUD
 from apps.schedule.domain.constants import PeriodicityType
-from tests.legacy.base import BaseTest
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject
 from apps.users import User, UsersCRUD

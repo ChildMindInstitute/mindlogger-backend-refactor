@@ -6,6 +6,7 @@ from typing import cast
 import pytest
 from pydantic_extra_types.color import Color
 from pytest import FixtureRequest
+from tests.legacy.client import TestClient
 
 from apps.activities import errors as activity_errors
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
@@ -27,7 +28,6 @@ from apps.activities.errors import InvalidAgeSubscaleError
 from apps.applets.domain.applet_create_update import AppletCreate, AppletUpdate
 from apps.applets.domain.applet_full import AppletFull
 from apps.shared.enums import Language
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

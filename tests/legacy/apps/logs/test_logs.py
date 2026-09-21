@@ -1,5 +1,4 @@
 from pytest import fixture, mark
-
 from tests.legacy.base import BaseTest
 
 EMPTY_DESCRIPTIONS = [

@@ -3,6 +3,9 @@ import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# TODO This should be a fixture
+from tests.legacy.infrastructure.storage import ANSWER_BUCKET_NAME
+
 from apps.applets.domain.applet_full import AppletFull
 from apps.users import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
@@ -10,8 +13,6 @@ from apps.workspaces.domain.constants import Role
 from infrastructure.storage.presign_services import S3PresignService
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-# TODO This should be a fixture
-from tests.legacy.infrastructure.storage import ANSWER_BUCKET_NAME
 
 
 class TestS3PresignService:

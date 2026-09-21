@@ -14,8 +14,6 @@ from apps.file.enums import FileScopeEnum
 from apps.file.errors import FileNotFoundError, SomethingWentWrongError
 from apps.file.services import LogFileService
 from apps.shared.exception import AccessDeniedError, NotFoundError
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.constants import StorageType
 from apps.workspaces.domain.workspace import WorkspaceArbitrary, WorkspaceArbitraryCreate
@@ -26,6 +24,8 @@ from config.cdn import CDNSettings
 from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 @pytest.fixture

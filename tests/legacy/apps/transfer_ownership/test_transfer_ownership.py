@@ -5,6 +5,8 @@ import uuid
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.applets.domain import Role
 from apps.applets.domain.applet_create_update import AppletReportConfiguration
@@ -15,8 +17,6 @@ from apps.authentication.errors import PermissionsError
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.errors import ManagerInvitationExist
 from apps.mailing.services import TestMail
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.constants import SubjectTag
 from apps.subjects.services import SubjectsService
 from apps.transfer_ownership.crud import TransferCRUD

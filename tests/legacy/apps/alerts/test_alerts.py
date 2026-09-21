@@ -3,6 +3,7 @@ import uuid
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
 
 from apps.alerts.crud.alert import AlertCRUD
 from apps.alerts.db.schemas import AlertSchema
@@ -12,7 +13,6 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users import User
-from tests.legacy.base import BaseTest
 
 
 @pytest.fixture()

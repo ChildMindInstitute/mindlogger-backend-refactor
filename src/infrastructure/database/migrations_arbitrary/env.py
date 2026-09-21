@@ -36,6 +36,7 @@ setup_structured_logging(LOG_JSON_FORMAT)
 migration_log = getLogger("alembic.arbitrary")
 migration_log.level = logging.INFO
 
+
 def get_database_url() -> str:
     # return settings.database.url
     database_url = config.get_main_option("sqlalchemy.url")
@@ -45,18 +46,8 @@ def get_database_url() -> str:
 
     return database_url
 
-async def get_all_servers(connection):
-    if os.environ.get("PYTEST_APP_TESTING"):
-        # arbitrary_db_name = os.environ["ARBITRARY_DB"]
-        # url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
-        # New method
-        if url := os.environ.get("PYTEST_ARB_URL", None):
-            return [(url, uuid.uuid4())]
-        else:
-            arbitrary_db_name = os.environ["ARBITRARY_DB"]
-            url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
-            return [(url, uuid.uuid4())]
 
+async def get_all_servers(connection):
     try:
         query = text(
             """
@@ -76,13 +67,18 @@ async def get_all_servers(connection):
     except Exception as ex:
         print(ex)
         data = []
-    
+
     return data
 
 
 async def get_urls():
-    # global arbitrary_data
-    connectable = create_async_engine(url=settings.database.url)
+    if os.environ.get("PYTEST_APP_TESTING"):
+        if url := os.environ.get("PYTEST_ARB_URL", None):
+            return [(url, uuid.uuid4())]
+        else:
+            raise ValueError("PYTEST_ARB_URL environment variable is not set")
+
+    connectable = create_async_engine(url=get_database_url())
     async with connectable.connect() as connection:
         arbitrary_data = await get_all_servers(connection)
     await connectable.dispose()

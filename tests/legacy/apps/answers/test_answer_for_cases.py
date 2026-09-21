@@ -4,13 +4,13 @@ from typing import AsyncGenerator
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.client import TestClient
 
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.applets.domain.applet_create_update import AppletCreate
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.service.applet import AppletService
 from apps.shared.enums import Language
-from tests.legacy.client import TestClient
 from apps.themes.service import ThemeService
 from apps.users.domain import User
 

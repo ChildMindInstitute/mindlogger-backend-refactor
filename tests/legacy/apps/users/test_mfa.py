@@ -3,9 +3,9 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from tests.legacy.client import TestClient
 
 from apps.audit import EventAction, EventOutcome
-from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import User
 from apps.users.router import router as user_router

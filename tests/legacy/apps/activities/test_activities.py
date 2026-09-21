@@ -26,10 +26,8 @@ from apps.applets.domain.applet_full import AppletFull
 from apps.applets.domain.applet_link import CreateAccessLink
 from apps.applets.domain.base import AppletBase
 from apps.applets.service.applet import AppletService
-from tests.legacy.apps.applets.fixtures.applets import _get_or_create_applet
 from apps.applets.tests.utils import teardown_applet
 from apps.shared.enums import Language
-from tests.legacy.client import TestClient
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
@@ -37,6 +35,8 @@ from apps.themes.domain import Theme
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from tests.legacy.apps.applets.fixtures.applets import _get_or_create_applet
+from tests.legacy.client import TestClient
 
 
 @pytest.fixture

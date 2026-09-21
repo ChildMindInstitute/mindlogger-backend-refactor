@@ -2,9 +2,9 @@ import datetime
 import uuid
 
 import pytest
+from tests.legacy.client import TestClient
 
 from apps.integrations.loris.router import router as loris_router
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 
 

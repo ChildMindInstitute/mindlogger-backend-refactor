@@ -5,6 +5,8 @@ import uuid
 import pytest
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_assignments.domain.assignments import (
@@ -20,8 +22,6 @@ from apps.applets.service import AppletService
 from apps.invitations.domain import InvitationLanguage, InvitationRespondentRequest
 from apps.mailing.services import TestMail
 from apps.shared.enums import Language
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectFull

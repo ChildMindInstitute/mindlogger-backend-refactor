@@ -13,6 +13,9 @@ import pytest
 from pytest import Config, FixtureRequest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.apps.users.fixtures.users import _get_or_create_user
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activity_assignments.domain.assignments import ActivityAssignmentCreate
@@ -40,8 +43,6 @@ from apps.integrations.oneup_health.service.ehr_storage import EHRStorage
 from apps.mailing.services import TestMail
 from apps.schedule.domain.schedule import PublicEvent
 from apps.schedule.service import ScheduleService
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.constants import Relation
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate
@@ -49,7 +50,6 @@ from apps.subjects.services import SubjectsService
 from apps.users import User
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import AppInfoOS, UserCreate, UserDeviceCreate
-from tests.legacy.apps.users.fixtures.users import _get_or_create_user
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 from apps.workspaces.domain.constants import Role

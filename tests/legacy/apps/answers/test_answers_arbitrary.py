@@ -9,6 +9,8 @@ from pytest import FixtureRequest
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Query
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.answers.crud import AnswerItemsCRUD
 from apps.answers.crud.answers import AnswersCRUD
@@ -18,8 +20,6 @@ from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.applets.errors import InvalidVersionError
 from apps.mailing.services import TestMail
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.domain import Subject
 from apps.subjects.services import SubjectsService
 from apps.users.domain import User

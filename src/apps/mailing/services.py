@@ -6,6 +6,7 @@ from jinja2 import Environment, PackageLoader, TemplateNotFound, select_autoesca
 from apps.mailing.domain import MessageSchema
 from config import settings
 
+
 # TODO This should be somewhere else
 class TestMail:
     """

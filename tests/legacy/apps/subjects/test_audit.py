@@ -8,11 +8,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject
 from apps.users import User
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 @pytest.fixture

@@ -9,12 +9,12 @@ import jwt
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service

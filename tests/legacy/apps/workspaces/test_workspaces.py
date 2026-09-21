@@ -18,8 +18,6 @@ from apps.invitations.domain import InvitationManagersRequest, InvitationRespond
 from apps.invitations.services import InvitationsService
 from apps.shared.enums import Language
 from apps.shared.query_params import QueryParams
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
@@ -28,6 +26,8 @@ from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from apps.workspaces.service.workspace import WorkspaceService
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 @pytest.fixture

@@ -18,8 +18,6 @@ from apps.answers.domain import AppletAnswerCreate
 from apps.answers.service import AnswerService
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit.enums import EventAction, EventOutcome
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectCreateRequest, SubjectRelationCreate
@@ -29,6 +27,8 @@ from apps.users.domain import UserCreate
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 
 @pytest.fixture

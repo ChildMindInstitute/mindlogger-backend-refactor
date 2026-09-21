@@ -14,11 +14,11 @@ import pyotp
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.authentication.cruds.recovery_code import RecoveryCodeCRUD
 from apps.authentication.services.recovery_codes import generate_recovery_codes
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 from apps.users.services.totp import totp_service
 

@@ -6,13 +6,13 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.client import TestClient
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit.crud import AuditLogCRUD
 from apps.audit.domain import AuditEvent
 from apps.audit.enums import EventAction
 from apps.audit.tasks import _build_schema
-from tests.legacy.client import TestClient
 from apps.users.domain import User
 from apps.workspaces.db.schemas import UserAppletAccessSchema
 

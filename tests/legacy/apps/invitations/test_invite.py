@@ -8,6 +8,8 @@ from typing import Any, Literal, cast
 import pytest
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.applets.crud import UserAppletAccessCRUD
 from apps.applets.domain import ManagersRole, Role
@@ -33,8 +35,6 @@ from apps.invitations.errors import (
     RespondentInvitationExist,
 )
 from apps.mailing.services import TestMail
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.subjects.crud import SubjectsCrud
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService

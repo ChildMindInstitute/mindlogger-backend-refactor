@@ -7,10 +7,10 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from apps.authentication.router import router as auth_router
 from tests.legacy.base import BaseTest
 from tests.legacy.client import TestClient
+
+from apps.authentication.router import router as auth_router
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.services.totp import totp_service

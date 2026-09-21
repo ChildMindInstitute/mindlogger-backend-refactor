@@ -8,6 +8,7 @@ from firebase_admin.exceptions import NotFoundError as FireBaseNotFoundError
 from pytest import FixtureRequest, LogCaptureFixture
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.client import TestClient
 
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.answers.errors import UserDoesNotHavePermissionError
@@ -38,7 +39,6 @@ from apps.schedule.errors import (
 )
 from apps.schedule.service.schedule import ScheduleService
 from apps.shared.enums import Language
-from tests.legacy.client import TestClient
 from apps.shared.util import assert_not_none
 from apps.users.domain import User, UserDeviceCreate
 from apps.users.errors import UserNotFound

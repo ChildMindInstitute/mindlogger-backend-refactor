@@ -4,16 +4,16 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from tests.legacy.apps.users.factories import UserUpdateRequestFactory
+from tests.legacy.client import TestClient
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.router import router as auth_router
 from apps.shared.domain import to_camelcase
-from tests.legacy.client import TestClient
 from apps.users import UsersCRUD
 from apps.users.domain import AppInfoOS, User, UserCreate, UserCreateRequest, UserDeviceCreate
 from apps.users.errors import PasswordHasSpacesError, UserIsDeletedError
 from apps.users.router import router as user_router
-from tests.legacy.apps.users.factories import UserUpdateRequestFactory
 
 
 @pytest.fixture

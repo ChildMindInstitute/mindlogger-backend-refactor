@@ -3,6 +3,9 @@ from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 from sqlalchemy.ext.asyncio.session import AsyncSession
 
+# TODO These should be fixtures
+from tests.legacy.infrastructure.storage import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
+
 from apps.users import User
 from config import CDNSettings, Settings
 from infrastructure.storage.storage import (
@@ -12,8 +15,6 @@ from infrastructure.storage.storage import (
     get_operations_storage,
     select_answer_storage,
 )
-# TODO These should be fixtures
-from tests.legacy.infrastructure.storage import ANSWER_OVERRIDE, MEDIA_OVERRIDE, OPERATIONS_OVERRIDE
 
 
 @register_fixture

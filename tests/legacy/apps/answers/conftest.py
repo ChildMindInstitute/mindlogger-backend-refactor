@@ -28,7 +28,7 @@ from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 
-from ..activities.fixtures.items import * # noqa
+from ..activities.fixtures.items import *  # noqa
 
 
 @pytest.fixture

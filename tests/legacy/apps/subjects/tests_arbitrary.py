@@ -5,8 +5,8 @@ import uuid
 import pytest
 
 from apps.answers.crud.answers import AnswersCRUD
-from tests.legacy.base import BaseTest
 from apps.subjects.crud import SubjectsCrud
+from tests.legacy.base import BaseTest
 
 
 @pytest.fixture

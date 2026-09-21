@@ -9,6 +9,9 @@ from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.types import Message
 from starlette.websockets import WebSocket
+from tests.legacy.apps.authentication.factories import UserLogoutRequestFactory
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.audit import EventAction, EventOutcome
 from apps.authentication.domain.login import UserLoginRequest
@@ -22,9 +25,6 @@ from apps.authentication.errors import (
 from apps.authentication.router import router as auth_router
 from apps.authentication.services import AuthenticationService
 from apps.authentication.services.rotation import TokenRotationService
-from tests.legacy.apps.authentication.factories import UserLogoutRequestFactory
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User, UserCreate, UserCreateRequest
 from config import settings
