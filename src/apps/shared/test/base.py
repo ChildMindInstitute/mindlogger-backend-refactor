@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import pytest
 from sqlalchemy import text
@@ -40,7 +41,9 @@ class BaseTest:
     async def load_data(self, relative_path: str):
         AsyncSession = session_manager.get_session()
         async with AsyncSession() as session:
-            file = open(os.path.join(settings.apps_dir, relative_path), "r")
+            path = Path(os.getcwd()) / "tests" / "legacy" / relative_path
+            file = open(path.resolve(), "r")
+            # file = open(os.path.join(settings.apps_dir, relative_path), "r")
             data = json.load(file)
             for datum in data:
                 if datum["table"] == "users":

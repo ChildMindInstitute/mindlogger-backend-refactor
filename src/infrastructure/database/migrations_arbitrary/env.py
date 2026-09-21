@@ -49,8 +49,13 @@ async def get_all_servers(connection):
     if os.environ.get("PYTEST_APP_TESTING"):
         # arbitrary_db_name = os.environ["ARBITRARY_DB"]
         # url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
-        url = os.environ["PYTEST_ARB_URL"]
-        return [(url, uuid.uuid4())]
+        # New method
+        if url := os.environ.get("PYTEST_ARB_URL", None):
+            return [(url, uuid.uuid4())]
+        else:
+            arbitrary_db_name = os.environ["ARBITRARY_DB"]
+            url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
+            return [(url, uuid.uuid4())]
 
     try:
         query = text(

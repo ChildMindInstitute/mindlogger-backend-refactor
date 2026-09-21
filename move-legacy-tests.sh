@@ -3,7 +3,7 @@
 set -euo pipefail
 
 SRC_ROOT="src"
-TEST_ROOT="test/legacy"
+TEST_ROOT="tests/legacy"
 
 find "$SRC_ROOT" -type f \( -name 'test_*.py' -o -name 'conftest.py' \) -print0 |
 while IFS= read -r -d '' src_file; do
@@ -20,11 +20,12 @@ while IFS= read -r -d '' src_file; do
     # Don't overwrite an existing file.
     if [[ -e "$dest_file" ]]; then
         echo "ERROR: destination already exists: $dest_file" >&2
-        exit 1
+        continue
+#        exit 1
     fi
 
-#    mkdir -p "$dest_dir"
+    mkdir -p "$dest_dir"
 
     echo "git mv: $src_file -> $dest_file"
-#    git mv "$src_file" "$dest_file"
+    git mv "$src_file" "$dest_file"
 done

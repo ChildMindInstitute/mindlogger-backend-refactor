@@ -1,3 +1,4 @@
+# TODO Should these be fixtures?
 DOMAIN = "testing.gettingcurious.com"
 
 ANSWER_BUCKET_NAME = "test-answer-bucket"

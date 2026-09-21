@@ -123,7 +123,7 @@ max-complexity = 15
 known-local-folder = ["src"]
 
 [tool.pytest.ini_options]
-addopts = '-s -v'
+addopts = '-s -v --import-mode=importlib'
 asyncio_mode = 'auto'
 cache_dir = '/tmp'
 python_files = 'tests.py test_*.py *_test.py'

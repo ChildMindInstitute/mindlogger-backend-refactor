@@ -32,15 +32,15 @@ from infrastructure.utility.redis_client import RedisCacheTest
 # from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 
 pytest_plugins = [
-    "apps.activities.tests.fixtures.configs",
-    "apps.activities.tests.fixtures.response_values",
-    "apps.activities.tests.fixtures.items",
-    "apps.activities.tests.fixtures.conditional_logic",
-    "apps.activities.tests.fixtures.scores_reports",
-    "apps.activities.tests.fixtures.activities",
-    "apps.users.tests.fixtures.users",
-    "apps.applets.tests.fixtures.applets",
-    "apps.users.tests.fixtures.user_devices",
+    "tests.legacy.apps.activities.fixtures.configs",
+    "tests.legacy.apps.activities.fixtures.response_values",
+    "tests.legacy.apps.activities.fixtures.items",
+    "tests.legacy.apps.activities.fixtures.conditional_logic",
+    "tests.legacy.apps.activities.fixtures.scores_reports",
+    "tests.legacy.apps.activities.fixtures.activities",
+    "tests.legacy.apps.users.fixtures.users",
+    "tests.legacy.apps.applets.fixtures.applets",
+    "tests.legacy.apps.users.fixtures.user_devices",
 ]
 
 

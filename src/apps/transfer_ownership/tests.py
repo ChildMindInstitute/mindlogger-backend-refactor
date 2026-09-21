@@ -66,8 +66,8 @@ async def applet_one_bob_coordinator_reviewer(session: AsyncSession, applet_one:
 
 class TestTransfer(BaseTest):
     fixtures = [
-        "transfer_ownership/fixtures/transfers.json",
-        "invitations/fixtures/invitations.json",
+        "fixtures/transfers.json",
+        "../invitations/fixtures/invitations.json",
     ]
 
     login_url = "/auth/login"

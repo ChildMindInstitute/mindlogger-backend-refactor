@@ -72,6 +72,11 @@ test:
 test-legacy:
 	${NEW_TEST_COMMAND} tests/legacy
 
+.PHONY: test-legacy-current
+test-legacy-current:
+	${NEW_TEST_COMMAND} tests/legacy/apps/workspaces
+
+
 .PHONY: test-unit
 test-unit:
 	${NEW_TEST_COMMAND} tests/unit
