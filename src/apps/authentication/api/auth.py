@@ -35,6 +35,7 @@ from apps.authentication.services.mfa_helpers import extract_request_metadata
 from apps.authentication.services.mfa_notifications import MFANotificationService
 from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
+from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.services.security import AuthenticationService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
@@ -47,7 +48,24 @@ from apps.users.services.user_device import UserDeviceService
 from config import settings
 from infrastructure.database import atomic
 from infrastructure.database.deps import get_session
+from infrastructure.http.deps import get_optional_mindlogger_content_source
+from infrastructure.http.domain import MindloggerContentSource
 from infrastructure.logger import logger
+
+
+def client_token_claims(content_source: MindloggerContentSource | None) -> dict:
+    """Extra claims recording which client the tokens are issued to; empty when unknown."""
+    return {JWTClaim.client: content_source} if content_source else {}
+
+
+async def revoke_token_family_if_web_admin(session, token: InternalToken) -> None:
+    """On logout of a rotating (web/admin) token, revoke its whole family so a superseded
+    refresh token in the same chain cannot keep the session alive."""
+    if token.payload.family and token.payload.client in (
+        MindloggerContentSource.web,
+        MindloggerContentSource.admin,
+    ):
+        await TokenRotationService(session).revoke_family(token.payload.family, token.payload.sub)
 
 
 async def get_token(
@@ -57,6 +75,7 @@ async def get_token(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin | MFARequiredResponse]:
     """Generate the JWT access token."""
     try:
@@ -104,12 +123,16 @@ async def get_token(
         )
 
     rjti = str(uuid.uuid4())
-    refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+    refresh_token = AuthenticationService.create_refresh_token(
+        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, JWTClaim.family: rjti, **client_token_claims(content_source)}
+    )
 
     access_token = AuthenticationService.create_access_token(
         {
             JWTClaim.sub: str(user.id),
             JWTClaim.rjti: rjti,
+            JWTClaim.family: rjti,
+            **client_token_claims(content_source),
         }
     )
 
@@ -139,6 +162,7 @@ async def verify_mfa_totp(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Verify TOTP code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
@@ -280,7 +304,7 @@ async def verify_mfa_totp(
 
             logger.info(
                 f"MFA verification successful user_id={user.id} email={user.email_encrypted} "
-                f"device_id={verify_request.device_id}"
+                f"device_id={verify_request.device_id} client={content_source}"
             )
 
             # Register device if device_id provided
@@ -295,12 +319,21 @@ async def verify_mfa_totp(
 
             # Issue refresh and access tokens
             rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user.id), JWTClaim.jti: rjti})
+            refresh_token = AuthenticationService.create_refresh_token(
+                {
+                    JWTClaim.sub: str(user.id),
+                    JWTClaim.jti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
+                }
+            )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user.id),
                     JWTClaim.rjti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
                 }
             )
     except BaseError as e:
@@ -339,6 +372,7 @@ async def verify_mfa_recovery_code(
     os_name: Annotated[str | None, Header()] = None,
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
+    content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
 ) -> Response[UserLogin]:
     """Verify recovery code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
@@ -553,7 +587,7 @@ async def verify_mfa_recovery_code(
 
             logger.info(
                 f"MFA recovery code verification successful user_id={user_id} email={user.email_encrypted} "
-                f"device_id={verify_request.device_id}"
+                f"device_id={verify_request.device_id} client={content_source}"
             )
 
             # Step 5: Register device if device_id provided
@@ -568,12 +602,21 @@ async def verify_mfa_recovery_code(
 
             # Step 6: Issue refresh and access tokens
             rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token({JWTClaim.sub: str(user_id), JWTClaim.jti: rjti})
+            refresh_token = AuthenticationService.create_refresh_token(
+                {
+                    JWTClaim.sub: str(user_id),
+                    JWTClaim.jti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
+                }
+            )
 
             access_token = AuthenticationService.create_access_token(
                 {
                     JWTClaim.sub: str(user_id),
                     JWTClaim.rjti: rjti,
+                    JWTClaim.family: rjti,
+                    **client_token_claims(content_source),
                 }
             )
     except BaseError as e:
@@ -621,6 +664,8 @@ async def refresh_access_token(
 ) -> Response[Token]:
     """Refresh access token."""
     user_id: uuid.UUID | None = None
+    reuse_family: str | None = None
+    refresh_outcome = "reused"
     try:
         async with atomic(session):
             try:
@@ -652,31 +697,94 @@ async def refresh_access_token(
                 raise InvalidRefreshToken() from e
 
             user_id = token_data.sub
+            family = token_data.family or token_data.jti
+            is_web_admin = token_data.client in (MindloggerContentSource.web, MindloggerContentSource.admin)
 
-            # Check if the token is in the blacklist
-            revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
-            if revoked:
-                raise AuthenticationError
+            if is_web_admin:
+                # Rotating clients: slide the refresh window by issuing a fresh token each time,
+                # with a grace window that idempotently redeems the old token, and reuse detection
+                # that revokes the whole family.
+                rotation = TokenRotationService(session)
 
-            rjti = token_data.jti
-            refresh_token = schema.refresh_token
-            if regenerate_refresh_token:
-                # blacklist current refresh token
-                await AuthenticationService(session).revoke_token(
-                    InternalToken(payload=token_data), TokenPurpose.REFRESH
+                if await rotation.is_family_revoked(family):
+                    raise AuthenticationError
+
+                replacement = await rotation.get_rotation_replacement(token_data.jti)
+                if replacement is not None:
+                    # Within the grace window: hand back the same replacement pair.
+                    access_token = replacement.access_token
+                    refresh_token = replacement.refresh_token
+                    refresh_outcome = "grace_redeemed"
+                elif await AuthenticationService(session).is_revoked(InternalToken(payload=token_data)):
+                    # Old token replayed after its grace window -> treat as theft. Defer the
+                    # family revocation to its own committed transaction (raising here would roll
+                    # back this atomic block and undo it).
+                    reuse_family = family
+                else:
+                    new_rjti = str(uuid.uuid4())
+                    refresh_token = AuthenticationService.create_refresh_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.jti: new_rjti,
+                            JWTClaim.family: family,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+                    access_token = AuthenticationService.create_access_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.rjti: new_rjti,
+                            JWTClaim.family: family,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+                    # Mark the old refresh token used, and record the replacement for the grace window.
+                    await AuthenticationService(session).revoke_token(
+                        InternalToken(payload=token_data), TokenPurpose.REFRESH
+                    )
+                    await rotation.store_rotation_record(
+                        token_data.jti,
+                        Token(access_token=access_token, refresh_token=refresh_token),
+                    )
+                    refresh_outcome = "rotated"
+            else:
+                # Mobile / unknown / legacy: reuse the same refresh token (unchanged behavior).
+                revoked = await AuthenticationService(session).is_revoked(InternalToken(payload=token_data))
+                if revoked:
+                    raise AuthenticationError
+
+                rjti = token_data.jti
+                refresh_token = schema.refresh_token
+                if regenerate_refresh_token:
+                    # blacklist current refresh token
+                    await AuthenticationService(session).revoke_token(
+                        InternalToken(payload=token_data), TokenPurpose.REFRESH
+                    )
+
+                    rjti = str(uuid.uuid4())
+                    refresh_token = AuthenticationService.create_refresh_token(
+                        {
+                            JWTClaim.sub: str(user_id),
+                            JWTClaim.jti: rjti,
+                            JWTClaim.exp: token_data.exp,
+                            **client_token_claims(token_data.client),
+                        }
+                    )
+
+                access_token = AuthenticationService.create_access_token(
+                    {
+                        JWTClaim.sub: str(user_id),
+                        JWTClaim.rjti: rjti,
+                        **client_token_claims(token_data.client),
+                    }
                 )
 
-                rjti = str(uuid.uuid4())
-                refresh_token = AuthenticationService.create_refresh_token(
-                    {JWTClaim.sub: str(user_id), JWTClaim.jti: rjti, JWTClaim.exp: token_data.exp}
-                )
-
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.rjti: rjti,
-                }
-            )
+        if reuse_family is not None:
+            # Commit the family revocation in its own transaction, then reject the request.
+            logger.warning(f"Refresh token reuse detected; revoking family user_id={user_id} family={reuse_family}")
+            async with atomic(session):
+                await TokenRotationService(session).revoke_family(reuse_family, user_id)
+            raise AuthenticationError
     except BaseError as e:
         await log(
             AuditEvent(
@@ -687,6 +795,7 @@ async def refresh_access_token(
         )
         raise
 
+    logger.info(f"Token refresh succeeded user_id={user_id} outcome={refresh_outcome}")
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_REFRESH,
@@ -708,6 +817,7 @@ async def delete_access_token(
     try:
         async with atomic(session):
             await AuthenticationService(session).revoke_token(token, TokenPurpose.ACCESS)
+            await revoke_token_family_if_web_admin(session, token)
         async with atomic(session):
             if schema and schema.device_id:
                 await UserDeviceService(session, user.id).remove_device(schema.device_id)
@@ -739,6 +849,7 @@ async def delete_refresh_token(
     """Add token to the blacklist."""
     async with atomic(session):
         await AuthenticationService(session).revoke_token(token, TokenPurpose.REFRESH)
+        await revoke_token_family_if_web_admin(session, token)
     if schema and schema.device_id:
         async with atomic(session):
             await UserDeviceService(session, token.payload.sub).remove_device(schema.device_id)

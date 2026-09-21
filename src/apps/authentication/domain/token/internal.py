@@ -4,6 +4,7 @@ from enum import StrEnum
 from pydantic import EmailStr
 
 from apps.shared.domain.base import InternalModel
+from infrastructure.http.domain import MindloggerContentSource
 
 
 class TokenPurpose(StrEnum):
@@ -21,6 +22,8 @@ class JWTClaim(StrEnum):
     exp = "exp"
     rjti = "rjti"
     mfa_session_id = "mfa_session_id"
+    client = "client"
+    family = "family"
 
 
 class TokenPayload(InternalModel):
@@ -28,6 +31,14 @@ class TokenPayload(InternalModel):
     exp: int
     jti: str
     rjti: str | None = None
+    # Which client the token was issued to (Mindlogger-Content-Source header).
+    # None for tokens issued before the claim existed or to clients that do not
+    # send the header
+    client: MindloggerContentSource | None = None
+    # Token family (the login refresh token's jti). Shared by every access/refresh
+    # token descended from one login, so a whole rotated chain can be revoked at once.
+    # None for tokens issued before the claim existed.
+    family: str | None = None
 
 
 class InternalToken(InternalModel):

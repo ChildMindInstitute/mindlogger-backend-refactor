@@ -1,7 +1,7 @@
 # ------------------------------
 # Stage 1: Build
 # ------------------------------
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS builder
+FROM ghcr.io/astral-sh/uv:python3.13-trixie-slim AS builder
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy
 
 # Configure the Python directory so it is consistent
@@ -29,13 +29,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev
 
 # Then, use a final image without uv
-FROM debian:bookworm-slim AS base
+FROM debian:trixie-slim AS base
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get dist-upgrade -y && \
     rm -rf /var/lib/apt/lists/*
 
-RUN adduser --disabled-password --gecos '' app
+RUN groupadd -r app && useradd -r -g app -m -d /home/app -s /usr/sbin/nologin app
 
 COPY --from=builder --chown=python:python /python /python
 

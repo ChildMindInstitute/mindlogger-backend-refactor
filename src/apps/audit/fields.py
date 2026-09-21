@@ -15,6 +15,7 @@ def http_audit_fields(conn: HTTPConnection, error: BaseError | StarletteHTTPExce
     span = tracer.current_span()
     fields = {
         "client_ip": conn.client and conn.client.host,
+        "client_source": conn.headers.get("mindlogger-content-source"),
         "http_request_id": correlation_id.get(),
         # WebSocket connections have no HTTP method.
         "http_request_method": conn.method if isinstance(conn, Request) else None,

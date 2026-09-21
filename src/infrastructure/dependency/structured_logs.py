@@ -147,7 +147,7 @@ def setup_structured_logging(json_logs: bool = False, log_level: str = "INFO"):
             sys.__excepthook__(exc_type, exc_value, exc_traceback)
             return
 
-        root_logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+        root_logger.warning("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
     sys.excepthook = handle_exception
 
@@ -205,6 +205,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             if 400 <= status_code < 500:
                 logger_fn = access_logger.warn
             elif 600 > status_code >= 500:
+                # TODO Keep an eye on this one and change to warning if too noisy in Datadog
                 logger_fn = access_logger.error
 
             # Recreate the Uvicorn access log format, but add all parameters as structured information

@@ -95,7 +95,7 @@ class OneupHealthAPIClient:
         if resp.status_code not in (200, 201):
             if resp.status_code == 400 and (resp.json() and resp.json().get("error") == "this user already exists"):
                 # The API returns a 400 status code with a "this user already exists" error if the user already exists
-                logger.error(
+                logger.warning(
                     f"1UpHealth user already exists - Path: {url_path} - Status: {resp.status_code}",
                     extra={
                         "error_type": "oneup_health_user_already_exists",
@@ -107,7 +107,7 @@ class OneupHealthAPIClient:
 
             if resp.status_code == 401:
                 # The API returns a 401 status code if the token has expired
-                logger.error(
+                logger.warning(
                     f"1UpHealth token expired - Path: {url_path} - Status: {resp.status_code}",
                     extra={
                         "error_type": "oneup_health_token_expired",
@@ -119,7 +119,7 @@ class OneupHealthAPIClient:
 
             elif resp.status_code == 403:
                 # The API returns a 403 status code if request comes from outside the USA
-                logger.error(
+                logger.warning(
                     f"1UpHealth geographic restriction - Path: {url_path} - Status: {resp.status_code}",
                     extra={
                         "error_type": "oneup_health_geo_restricted",
@@ -131,7 +131,7 @@ class OneupHealthAPIClient:
 
             elif resp.status_code in (503, 504):
                 # The API returns 503 or 504 status codes if the service is unavailable
-                logger.error(
+                logger.warning(
                     f"1UpHealth service unavailable - Path: {url_path} - Status: {resp.status_code}",
                     extra={
                         "error_type": "oneup_health_service_unavailable",
@@ -143,7 +143,7 @@ class OneupHealthAPIClient:
 
             # For any other error status code
             response_text = resp.text[:200] if resp.text else "No response text"
-            logger.error(
+            logger.warning(
                 f"1UpHealth API error - Path: {url_path} - Status: {resp.status_code} - Response: {response_text}",
                 extra={
                     "error_type": "oneup_health_api_error",
@@ -182,7 +182,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
+            logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def post_auth(self, url_path, data=None):
@@ -209,7 +209,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
+            logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
     async def get(self, url_path, params=None, headers=None):
@@ -243,7 +243,7 @@ class OneupHealthAPIClient:
 
                 return result
         except httpx.RequestError as e:
-            logger.error(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
+            logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
 
@@ -453,7 +453,7 @@ class OneupHealthService:
                         break
 
         except OneUpHealthAPIError as ex:
-            logger.error(ex.message)
+            logger.warning(ex.message)
 
         return counters, healthcare_providers
 
@@ -550,7 +550,7 @@ class OneupHealthService:
                         logger.info(f"Downloaded and stored document: {file_name}")
 
                     except OneUpHealthAPIError as ex:
-                        logger.error(f"Failed to download document: {url}: {ex}")
+                        logger.warning(f"Failed to download document: {url}: {ex}")
                         continue
 
             zip_buffer.seek(0)

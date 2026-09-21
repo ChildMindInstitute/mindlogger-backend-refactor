@@ -1,19 +1,23 @@
 import uuid
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from pytest import FixtureRequest
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from apps.authentication.crud import TokenBlacklistCRUD
 from apps.authentication.domain.login import UserLoginRequest
 from apps.authentication.domain.token import InternalToken
-from apps.authentication.domain.token.internal import TokenPurpose
+from apps.authentication.domain.token.internal import TokenPayload, TokenPurpose
 from apps.authentication.errors import BadCredentials, InvalidCredentials
 from apps.authentication.services import AuthenticationService
 from apps.authentication.services.core import TokensService
 from apps.users.cruds.user import UsersCRUD
 from apps.users.domain import User
 from apps.users.errors import UserIsDeletedError, UserNotFound
+from config import settings
+from infrastructure.http.domain import MindloggerContentSource
 
 TEST_PASSWORD = "Test12345!"
 RJTI = str(uuid.uuid4())
@@ -147,6 +151,16 @@ class TestTokenService:
         await token_blacklist_service.revoke(access_token_internal, TokenPurpose.ACCESS)
         mock.assert_not_awaited()
 
+    async def test_token_revoke__concurrent_revocations_of_same_token(
+        self, session: AsyncSession, access_token_internal: InternalToken
+    ):
+        """Two requests revoking the same token both pass the is_revoked check before either
+        inserts, so the second insert must not violate the unique constraint on jti."""
+        crud = TokenBlacklistCRUD(session)
+        await crud.create(access_token_internal, TokenPurpose.ACCESS)
+        await crud.create(access_token_internal, TokenPurpose.ACCESS)
+        assert await crud.exists(access_token_internal)
+
     async def test_token_revoke__ttl_less_than_one(
         self, token_blacklist_service: TokensService, access_token_internal: InternalToken, mocker: MockerFixture
     ):
@@ -154,3 +168,47 @@ class TestTokenService:
         await token_blacklist_service.revoke(access_token_internal, TokenPurpose.ACCESS)
         is_revoked = await token_blacklist_service.is_revoked(access_token_internal)
         assert not is_revoked
+
+
+class TestRefreshTokenExpDerivation:
+    """`_get_refresh_token_by_access` must derive the paired refresh exp using the
+    same per-client lifetimes the tokens were minted with (keyed on the `client` claim)."""
+
+    @staticmethod
+    def _access_token(access_exp: datetime, client: MindloggerContentSource | None) -> InternalToken:
+        return InternalToken(
+            payload=TokenPayload(
+                sub=uuid.uuid4(),
+                exp=int(access_exp.timestamp()),
+                jti=str(uuid.uuid4()),
+                rjti=RJTI,
+                client=client,
+            )
+        )
+
+    def test_web_admin_uses_short_deltas(self, auth_service: AuthenticationService, mocker: MockerFixture):
+        mocker.patch.object(settings.authentication.access_token, "web_admin_expiration", 15)
+        mocker.patch.object(settings.authentication.refresh_token, "web_admin_expiration", 120)
+        access_exp = datetime.now(timezone.utc) + timedelta(minutes=15)
+        derived = auth_service._get_refresh_token_by_access(
+            self._access_token(access_exp, MindloggerContentSource.admin)
+        )
+        assert derived is not None
+        expected = int((access_exp - timedelta(minutes=15) + timedelta(minutes=120)).timestamp())
+        assert derived.payload.exp == expected
+        assert derived.payload.jti == RJTI
+
+    def test_legacy_client_none_uses_defaults(self, auth_service: AuthenticationService, mocker: MockerFixture):
+        mocker.patch.object(settings.authentication.access_token, "web_admin_expiration", 15)
+        mocker.patch.object(settings.authentication.refresh_token, "web_admin_expiration", 120)
+        access_exp = datetime.now(timezone.utc) + timedelta(minutes=settings.authentication.access_token.expiration)
+        derived = auth_service._get_refresh_token_by_access(self._access_token(access_exp, None))
+        assert derived is not None
+        expected = int(
+            (
+                access_exp
+                - timedelta(minutes=settings.authentication.access_token.expiration)
+                + timedelta(minutes=settings.authentication.refresh_token.expiration)
+            ).timestamp()
+        )
+        assert derived.payload.exp == expected

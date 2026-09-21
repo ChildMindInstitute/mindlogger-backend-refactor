@@ -39,6 +39,7 @@ class AuditEvent(PublicModel):
 
     Applicable to HTTP requests:
     - client_ip
+    - client_source
     - http_request_id
     - http_request_method,
     - http_response_status_code
@@ -92,6 +93,7 @@ class AuditEvent(PublicModel):
 
     # For HTTP requests
     client_ip: Annotated[str | None, Field(alias="client.ip")] = None
+    client_source: Annotated[str | None, Field(alias="client.source")] = None  # Mindlogger-Content-Source header
     http_request_id: Annotated[str | None, Field(alias="http.request.id")] = None  # from asgi-correlation-id
     http_request_method: Annotated[str | None, Field(alias="http.request.method")] = None
     http_response_status_code: Annotated[int | None, Field(alias="http.response.status_code")] = None

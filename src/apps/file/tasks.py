@@ -31,7 +31,7 @@ async def convert_audio_file(filename: str, remove_src: bool = True) -> str:
             timeout=settings.task_audio_file_convert.subprocess_timeout,
         )
     except subprocess.CalledProcessError as e:
-        logger.error(f"{LOG_PREFIX}Convertion error: {fin} => {fout}")
+        logger.warning(f"{LOG_PREFIX}Conversion error: {fin} => {fout}")
         raise Exception(f"{LOG_PREFIX}Error message: {e.output.decode()}")
     finally:
         if remove_src:
@@ -63,7 +63,7 @@ async def convert_image(filename: str, remove_src: bool = True) -> str:
             timeout=settings.task_image_convert.subprocess_timeout,
         )
     except subprocess.CalledProcessError as e:
-        logger.error(f"{LOG_PREFIX}Convertion error: {fin} => {fout}")
+        logger.warning(f"{LOG_PREFIX}Conversion error: {fin} => {fout}")
         raise Exception(f"{LOG_PREFIX}Error message: {e.output.decode()}")
     finally:
         if remove_src:

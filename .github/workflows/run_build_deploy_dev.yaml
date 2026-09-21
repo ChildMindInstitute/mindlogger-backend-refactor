@@ -39,6 +39,7 @@ jobs:
     with:
       tag-name: ${{ needs.version.outputs.short-sha }}
       env-name: dev
+      tag-latest: true
 
   migrations:
     needs: [version, build]
