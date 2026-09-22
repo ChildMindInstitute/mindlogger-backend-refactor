@@ -5,6 +5,8 @@ from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.answers.domain import AppletAnswerCreate, ClientMeta, ItemAnswerCreate
 from apps.answers.service import AnswerService
@@ -26,8 +28,6 @@ from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from apps.workspaces.service.workspace import WorkspaceService
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 
 
 @pytest.fixture

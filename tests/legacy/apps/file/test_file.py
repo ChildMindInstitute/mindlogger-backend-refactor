@@ -7,6 +7,8 @@ from botocore.exceptions import ClientError, EndpointConnectionError
 from pytest import LogCaptureFixture
 from pytest_mock import MockerFixture
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.file.domain import WebmTargetExtenstion
@@ -24,8 +26,6 @@ from config.cdn import CDNSettings
 from infrastructure.storage.storage_arbitrary import ArbitraryS3StorageClient
 from infrastructure.storage.storage_client import StorageClient
 from infrastructure.storage.storage_config import StorageConfig
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 
 
 @pytest.fixture

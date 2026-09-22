@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 from sqlalchemy import text
+from tests.legacy.utils import truncate_tables
 
 from apps.mailing.services import TestMail
 from infrastructure.database.core import session_manager
-from tests.legacy.utils import truncate_tables
 
 
 class BaseTest:

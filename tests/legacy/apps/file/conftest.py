@@ -1,9 +1,5 @@
 import pytest
 from fastapi import FastAPI
-
-from config import CDNSettings, Settings, get_settings
-from infrastructure.storage.storage_client import StorageClient
-from infrastructure.storage.storage_config import StorageConfig
 from tests.legacy.apps.file import FILE_KEY
 
 # TODO These should be moved into a higher level shared conftest or S3/storage pytest plugin
@@ -15,6 +11,10 @@ from tests.legacy.infrastructure.storage.conftest import (
     s3_client,
     s3_resource,
 )
+
+from config import CDNSettings, Settings, get_settings
+from infrastructure.storage.storage_client import StorageClient
+from infrastructure.storage.storage_config import StorageConfig
 
 # This does nothing, but it fakes out ruff to leave the imported fixtures from other packages
 __all__ = [

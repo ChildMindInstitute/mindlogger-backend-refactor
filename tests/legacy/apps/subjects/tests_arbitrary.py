@@ -3,10 +3,10 @@ import json
 import uuid
 
 import pytest
+from tests.legacy.base import BaseTest
 
 from apps.answers.crud.answers import AnswersCRUD
 from apps.subjects.crud import SubjectsCrud
-from tests.legacy.base import BaseTest
 
 
 @pytest.fixture

@@ -28,6 +28,7 @@ from apps.shared.enums import Language
 def activity_create() -> ActivityCreate:
     return ActivityCreate(name="test", description={Language.ENGLISH: "test"}, items=[], key=uuid.uuid4())
 
+
 # TODO Can these be moked with Polyfactory?
 @pytest.fixture
 def activity_ab_trails_ipad_create() -> ActivityCreate:

@@ -81,7 +81,6 @@ async def get_urls():
             arbitrary_db_name = os.environ["ARBITRARY_DB"]
             url = settings.database.url.replace("/test", f"/{arbitrary_db_name}")
             return [(url, uuid.uuid4())]
-            
 
     connectable = create_async_engine(url=get_database_url())
     async with connectable.connect() as connection:

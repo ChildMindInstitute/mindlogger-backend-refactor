@@ -17,6 +17,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
 from sqlalchemy.orm import Session, SessionTransaction
+from tests.legacy.client import TestClient
 
 from apps.answers.deps.preprocess_arbitrary import get_answer_session, get_answer_session_by_subject
 from apps.mailing.services import TestMail
@@ -27,7 +28,6 @@ from infrastructure.database.core import build_engine
 from infrastructure.database.deps import get_session
 from infrastructure.utility.notification_client import FCMNotificationTest
 from infrastructure.utility.redis_client import RedisCacheTest
-from tests.legacy.client import TestClient
 
 # from infrastructure.utility import FCMNotificationTest, RedisCacheTest
 

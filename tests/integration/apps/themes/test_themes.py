@@ -1,7 +1,7 @@
-import pytest
 import allure
 
 fixtures = ["apps/themes/fixtures/themes.json"]
+
 
 @allure.epic("Themes")
 @allure.severity(allure.severity_level.MINOR)
@@ -16,5 +16,3 @@ class TestThemes:
 
         assert response.status_code == 200
         assert isinstance(response.json()["result"], list)
-
-

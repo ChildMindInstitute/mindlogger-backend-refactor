@@ -8,6 +8,8 @@ from _pytest.config import Config
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.apps.applets.fixtures.applets import _get_or_create_applet
+from tests.legacy.client import TestClient
 
 from apps.activities.domain.activity import ActivityOrFlowStatusEnum
 from apps.activities.domain.activity_create import ActivityCreate
@@ -35,8 +37,6 @@ from apps.themes.domain import Theme
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from tests.legacy.apps.applets.fixtures.applets import _get_or_create_applet
-from tests.legacy.client import TestClient
 
 
 @pytest.fixture

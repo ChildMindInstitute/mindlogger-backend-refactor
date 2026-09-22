@@ -1,15 +1,12 @@
 import json
 import uuid
 from pathlib import Path
-from types import CoroutineType
-from typing import Callable, Generator, AsyncGenerator, Any, Coroutine
+from typing import Callable
 
 import pytest
 import taskiq_fastapi
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
-from httpx import AsyncClient, ASGITransport
-
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,7 +21,7 @@ pytest_plugins = [
     "tests.integration.fixtures.testcontainers.db",
     "tests.integration.fixtures.testcontainers.rabbit",
     "tests.integration.fixtures.testcontainers.redis",
-    "tests.integration.fixtures.users"
+    "tests.integration.fixtures.users",
 ]
 
 
@@ -60,8 +57,11 @@ def create_authorized_client(app: FastAPI) -> Callable[..., AsyncClient]:
             }
         )
 
-        return AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com", headers={"Authorization": f"Bearer {access_token}"})
-
+        return AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://test.com",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
 
     return _create_client
 
@@ -70,11 +70,12 @@ FIXTURES_ROOT = Path("tests/integration")
 # Tables to skip when loading db fixture data
 SKIP_TABLES = {"users"}
 
+
 # Fixture helpers
 async def _load_fixture_file(db_session, relative_path: str):
     path = FIXTURES_ROOT / relative_path
 
-    with open(path.resolve(), 'r', encoding='utf-8') as file:
+    with open(path.resolve(), "r", encoding="utf-8") as file:
         data = json.load(file)
 
     for datum in data:
@@ -115,6 +116,7 @@ async def load_fixtures(request, db_session):
     for f in fixture_files:
         await _load_fixture_file(db_session, f)
     yield
+
 
 def _str_caster(val):
     if val is None:

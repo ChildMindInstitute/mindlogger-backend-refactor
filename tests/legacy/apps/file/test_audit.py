@@ -3,13 +3,13 @@ import http
 import pytest
 from botocore.exceptions import ClientError
 from pytest_mock import MockerFixture
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.applets.domain.applet_full import AppletFull
 from apps.audit import EventAction, EventOutcome
 from apps.shared.exception import AccessDeniedError
 from apps.users.domain import User
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 
 
 @pytest.mark.usefixtures("cdn_settings", "override_app_settings", "s3_resource")

@@ -1,12 +1,11 @@
 import os
-from typing import AsyncGenerator
 from urllib.parse import unquote, urlparse
 
 import pytest
 from alembic import command
 from alembic.config import Config
 from sqlalchemy import event, text
-from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from testcontainers.postgres import PostgresContainer
 
@@ -104,6 +103,7 @@ async def arb_db_engine(arb_db_url) -> AsyncEngine:
 #         finally:
 #             await conn.rollback()
 
+
 @pytest.fixture
 async def db_session(db_engine: AsyncEngine):
     connection = await db_engine.connect()
@@ -114,18 +114,14 @@ async def db_session(db_engine: AsyncEngine):
         expire_on_commit=False,
     )
 
-    something = await session.begin_nested()
+    await session.begin_nested()
 
     @event.listens_for(
         session.sync_session,
         "after_transaction_end",
     )
     def restart_savepoint(sync_session, transaction):
-        if (
-            transaction.nested
-            and transaction._parent is not None
-            and not transaction._parent.nested
-        ):
+        if transaction.nested and transaction._parent is not None and not transaction._parent.nested:
             sync_session.begin_nested()
 
     try:
@@ -154,12 +150,6 @@ async def db_session(db_engine: AsyncEngine):
 #     )
 #     async with async_session_factory() as s:
 #         yield s
-
-
-
-
-
-
 
 
 # @pytest.fixture

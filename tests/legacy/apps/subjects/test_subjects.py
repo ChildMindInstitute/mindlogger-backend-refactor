@@ -8,6 +8,8 @@ import pytest
 from asyncpg import UniqueViolationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from tests.legacy.base import BaseTest
+from tests.legacy.client import TestClient
 
 from apps.activities.domain.activity_update import ActivityUpdate
 from apps.activities.services.activity import ActivityService
@@ -27,8 +29,6 @@ from apps.users.domain import UserCreate
 from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.constants import Role
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
-from tests.legacy.base import BaseTest
-from tests.legacy.client import TestClient
 
 
 @pytest.fixture

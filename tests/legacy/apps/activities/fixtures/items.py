@@ -1,4 +1,5 @@
 import pytest
+from tests.legacy.apps.activities.utils import BaseItemData
 
 from apps.activities.domain.activity_create import ActivityItemCreate
 from apps.activities.domain.response_type_config import (
@@ -39,7 +40,6 @@ from apps.activities.domain.response_values import (
     SliderRowsValues,
     SliderValues,
 )
-from tests.legacy.apps.activities.utils import BaseItemData
 
 
 @pytest.fixture
