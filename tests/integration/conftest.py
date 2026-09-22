@@ -1,12 +1,15 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Callable
+from types import CoroutineType
+from typing import Callable, Generator, AsyncGenerator, Any, Coroutine
 
 import pytest
 import taskiq_fastapi
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from httpx import AsyncClient, ASGITransport
+
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -40,10 +43,10 @@ def setup_app_session(app: FastAPI, db_session: AsyncSession):
 
 
 @pytest.fixture
-def create_authorized_client(app: FastAPI) -> Callable[[User | uuid.UUID], TestClient]:
+def create_authorized_client(app: FastAPI) -> Callable[..., AsyncClient]:
     """Factory fixture to create an authenticated FastAPI TestClient"""
 
-    def _create_client(user: User | uuid.UUID) -> TestClient:
+    def _create_client(user: User | uuid.UUID) -> AsyncClient:
         if isinstance(user, User):
             sub = user.id
         else:
@@ -56,8 +59,8 @@ def create_authorized_client(app: FastAPI) -> Callable[[User | uuid.UUID], TestC
             }
         )
 
-        client = TestClient(app, headers={"Authorization": f"Bearer {access_token}"})
-        return client
+        return AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com", headers={"Authorization": f"Bearer {access_token}"})
+
 
     return _create_client
 

@@ -129,71 +129,14 @@ async def db_session(db_engine: AsyncEngine):
             sync_session.begin_nested()
 
     try:
-        # yield session
-        async with session as s:
-            yield s
+        yield session
     finally:
         await session.close()
         await outer_transaction.rollback()
         await connection.close()
 
-# @pytest.fixture
-# async def db_session(connection: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
-#     await connection.begin_nested()
-#     async_session = AsyncSession(bind=connection, expire_on_commit=False)
-#
-#     @event.listens_for(async_session.sync_session, "after_transaction_end")
-#     def restart_savepoint(session, transaction):
-#         if transaction.nested and not transaction._parent.nested:
-#             session.begin_nested()
-#
-#     async with async_session as s:
-#         yield s
 
-# @pytest.fixture
-# def db_session(connection):
-#
-#     # Outer transaction
-#     transaction = connection.begin()
-#
-#     session = SessionLocal(bind=connection, class_=AsyncSession,
-#             expire_on_commit=False,
-#             autoflush=False,
-#             autocommit=False,)
-#
-#     # Nested transaction (SAVEPOINT)
-#     nested = connection.begin_nested()
-#
-#     @event.listens_for(session, "after_transaction_end")
-#     def restart_savepoint(session_, trans):
-#         nonlocal nested
-#
-#         if nested.is_active:
-#             return
-#
-#         if not connection.closed:
-#             nested = connection.begin_nested()
-#
-#     yield session
-#
-#     session.close()
-#     transaction.rollback()
-#     connection.close()
-
-# @pytest.fixture
-# async def db_session(connection: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
-#     await connection.begin_nested()
-#     async_session = AsyncSession(bind=connection, expire_on_commit=False)
-#
-#     @event.listens_for(async_session.sync_session, "after_transaction_end")
-#     def restart_savepoint(session, transaction):
-#         if transaction.nested and not transaction._parent.nested:
-#             session.begin_nested()
-#
-#     async with async_session as s:
-#         yield s
-
-# TODO This is the sqlalchemy 2.x method
+# TODO This is the sqlalchemy 2.x method (maybe)
 # @pytest.fixture
 # async def connection(db_engine: AsyncEngine) -> AsyncGenerator[AsyncConnection, None]:
 #     """Outer transaction — this is what gets rolled back at the very end."""
