@@ -25,6 +25,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
+          cp .env.default .env
           make test-unit
 
       - name: "Running Legacy Tests"
