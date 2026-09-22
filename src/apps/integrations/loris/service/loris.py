@@ -388,7 +388,7 @@ class LorisIntegrationService:
                     response_data = await resp.json()
                     return response_data["token"]
                 else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    logger.warning(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     raise LorisServerError(message=error_message)
 
@@ -415,7 +415,7 @@ class LorisIntegrationService:
                     response_data = await resp.json()
                     return response_data
                 else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    logger.warning(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     await self._create_integration_alerts(
                         self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
@@ -464,7 +464,7 @@ class LorisIntegrationService:
                 if resp.status == 200:
                     logger.info(f"Successful request in {duration:.1f} seconds.")
                 else:
-                    logger.error(f"Failed request in {duration:.1f} seconds.")
+                    logger.warning(f"Failed request in {duration:.1f} seconds.")
                     error_message = await resp.text()
                     await self._create_integration_alerts(
                         self.applet_id, message=LorisIntegrationAlertMessages.LORIS_SERVER_ERROR.value
