@@ -23,7 +23,11 @@ jobs:
           uv python install
           uv sync --locked
 
-      - name: "Running tests"
+      - name: Run Unit Tests
+        run: |
+          make test-unit
+
+      - name: "Running Legacy Tests"
         run: |
           cp .env.default .env
           echo -e "\nRABBITMQ__USE_SSL=False" >> .env

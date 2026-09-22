@@ -7,9 +7,12 @@ from alembic import command
 from alembic.config import Config
 from sqlalchemy import event, text
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine, AsyncSession
+from sqlalchemy.orm import sessionmaker
 from testcontainers.postgres import PostgresContainer
 
 from infrastructure.database import build_engine
+
+SessionLocal = sessionmaker()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -94,62 +97,147 @@ async def arb_db_engine(arb_db_url) -> AsyncEngine:
 # ==============================================
 # @pytest.fixture
 # async def connection(db_engine: AsyncEngine) -> AsyncGenerator[AsyncConnection, None]:
+#     async with db_engine.connect() as conn:
+#         await conn.begin()
+#         try:
+#             yield conn
+#         finally:
+#             await conn.rollback()
+
+@pytest.fixture
+async def db_session(db_engine: AsyncEngine):
+    connection = await db_engine.connect()
+    outer_transaction = await connection.begin()
+
+    session = AsyncSession(
+        bind=connection,
+        expire_on_commit=False,
+    )
+
+    something = await session.begin_nested()
+
+    @event.listens_for(
+        session.sync_session,
+        "after_transaction_end",
+    )
+    def restart_savepoint(sync_session, transaction):
+        if (
+            transaction.nested
+            and transaction._parent is not None
+            and not transaction._parent.nested
+        ):
+            sync_session.begin_nested()
+
+    try:
+        # yield session
+        async with session as s:
+            yield s
+    finally:
+        await session.close()
+        await outer_transaction.rollback()
+        await connection.close()
+
+# @pytest.fixture
+# async def db_session(connection: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
+#     await connection.begin_nested()
+#     async_session = AsyncSession(bind=connection, expire_on_commit=False)
+#
+#     @event.listens_for(async_session.sync_session, "after_transaction_end")
+#     def restart_savepoint(session, transaction):
+#         if transaction.nested and not transaction._parent.nested:
+#             session.begin_nested()
+#
+#     async with async_session as s:
+#         yield s
+
+# @pytest.fixture
+# def db_session(connection):
+#
+#     # Outer transaction
+#     transaction = connection.begin()
+#
+#     session = SessionLocal(bind=connection, class_=AsyncSession,
+#             expire_on_commit=False,
+#             autoflush=False,
+#             autocommit=False,)
+#
+#     # Nested transaction (SAVEPOINT)
+#     nested = connection.begin_nested()
+#
+#     @event.listens_for(session, "after_transaction_end")
+#     def restart_savepoint(session_, trans):
+#         nonlocal nested
+#
+#         if nested.is_active:
+#             return
+#
+#         if not connection.closed:
+#             nested = connection.begin_nested()
+#
+#     yield session
+#
+#     session.close()
+#     transaction.rollback()
+#     connection.close()
+
+# @pytest.fixture
+# async def db_session(connection: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
+#     await connection.begin_nested()
+#     async_session = AsyncSession(bind=connection, expire_on_commit=False)
+#
+#     @event.listens_for(async_session.sync_session, "after_transaction_end")
+#     def restart_savepoint(session, transaction):
+#         if transaction.nested and not transaction._parent.nested:
+#             session.begin_nested()
+#
+#     async with async_session as s:
+#         yield s
+
+# TODO This is the sqlalchemy 2.x method
+# @pytest.fixture
+# async def connection(db_engine: AsyncEngine) -> AsyncGenerator[AsyncConnection, None]:
 #     """Outer transaction — this is what gets rolled back at the very end."""
 #     async with db_engine.connect() as conn:
 #         async with conn.begin():
 #             yield conn
-#             # transaction auto-rolls-back on exit if not committed —
-#             # but we never commit it, so it's implicitly discarded here.
-#
-#
+# @pytest.fixture
+# async def db_session(connection: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
+#     """The session tests actually use. SQLAlchemy handles the savepoint
+#     restart internally — no manual event listener needed."""
+#     async_session_factory = async_sessionmaker(
+#         bind=connection,
+#         join_transaction_mode="create_savepoint",
+#         expire_on_commit=False,
+#     )
+#     async with async_session_factory() as s:
+#         yield s
+
+
+
+
+
+
+
+
 # @pytest.fixture
 # async def savepoint(connection: AsyncConnection) -> AsyncGenerator[AsyncConnection, None]:
-#     """Nested SAVEPOINT that auto-restarts itself if the session commits."""
+#     """Nested SAVEPOINT — just establishes the initial savepoint."""
 #     await connection.begin_nested()
-#
-#     @event.listens_for(connection.sync_connection, "after_transaction_end")
-#     def restart_savepoint(sync_conn, transaction):
-#         if connection.closed:
-#             return
-#         if not connection.in_nested_transaction():
-#             connection.sync_connection.begin_nested()
-#
 #     yield connection
 #
 #
 # @pytest.fixture
-# async def session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
-#     """The session tests actually use."""
-#     async with AsyncSession(bind=savepoint) as s:
+# async def db_session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
+#     """The session tests actually use. Owns the restart-savepoint listener."""
+#     async_session = AsyncSession(bind=savepoint)
+#
+#     @event.listens_for(async_session.sync_session, "after_transaction_end")
+#     def restart_savepoint(sync_session, transaction):
+#         sync_conn = savepoint.sync_connection
+#         if sync_conn.closed:
+#             return
+#         if not sync_conn.in_nested_transaction():
+#             sync_conn.begin_nested()
+#
+#     async with async_session as s:
 #         yield s
-
-@pytest.fixture
-async def connection(db_engine: AsyncEngine) -> AsyncGenerator[AsyncConnection, None]:
-    """Outer transaction — this is what gets rolled back at the very end."""
-    async with db_engine.connect() as conn:
-        async with conn.begin():
-            yield conn
-
-
-@pytest.fixture
-async def savepoint(connection: AsyncConnection) -> AsyncGenerator[AsyncConnection, None]:
-    """Nested SAVEPOINT — just establishes the initial savepoint."""
-    await connection.begin_nested()
-    yield connection
-
-
-@pytest.fixture
-async def db_session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
-    """The session tests actually use. Owns the restart-savepoint listener."""
-    async_session = AsyncSession(bind=savepoint)
-
-    @event.listens_for(async_session.sync_session, "after_transaction_end")
-    def restart_savepoint(sync_session, transaction):
-        sync_conn = savepoint.sync_connection
-        if sync_conn.closed:
-            return
-        if not sync_conn.in_nested_transaction():
-            sync_conn.begin_nested()
-
-    async with async_session as s:
-        yield s

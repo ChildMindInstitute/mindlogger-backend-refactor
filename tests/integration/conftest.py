@@ -67,8 +67,9 @@ FIXTURES_ROOT = Path("tests/integration")
 SKIP_TABLES = {"users"}
 
 # Fixture helpers
-async def _load_fixture_file(session, relative_path: str):
-    data = json.loads((FIXTURES_ROOT / relative_path).read_text())
+async def _load_fixture_file(db_session, relative_path: str):
+    path = FIXTURES_ROOT / relative_path
+    data = json.loads(path.resolve()).read_text()
     for datum in data:
         if datum["table"] in SKIP_TABLES:
             continue
@@ -76,9 +77,9 @@ async def _load_fixture_file(session, relative_path: str):
         placeholders = ", ".join(f":{f}" for f in datum["fields"])
 
         query = text(f'INSERT INTO "{datum["table"]}" ({columns}) VALUES ({placeholders})')
-        await session.execute(query, datum["fields"])
+        await db_session.execute(query, datum["fields"])
 
-    await session.commit()
+    await db_session.commit()
 
 
 @pytest.fixture(autouse=True)
