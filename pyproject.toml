@@ -132,8 +132,9 @@ python_functions = 'test_* *_test'
 markers = [
     "db_fixtures(files): list of JSON fixture files to load before this test",
 ]
-                                                                    # Temp till next version of testcontainers
+# Temp till next version of testcontainers
 filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning', "ignore:^The @wait_container_is_ready decorator:DeprecationWarning"]
+
 env = [
   "ENV=testing",
   "DATABASE__HOST=localhost",

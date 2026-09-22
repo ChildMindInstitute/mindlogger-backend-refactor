@@ -24,6 +24,7 @@ pytest_plugins = [
     "tests.integration.fixtures.testcontainers.db",
     "tests.integration.fixtures.testcontainers.rabbit",
     "tests.integration.fixtures.testcontainers.redis",
+    "tests.integration.fixtures.users"
 ]
 
 
@@ -72,15 +73,26 @@ SKIP_TABLES = {"users"}
 # Fixture helpers
 async def _load_fixture_file(db_session, relative_path: str):
     path = FIXTURES_ROOT / relative_path
-    data = json.loads(path.resolve()).read_text()
+
+    with open(path.resolve(), 'r', encoding='utf-8') as file:
+        data = json.load(file)
+
     for datum in data:
         if datum["table"] in SKIP_TABLES:
             continue
-        columns = ", ".join(f'"{f}"' for f in datum["fields"])
-        placeholders = ", ".join(f":{f}" for f in datum["fields"])
+        # columns = ", ".join(f'"{f}"' for f in datum["fields"])
+        # placeholders = ", ".join(f":{f}" for f in datum["fields"])
+        # query = text(f'INSERT INTO "{datum["table"]}" ({columns}) VALUES ({placeholders})')
 
-        query = text(f'INSERT INTO "{datum["table"]}" ({columns}) VALUES ({placeholders})')
-        await db_session.execute(query, datum["fields"])
+        columns = ",".join(map(lambda field: f'"{field}"', datum["fields"].keys()))
+        values = ",".join(map(_str_caster, datum["fields"].values()))
+        query = text(f"""insert into "{datum["table"]}"({columns}) values ({values})""")
+
+        try:
+            # await db_session.execute(query, datum["fields"])
+            await db_session.execute(query)
+        except Exception as e:
+            print(e)
 
     await db_session.commit()
 
@@ -98,8 +110,20 @@ async def load_fixtures(request, db_session):
 
     All data is cleared after each test.
     """
-    marker = request.node.get_closest_marker("fixtures")
+    marker = request.node.get_closest_marker("db_fixtures")
     fixture_files = marker.args[0] if marker else []
     for f in fixture_files:
         await _load_fixture_file(db_session, f)
     yield
+
+def _str_caster(val):
+    if val is None:
+        return "null"
+    if isinstance(val, str):
+        return f"'{val}'"
+    elif isinstance(val, (list, dict)):
+        return f"'{json.dumps(val)}'"
+    elif isinstance(val, bool):
+        val = {True: "true", False: "false"}[val]
+        return val
+    return str(val)
