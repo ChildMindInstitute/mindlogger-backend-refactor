@@ -174,6 +174,7 @@ class StorageClient:
                 result = await asyncio.wrap_future(future)
                 return result.get("Contents", [])
 
+    @tracer.wrap(name="storage.generate_presigned_post")
     def generate_presigned_post(self, key) -> dict[str, Any]:
         # Not needed ThreadPoolExecutor because there is no any IO operation (no API calls to s3)
         fields = {}
