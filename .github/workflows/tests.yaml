@@ -25,8 +25,13 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          cp .env.default .env
+          cp .env.test .env
           make test-unit
+
+      - name: Run Integration Tests
+        run: |
+          cp .env.test .env
+          make test-int
 
       - name: "Running Legacy Tests"
         run: |

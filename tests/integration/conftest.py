@@ -1,7 +1,7 @@
 import json
 import uuid
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 import pytest
 import taskiq_fastapi
@@ -27,7 +27,7 @@ pytest_plugins = [
 
 @pytest.fixture(scope="session")
 def app(apply_migrations) -> FastAPI:
-    """Create the FastAPI app with the test database session."""
+    """Create the FastAPI app."""
     app = create_app()
     return app
 
@@ -118,7 +118,7 @@ async def load_fixtures(request, db_session):
     yield
 
 
-def _str_caster(val):
+def _str_caster(val: Any) -> str:
     if val is None:
         return "null"
     if isinstance(val, str):
