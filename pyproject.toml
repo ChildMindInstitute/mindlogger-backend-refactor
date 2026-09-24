@@ -91,6 +91,7 @@ dev = [
   "pytest-httpx",
   "pytest-mock==3.14.1",
   "ruff==0.11.*",
+  "testcontainers[postgres,redis,rabbitmq]>=4.13.3",
   "types-aiofiles==24.1.0.*",
   "types-cachetools==6.0.0.20250525",
   "types-python-dateutil==2.9.0.*",
@@ -122,12 +123,18 @@ max-complexity = 15
 known-local-folder = ["src"]
 
 [tool.pytest.ini_options]
-addopts = '-s -v'
+addopts = '-s -v --import-mode=importlib'
 asyncio_mode = 'auto'
 cache_dir = '/tmp'
 python_files = 'tests.py test_*.py *_test.py'
 python_functions = 'test_* *_test'
-filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning']
+
+markers = [
+    "db_fixtures(files): list of JSON fixture files to load before this test",
+]
+# Temp till next version of testcontainers
+filterwarnings = ['ignore::RuntimeWarning', 'ignore::UserWarning', "ignore:^The @wait_container_is_ready decorator:DeprecationWarning"]
+
 env = [
   "ENV=testing",
   "DATABASE__HOST=localhost",
@@ -138,6 +145,9 @@ env = [
   "ARBITRARY_DB=test_arbitrary",
   "TASK_ANSWER_ENCRYPTION__BATCH_LIMIT=1",
 ]
+
+
+
 
 [tool.coverage.run]
 omit = [
@@ -160,6 +170,7 @@ warn_unused_ignores = true
 show_error_codes = true
 namespace_packages = true
 exclude = ["apps/jsonld_converter"]
+explicit_package_bases = true
 
 # Silence "type import errors" as our 3rd-party libs does not have types
 # Check: https://mypy.readthedocs.io/en/latest/config_file.html#import-discovery
@@ -175,3 +186,6 @@ module = [
   'requests',
 ]
 ignore_missing_imports = true
+
+
+

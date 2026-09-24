@@ -2,6 +2,7 @@ PORT = 8000
 HOST = localhost
 
 TEST_COMMAND = PYTHONPATH=src uv run pytest -s -vv --alluredir=allure-results
+NEW_TEST_COMMAND = PYTHONPATH=src uv run pytest
 COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
 REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 
@@ -66,6 +67,50 @@ build-all:
 .PHONY: test
 test:
 	${TEST_COMMAND} ./
+
+.PHONY: test-legacy
+test-legacy:
+	${NEW_TEST_COMMAND} tests/legacy
+
+.PHONY: test-legacy-ci
+test-legacy-ci:
+	${NEW_TEST_COMMAND} --junit-xml=test-results.xml tests/legacy
+
+
+.PHONY: test-unit
+test-unit:
+	${NEW_TEST_COMMAND} tests/unit
+
+.PHONY: test-unit-cov
+test-unit-cov:
+	COVERAGE_FILE=.coverage.unit ${NEW_TEST_COMMAND} tests/unit --cov=src/ --cov-report= --alluredir=allure-results
+
+
+.PHONY: test-int
+test-int:
+	${NEW_TEST_COMMAND} tests/integration
+
+.PHONY: test-int-cov
+test-int-cov:
+	COVERAGE_FILE=.coverage.integration ${NEW_TEST_COMMAND} tests/integration --cov=src/ --cov-report= --alluredir=allure-results
+
+.PHONY: cov-combine
+cov-combine:
+	uv run coverage combine
+	uv run coverage xml
+	uv run coverage html
+
+.PHONY: cov-serve
+cov-serve:
+	uv run python -m http.server -d htmlcov/ 8000
+
+.PHONY: allure
+allure:
+	uv run allure generate allure-results --clean -o allure-report
+
+.PHONY: check-test-locations
+check-test-locations:
+	bash ci-check-test-locations.sh
 
 .PHONY: migrate
 migrate:
