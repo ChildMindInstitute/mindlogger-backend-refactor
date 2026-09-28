@@ -14,6 +14,7 @@ def pytest_sessionstart(session):
     for c in client.containers.list(all=True, filters={"ancestor": "testcontainers/ryuk"}):
         c.remove(force=True, v=True)
 
+
 #####################################################
 ## Shared Fixtures between unit and integration tests
 #####################################################

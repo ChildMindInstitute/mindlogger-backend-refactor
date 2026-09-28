@@ -1,7 +1,7 @@
 import allure
 from sqlalchemy import func, select
 
-from apps.users import UserSchema, User
+from apps.users import User, UserSchema
 
 
 @allure.epic("Validate Test Suite")
