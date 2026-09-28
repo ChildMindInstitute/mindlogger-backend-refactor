@@ -53,8 +53,8 @@ Install the python version specified in pyproject.toml
 ```bash
 uv python install
 ```
-
-> ⚠️ If the python version changes (ex: from 3.12 to 3.13) this command will need to be rerun
+ > [!NOTE]
+ > If the python version changes (ex: from 3.12 to 3.13) this command will need to be rerun
 
 #### Install Project Dependencies
 Install all dependencies from pyproject.toml
@@ -81,7 +81,8 @@ all local development:
 cp .env.default .env
 ```
 
-> 🛑 **NOTE:** Make sure to set `RABBITMQ__USE_SSL=False` for local development
+ > [!IMPORTANT]
+ > Make sure to set `RABBITMQ__USE_SSL=False` for local development
 
 ### Environment Variable Reference
 
@@ -186,8 +187,9 @@ Run RabbitMQ
 
 
 
-> 🛑 **NOTE:** If the application can't find the `RabbitMQ` service even though it's running normally, change your
-`RABBITMQ__URL` to your local ip address instead of `localhost`
+ > [!IMPORTANT]
+ > If the application can't find the `RabbitMQ` service even though it's running normally, change your
+ > `RABBITMQ__URL` to your local ip address instead of `localhost`
 
 
 ### Run services using other means
@@ -267,8 +269,17 @@ For local usage:
 # Run the application
 make run
 
-# Run the test suite
+# Run the entire test suite
 make test
+
+# Run just unit tests
+make test-unit
+
+# Run just the legacy tests (until they are fully retired)
+make test-legacy
+
+# Run just integration tests
+make test-int
 
 # Audit dependencies
 make audit
@@ -287,7 +298,8 @@ make cqf
 
 ### Adjust your database for using with tests
 
-⚠️️ You have to do this only once before running the test suite.
+ > [!WARNING]
+ > You have to do this only once before running the legacy test suite.
 
 ```base
 # Connect to the database with Docker

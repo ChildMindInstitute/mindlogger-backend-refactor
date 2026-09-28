@@ -1,9 +1,11 @@
 import random
 import string
 import uuid
+from typing import Any, Callable, Awaitable
 from uuid import UUID
 
 import pytest
+from polyfactory import Require, PostGenerated, Use
 from polyfactory.factories.pydantic_factory import ModelFactory
 from polyfactory.pytest_plugin import register_fixture
 from sqlalchemy.orm import Session
@@ -12,14 +14,6 @@ from apps.users import User
 from apps.users.domain import UserCreate
 from apps.users.services.user import UserService
 from infrastructure.database import atomic
-
-
-@register_fixture
-class UserFactory(ModelFactory[User]): ...
-
-
-@register_fixture
-class UserCreateFactory(ModelFactory[UserCreate]): ...
 
 
 def generate_password() -> str:
@@ -33,34 +27,51 @@ def generate_password() -> str:
     random.shuffle(chars)
     return "".join(chars)
 
+def make_email(name: str, values: dict[str, Any], *args: Any, **kwargs: Any) -> str:
+    return f"{values['first_name'].lower()}.{values['last_name'].lower()}@getting.com"
 
-async def _create_user(
-    db_session: Session, user_create_factory: type[UserCreateFactory], name: str, test_id: UUID = uuid.uuid4()
-) -> User:
-    user = user_create_factory.build(password=generate_password(), email=f"{name}@gettingcurious.com")
-    async with atomic(db_session):
-        return await UserService(db_session).create_user(user, test_id=test_id)
+@register_fixture
+class UserFactory(ModelFactory[User]): ...
 
 
-@pytest.fixture
-async def phineas_user(db_session: Session, user_create_factory: type[UserCreateFactory]):
-    user = await _create_user(db_session, user_create_factory, "phineas")
-    return user
-
-
-@pytest.fixture
-async def ferb_user(db_session: Session, user_create_factory: type[UserCreateFactory]):
-    user = await _create_user(db_session, user_create_factory, "ferb")
-    return user
+@register_fixture
+class UserCreateFactory(ModelFactory[UserCreate]):
+    first_name = Require()
+    last_name = Require()
+    # Generate email if not supplied in build()
+    email = PostGenerated(make_email)
+    # Generate password if not supplied in build()
+    password = Use(generate_password)
 
 
 @pytest.fixture
-async def perry_user(db_session: Session, user_create_factory: type[UserCreateFactory]):
-    user = await _create_user(db_session, user_create_factory, "perry")
-    return user
+def user_create_service(db_session: Session) -> Callable[[UserCreate], Awaitable[User]]:
+    """Factory fixture for creating users."""
+    async def _saver(user_create: UserCreate) -> User:
+        return await UserService(db_session).create_user(user_create, test_id=None)
+
+    return _saver
 
 
 @pytest.fixture
-async def doofenshmirtz_user(db_session: Session, user_create_factory: type[UserCreateFactory]):
-    user = await _create_user(db_session, user_create_factory, "doofenshmirtz")
-    return user
+async def phineas_user(user_create_service: Callable[[UserCreate], Awaitable[User]], user_create_factory: type[UserCreateFactory]) -> User:
+    user = user_create_factory.build(first_name="Phineas", last_name="Flynn")
+    return await user_create_service(user)
+
+
+@pytest.fixture
+async def ferb_user(user_create_service: Callable[[UserCreate], Awaitable[User]], user_create_factory: type[UserCreateFactory]) -> User:
+    user = user_create_factory.build(first_name="Ferb", last_name="Flynn")
+    return await user_create_service(user)
+
+
+@pytest.fixture
+async def perry_user(user_create_service: Callable[[UserCreate], Awaitable[User]], user_create_factory: type[UserCreateFactory]) -> User:
+    user = user_create_factory.build(first_name="Perry", last_name="Platypus")
+    return await user_create_service(user)
+
+
+@pytest.fixture
+async def doofenshmirtz_user(user_create_service: Callable[[UserCreate], Awaitable[User]], user_create_factory: type[UserCreateFactory]) -> User:
+    user = user_create_factory.build(first_name="Heinz", last_name="Doofenshmirtz")
+    return await user_create_service(user)

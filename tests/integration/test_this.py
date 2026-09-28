@@ -1,11 +1,13 @@
 import allure
 from sqlalchemy import func, select
 
-from apps.users import UserSchema
+from apps.users import UserSchema, User
 
 
-@allure.epic("Test")
+@allure.epic("Validate Test Suite")
+@allure.feature("Tests")
 @allure.severity(allure.severity_level.CRITICAL)
+@allure.issue("M2-11172")
 class TestTestSuite:
     """Sanity test some fixtures in the test suite"""
 
@@ -24,3 +26,16 @@ class TestTestSuite:
     async def _get_user_count(self, db_session):
         length = await db_session.scalar(select(func.count()).select_from(UserSchema))
         return length
+
+    async def test_create_many_users(self, phineas_user: User, ferb_user: User, doofenshmirtz_user: User):
+        assert phineas_user.id != ferb_user.id
+        assert phineas_user.id != doofenshmirtz_user.id
+        assert ferb_user.id != doofenshmirtz_user.id
+
+        assert phineas_user.email != doofenshmirtz_user.email
+        assert ferb_user.email != doofenshmirtz_user.email
+        assert phineas_user.email != ferb_user.email
+
+        assert phineas_user.hashed_password != doofenshmirtz_user.hashed_password
+        assert ferb_user.hashed_password != doofenshmirtz_user.hashed_password
+        assert phineas_user.hashed_password != ferb_user.hashed_password

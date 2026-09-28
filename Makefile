@@ -1,9 +1,9 @@
 PORT = 8000
 HOST = localhost
 
-TEST_COMMAND = PYTHONPATH=src uv run pytest -s -vv --alluredir=allure-results
-NEW_TEST_COMMAND = PYTHONPATH=src uv run pytest
-COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest  
+TEST_COMMAND = PYTHONPATH=src uv run pytest
+ALLURE_OPTS = --alluredir=allure-results --allure-link-pattern=issue:https://mindlogger.atlassian.net/browse/{}
+COVERAGE_COMMAND = coverage run --branch --concurrency=thread,gevent -m pytest
 REPORT_COVERAGE_COMMAND = coverage html --show-contexts --title "Coverage for ${SHA}"
 
 EXPORT_COMMAND = python src/export_spec.py
@@ -65,34 +65,33 @@ build-all:
 
 
 .PHONY: test
-test:
-	${TEST_COMMAND} ./
+test: test-unit test-int test-legacy
+
 
 .PHONY: test-legacy
 test-legacy:
-	${NEW_TEST_COMMAND} tests/legacy
+	${TEST_COMMAND} tests/legacy
 
 .PHONY: test-legacy-ci
 test-legacy-ci:
-	${NEW_TEST_COMMAND} --junit-xml=test-results.xml tests/legacy
-
+	${TEST_COMMAND} --junit-xml=test-results.xml tests/legacy
 
 .PHONY: test-unit
 test-unit:
-	${NEW_TEST_COMMAND} tests/unit
+	${TEST_COMMAND} tests/unit
 
 .PHONY: test-unit-cov
 test-unit-cov:
-	COVERAGE_FILE=.coverage.unit ${NEW_TEST_COMMAND} tests/unit --cov=src/ --cov-report= --alluredir=allure-results
+	COVERAGE_FILE=.coverage.unit ${TEST_COMMAND} tests/unit --cov=src/ --cov-report= --alluredir=allure-results
 
 
 .PHONY: test-int
 test-int:
-	${NEW_TEST_COMMAND} tests/integration
+	${TEST_COMMAND} tests/integration
 
 .PHONY: test-int-cov
 test-int-cov:
-	COVERAGE_FILE=.coverage.integration ${NEW_TEST_COMMAND} tests/integration --cov=src/ --cov-report= --alluredir=allure-results
+	COVERAGE_FILE=.coverage.integration ${TEST_COMMAND} tests/integration --cov=src/ --cov-report= --alluredir=allure-results
 
 .PHONY: cov-combine
 cov-combine:

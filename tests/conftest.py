@@ -1,8 +1,18 @@
 import uuid
 from typing import Any, AsyncGenerator
 
+import docker
 import pytest
 from pytest_mock import MockerFixture
+
+
+def pytest_sessionstart(session):
+    # Clean up stale ryuk containers from previous test runs
+    if hasattr(session.config, "workerinput"):  # skip xdist workers
+        return
+    client = docker.from_env()
+    for c in client.containers.list(all=True, filters={"ancestor": "testcontainers/ryuk"}):
+        c.remove(force=True, v=True)
 
 #####################################################
 ## Shared Fixtures between unit and integration tests

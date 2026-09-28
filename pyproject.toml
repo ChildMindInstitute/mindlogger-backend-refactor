@@ -147,8 +147,6 @@ env = [
 ]
 
 
-
-
 [tool.coverage.run]
 omit = [
   "*/conftest.py",

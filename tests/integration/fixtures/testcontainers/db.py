@@ -150,27 +150,3 @@ async def db_session(db_engine: AsyncEngine):
 #     )
 #     async with async_session_factory() as s:
 #         yield s
-
-
-# @pytest.fixture
-# async def savepoint(connection: AsyncConnection) -> AsyncGenerator[AsyncConnection, None]:
-#     """Nested SAVEPOINT — just establishes the initial savepoint."""
-#     await connection.begin_nested()
-#     yield connection
-#
-#
-# @pytest.fixture
-# async def db_session(savepoint: AsyncConnection) -> AsyncGenerator[AsyncSession, None]:
-#     """The session tests actually use. Owns the restart-savepoint listener."""
-#     async_session = AsyncSession(bind=savepoint)
-#
-#     @event.listens_for(async_session.sync_session, "after_transaction_end")
-#     def restart_savepoint(sync_session, transaction):
-#         sync_conn = savepoint.sync_connection
-#         if sync_conn.closed:
-#             return
-#         if not sync_conn.in_nested_transaction():
-#             sync_conn.begin_nested()
-#
-#     async with async_session as s:
-#         yield s
