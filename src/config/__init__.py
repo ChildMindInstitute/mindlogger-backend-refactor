@@ -12,6 +12,7 @@ from config.authentication import AuthenticationSettings
 from config.cdn import CDNSettings
 from config.cors import CorsSettings
 from config.database import DatabaseSettings
+from config.legal import LegalSettings
 from config.logs import Logs
 from config.mailing import MailingSettings
 from config.mfa import MFASettings
@@ -50,6 +51,9 @@ class Settings(BaseSettings):
     authentication: AuthenticationSettings
     mfa: MFASettings = MFASettings()
     password: PasswordSettings = PasswordSettings()
+
+    # Legal agreements
+    legal: LegalSettings = LegalSettings()
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
