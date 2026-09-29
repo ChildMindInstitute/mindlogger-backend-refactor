@@ -55,7 +55,7 @@ class TestUser:
         result = response.json()["result"]
         assert str(event.user_id) == result["id"]
         for k, v in request_data:
-            if k != "password":
+            if k not in ("password", "msa_accepted"):
                 assert v == result[to_camelcase(k)]
 
     async def test_user_create_exist(
