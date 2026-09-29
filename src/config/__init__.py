@@ -137,6 +137,7 @@ settings = Settings(
         "job",
         "subjects",
         "audit",
+        "legal",
         "integrations",
         "integrations.loris",
     ],
