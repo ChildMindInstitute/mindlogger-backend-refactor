@@ -20,6 +20,8 @@ from apps.authentication.services.recovery_codes import (
     verify_recovery_code_service,
 )
 from apps.authentication.services.security import AuthenticationService
+from apps.legal.constants import AcceptanceSource
+from apps.legal.service import LegalAcceptanceService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
 from apps.users.cruds.user import UsersCRUD
@@ -77,6 +79,8 @@ async def user_create(
             user = await service.create_user(prepared_data)
             # Create default workspace for new user
             await WorkspaceService(session, user.id).create_workspace_from_user(user)
+            if user_create_schema.msa_accepted:
+                await LegalAcceptanceService(session).accept_msa(user.id, AcceptanceSource.SIGNUP, request)
     except BaseError as e:
         await log(
             AuditEvent(
