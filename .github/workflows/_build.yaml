@@ -93,8 +93,8 @@ jobs:
           images: ${{ needs.setup-vars.outputs.ecr-repo }}/api-server
           tags: |
             type=sha
-            type=ref,event=pr
             type=raw,value=${{ inputs.tag-name }}
+            type=ref,event=pr
             type=raw,value=latest,enable=${{ inputs.tag-latest }}
 
       - name: Build and push

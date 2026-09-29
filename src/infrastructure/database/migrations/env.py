@@ -36,8 +36,15 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-# Override alembic.ini option
-config.set_main_option("sqlalchemy.url", settings.database.url)
+
+def get_database_url() -> str:
+    # return settings.database.url
+    database_url = config.get_main_option("sqlalchemy.url")
+
+    if not database_url:
+        database_url = settings.database.url
+
+    return database_url
 
 
 def run_migrations_offline() -> None:
@@ -53,7 +60,7 @@ def run_migrations_offline() -> None:
 
     """
     context.configure(
-        url=settings.database.url,
+        url=get_database_url(),
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -77,9 +84,13 @@ async def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
+    configuration = config.get_section(config.config_ini_section)
+    # Override sqlalchemy.url with our Pydantic settings
+    configuration["sqlalchemy.url"] = get_database_url()  # type: ignore[index]
+
     connectable = AsyncEngine(
         engine_from_config(
-            config.get_section(config.config_ini_section),
+            configuration,
             prefix="sqlalchemy.",
             poolclass=pool.NullPool,
             future=True,
