@@ -1,5 +1,7 @@
 import datetime
 
+from ddtrace import tracer
+
 from apps.authentication.crud import TokenBlacklistCRUD
 from apps.authentication.domain.token import InternalToken, TokenPurpose
 
@@ -13,6 +15,7 @@ class TokensService:
     async def is_revoked(self, token: InternalToken) -> bool:
         return await TokenBlacklistCRUD(self.session).exists(token)
 
+    @tracer.wrap(name="token.revoke")
     async def revoke(self, token: InternalToken, type_: TokenPurpose) -> None:
         now = datetime.datetime.now(datetime.UTC)
         ttl = token.payload.exp - int(now.timestamp())

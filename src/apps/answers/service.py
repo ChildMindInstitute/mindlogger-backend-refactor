@@ -16,6 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
+from ddtrace import tracer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD, ActivityItemHistoriesCRUD
@@ -140,7 +141,15 @@ class AnswerService:
 
         return key_generator
 
+    @tracer.wrap(name="answer.create")
     async def create_answer(self, activity_answer: AppletAnswerCreate, device_id: str | None = None) -> AnswerSchema:
+        # Set some Datadog tags
+        span = tracer.current_span()
+        if span:
+            span.set_tag("applet_id", str(activity_answer.applet_id))
+            span.set_tag("activity_id", str(activity_answer.activity_id))
+            span.set_tag("flow_id", str(activity_answer.flow_id))
+
         # Check for prolific parameters in the answer helping to identify whether the respondent comes from prolific
         is_prolific_respondent = activity_answer.prolific_params is not None
         if self.user_id and not is_prolific_respondent:
@@ -542,6 +551,7 @@ class AnswerService:
             await self._validate_user_role_for_take_now(applet_id, respondent_subject)
             await self._validate_relation_between_subjects_in_applet(respondent_subject, target_subject, source_subject)
 
+    @tracer.wrap(name="answer.create_report")
     async def create_report_from_answer(self, answer: AnswerSchema):
         service = ReportServerService(session=self.session, arbitrary_session=self.answer_session)
         # First check is flow single report or not, flow single report has
@@ -1922,6 +1932,7 @@ class AnswerService:
 
         return True
 
+    @tracer.wrap(name="answer.reencrypt_user_answers")
     async def reencrypt_user_answers(
         self,
         applet_id: uuid.UUID,
@@ -2014,6 +2025,7 @@ class AnswerService:
         schema = await AnswerItemsCRUD(self.answer_session).get_answer_assessment(assessment_id, answer_id)
         return AssessmentItem.model_validate(schema) if schema else None
 
+    @tracer.wrap(name="answer.delete_assessment")
     async def delete_assessment(self, assessment_id: uuid.UUID):
         return await AnswerItemsCRUD(self.answer_session).delete_assessment(assessment_id)
 
@@ -2362,6 +2374,7 @@ class ReportServerService:
 
         return self._is_activity_last_in_flow(applet_full, activity_id, flow_id)
 
+    @tracer.wrap(name="answer.create_report")
     async def create_report(
         self,
         submit_id: uuid.UUID,
@@ -2546,6 +2559,7 @@ class ReportServerEncryption:
     def __init__(self, key: str):
         self.encryption = load_pem_public_key(key.encode(), backend=default_backend())
 
+    @tracer.wrap(name="answer.report.encrypt")
     def encrypt(self, data: dict):
         str_data = json.dumps(data, default=str)
         key_size = getattr(self.encryption, "key_size", 0)

@@ -1,6 +1,8 @@
 import asyncio
 import uuid
 
+from ddtrace import tracer
+
 from apps.activities.crud import ActivitiesCRUD, ActivityHistoriesCRUD
 from apps.activities.db.schemas import ActivitySchema
 from apps.activities.domain.activity import (
@@ -35,6 +37,7 @@ class ActivityService:
         self.user_id = user_id
         self.session = session
 
+    @tracer.wrap(name="activity.create")
     async def create(self, applet_id: uuid.UUID, activities_create: list[ActivityCreate]) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -120,6 +123,7 @@ class ActivityService:
 
         return activities
 
+    @tracer.wrap(name="activity.update_create")
     async def update_create(self, applet_id: uuid.UUID, activities_create: list[ActivityUpdate]) -> list[ActivityFull]:
         schemas = []
         activity_key_id_map: dict[uuid.UUID, uuid.UUID] = dict()
@@ -322,6 +326,7 @@ class ActivityService:
 
         return activities
 
+    @tracer.wrap(name="activity.get_full_activities")
     async def get_full_activities(self, applet_id: uuid.UUID) -> list[ActivityFull]:
         schemas = await ActivitiesCRUD(self.session).get_by_applet_id(applet_id)
 
