@@ -10,6 +10,8 @@ from starlette import status
 
 from apps.legal.constants import AcceptanceSource, LegalDocType
 from apps.legal.db.schemas import LegalAcceptanceSchema
+from apps.shared.hashing import hash_sha224
+from apps.users.db.schemas import UserSchema
 from apps.users.router import router as user_router
 from config import settings
 
@@ -38,12 +40,12 @@ class TestUserCreateMsa:
     def mock_audit_log(self, mocker: MockerFixture):
         mocker.patch("apps.users.api.users.log")
 
-    async def test_signup_with_msa_accepted_saves_acceptance(self, app: FastAPI, db_session, mocker: MockerFixture):
+    async def test_signup_with_msa_version_saves_acceptance(self, app: FastAPI, db_session, mocker: MockerFixture):
         mocker.patch.object(settings.legal, "msa_version", "2026-09-15")
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com") as client:
             response = await client.post(
                 USER_CREATE_URL,
-                json=signup_payload(msaAccepted=True),
+                json=signup_payload(msaVersion="2026-09-15"),
                 headers={"Mindlogger-Content-Source": "admin"},
             )
 
@@ -55,10 +57,22 @@ class TestUserCreateMsa:
         assert acceptances[0].source == AcceptanceSource.SIGNUP
         assert acceptances[0].client_source == "admin"
 
-    @pytest.mark.parametrize("extra", [{}, {"msaAccepted": False}])
-    async def test_signup_without_msa_accepted_saves_nothing(self, app: FastAPI, db_session, extra: dict):
+    async def test_signup_without_msa_version_saves_nothing(self, app: FastAPI, db_session):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com") as client:
-            response = await client.post(USER_CREATE_URL, json=signup_payload(**extra))
+            response = await client.post(USER_CREATE_URL, json=signup_payload())
 
         assert response.status_code == status.HTTP_201_CREATED
         assert await get_acceptances(db_session, response.json()["result"]["id"]) == []
+
+    async def test_signup_with_outdated_msa_version_creates_nothing(
+        self, app: FastAPI, db_session, mocker: MockerFixture
+    ):
+        mocker.patch.object(settings.legal, "msa_version", "2026-09-15")
+        payload = signup_payload(msaVersion="2026-01-01")
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com") as client:
+            response = await client.post(USER_CREATE_URL, json=payload)
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["error_code"] == "LEGAL.MSA_VERSION_OUTDATED"
+        user = await db_session.scalar(select(UserSchema).where(UserSchema.email == hash_sha224(payload["email"])))
+        assert user is None
