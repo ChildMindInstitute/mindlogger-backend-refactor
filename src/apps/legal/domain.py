@@ -2,7 +2,7 @@ import datetime
 import uuid
 
 from apps.legal.constants import AcceptanceSource, LegalDocType
-from apps.shared.domain import InternalModel
+from apps.shared.domain import InternalModel, PublicModel
 
 
 class LegalAcceptanceCreate(InternalModel):
@@ -18,3 +18,7 @@ class LegalAcceptanceCreate(InternalModel):
 
 class LegalAcceptance(LegalAcceptanceCreate):
     id: uuid.UUID
+
+
+class MsaVersion(PublicModel):
+    version: str

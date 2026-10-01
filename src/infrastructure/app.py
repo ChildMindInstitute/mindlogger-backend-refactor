@@ -24,6 +24,7 @@ import apps.integrations.oneup_health.router as oneup_health
 import apps.integrations.prolific.router as prolific
 import apps.integrations.router as integrations
 import apps.invitations.router as invitations
+import apps.legal.router as legal
 import apps.library.router as library
 import apps.logs.router as logs
 import apps.schedule.router as schedule
@@ -83,6 +84,7 @@ routers: Iterable[APIRouter] = (
     integrations.router,
     oneup_health.router,
     audit.router,
+    legal.router,
 )
 
 # Declare your middlewares here
