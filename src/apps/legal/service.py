@@ -7,6 +7,7 @@ from apps.legal.constants import AcceptanceSource, LegalDocType
 from apps.legal.crud import LegalAcceptancesCRUD
 from apps.legal.domain import LegalAcceptance, LegalAcceptanceCreate
 from config import settings
+from infrastructure.http.deps import get_optional_mindlogger_content_source
 
 
 class LegalAcceptanceService:
@@ -21,7 +22,7 @@ class LegalAcceptanceService:
             version=settings.legal.msa_version,
             accepted_at=datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None),
             source=source,
-            client_source=request.headers.get("mindlogger-content-source"),
+            client_source=await get_optional_mindlogger_content_source(request),
             ip_address=request.client.host if request.client else None,
             user_agent=request.headers.get("user-agent"),
         )
