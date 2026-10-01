@@ -80,7 +80,9 @@ async def user_create(
             # Create default workspace for new user
             await WorkspaceService(session, user.id).create_workspace_from_user(user)
             if user_create_schema.msa_accepted:
-                await LegalAcceptanceService(session).accept_msa(user.id, AcceptanceSource.SIGNUP, request)
+                await LegalAcceptanceService(session).accept_msa(
+                    user.id, AcceptanceSource.SIGNUP, request, settings.legal.msa_version
+                )
     except BaseError as e:
         await log(
             AuditEvent(
