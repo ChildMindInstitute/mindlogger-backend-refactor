@@ -79,9 +79,9 @@ async def user_create(
             user = await service.create_user(prepared_data)
             # Create default workspace for new user
             await WorkspaceService(session, user.id).create_workspace_from_user(user)
-            if user_create_schema.msa_accepted:
+            if user_create_schema.msa_version:
                 await LegalAcceptanceService(session).accept_msa(
-                    user.id, AcceptanceSource.SIGNUP, request, settings.legal.msa_version
+                    user.id, AcceptanceSource.SIGNUP, request, user_create_schema.msa_version
                 )
     except BaseError as e:
         await log(

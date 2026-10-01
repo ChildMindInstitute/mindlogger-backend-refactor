@@ -59,12 +59,12 @@ class UserCreateRequest(PublicModel):
             description="This field represents the user password",
         ),
     ]
-    msa_accepted: Annotated[
-        bool,
+    msa_version: Annotated[
+        str | None,
         Field(
-            description="Whether the user accepted the current Master Services Agreement",
+            description="The Master Services Agreement version the user accepted",
         ),
-    ] = False
+    ] = None
 
     @field_validator("password")
     @classmethod
