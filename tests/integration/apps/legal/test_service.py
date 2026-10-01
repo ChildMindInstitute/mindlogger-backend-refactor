@@ -50,6 +50,13 @@ class TestLegalAcceptanceService:
         assert acceptance.ip_address is None
         assert acceptance.user_agent is None
 
+    async def test_accept_msa_ignores_unknown_client_source(self, db_session, ferb_user: User):
+        acceptance = await LegalAcceptanceService(db_session).accept_msa(
+            ferb_user.id, AcceptanceSource.SIGNUP, make_request(headers={"Mindlogger-Content-Source": "something-else"})
+        )
+
+        assert acceptance.client_source is None
+
     async def test_accept_msa_keeps_history(self, db_session, ferb_user: User, mocker: MockerFixture):
         service = LegalAcceptanceService(db_session)
         mocker.patch.object(settings.legal, "msa_version", "2026-09-15")
