@@ -1,10 +1,12 @@
 import allure
+import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 from starlette.requests import Request
 
 from apps.legal.constants import AcceptanceSource, LegalDocType
 from apps.legal.db.schemas import LegalAcceptanceSchema
+from apps.legal.errors import MSAVersionOutdatedError
 from apps.legal.service import LegalAcceptanceService
 from apps.users import User
 from config import settings
@@ -25,7 +27,9 @@ class TestLegalAcceptanceService:
             client=("203.0.113.7", 1234),
         )
 
-        acceptance = await LegalAcceptanceService(db_session).accept_msa(ferb_user.id, AcceptanceSource.SIGNUP, request)
+        acceptance = await LegalAcceptanceService(db_session).accept_msa(
+            ferb_user.id, AcceptanceSource.SIGNUP, request, "2026-09-15"
+        )
 
         rows = (
             await db_session.scalars(select(LegalAcceptanceSchema).where(LegalAcceptanceSchema.user_id == ferb_user.id))
@@ -43,7 +47,7 @@ class TestLegalAcceptanceService:
 
     async def test_accept_msa_without_request_details(self, db_session, ferb_user: User):
         acceptance = await LegalAcceptanceService(db_session).accept_msa(
-            ferb_user.id, AcceptanceSource.SIGNUP, make_request()
+            ferb_user.id, AcceptanceSource.SIGNUP, make_request(), settings.legal.msa_version
         )
 
         assert acceptance.client_source is None
@@ -52,7 +56,10 @@ class TestLegalAcceptanceService:
 
     async def test_accept_msa_ignores_unknown_client_source(self, db_session, ferb_user: User):
         acceptance = await LegalAcceptanceService(db_session).accept_msa(
-            ferb_user.id, AcceptanceSource.SIGNUP, make_request(headers={"Mindlogger-Content-Source": "something-else"})
+            ferb_user.id,
+            AcceptanceSource.SIGNUP,
+            make_request(headers={"Mindlogger-Content-Source": "something-else"}),
+            settings.legal.msa_version,
         )
 
         assert acceptance.client_source is None
@@ -60,9 +67,9 @@ class TestLegalAcceptanceService:
     async def test_accept_msa_keeps_history(self, db_session, ferb_user: User, mocker: MockerFixture):
         service = LegalAcceptanceService(db_session)
         mocker.patch.object(settings.legal, "msa_version", "2026-09-15")
-        await service.accept_msa(ferb_user.id, AcceptanceSource.SIGNUP, make_request())
+        await service.accept_msa(ferb_user.id, AcceptanceSource.SIGNUP, make_request(), "2026-09-15")
         mocker.patch.object(settings.legal, "msa_version", "2027-03-01")
-        await service.accept_msa(ferb_user.id, AcceptanceSource.SIGNUP, make_request())
+        await service.accept_msa(ferb_user.id, AcceptanceSource.SIGNUP, make_request(), "2027-03-01")
 
         versions = (
             await db_session.scalars(
@@ -70,3 +77,16 @@ class TestLegalAcceptanceService:
             )
         ).all()
         assert sorted(versions) == ["2026-09-15", "2027-03-01"]
+
+    async def test_accept_msa_rejects_outdated_version(self, db_session, ferb_user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.legal, "msa_version", "2027-03-01")
+
+        with pytest.raises(MSAVersionOutdatedError):
+            await LegalAcceptanceService(db_session).accept_msa(
+                ferb_user.id, AcceptanceSource.SIGNUP, make_request(), "2026-09-15"
+            )
+
+        rows = (
+            await db_session.scalars(select(LegalAcceptanceSchema).where(LegalAcceptanceSchema.user_id == ferb_user.id))
+        ).all()
+        assert rows == []
