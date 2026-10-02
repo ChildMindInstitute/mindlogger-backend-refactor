@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Annotated, Self
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import ConfigDict, Field, field_serializer, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
@@ -374,22 +374,22 @@ class WorkspaceArbitraryFields(InternalModel):
 
 
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
+    model_config = ConfigDict(extra="allow")
+
     user_id: uuid.UUID
     email: str
     alembic_version: str | None = None
 
-    @field_validator("use_arbitrary")
-    @classmethod
-    def format_arbitrary_usage(cls, value):
+    @field_serializer("use_arbitrary")
+    def format_arbitrary_usage(self, value):
+        """Format arbitrary usage for console output"""
         if value:
             return "[green]True[/green]"
         return "[red]False[/red]"
 
 
 class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
-    database_uri: str
-    storage_secret_key: str
-    storage_type: StorageType
+    """This class provides extra validation criteria for arbitrary workspace creation"""
 
     @model_validator(mode="after")
     def validate_storage_settings(self) -> Self:
