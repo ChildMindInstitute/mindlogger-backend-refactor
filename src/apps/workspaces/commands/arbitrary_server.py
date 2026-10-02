@@ -230,8 +230,9 @@ async def show(
 @app.command(short_help="Transfer arbitrary server ownership from one user to another")
 @coro
 async def transfer(
-        owner_email: str = typer.Argument(..., help="Workspace owner email"),
-        new_owner_email: str = typer.Argument(..., help="Workspace target owner email"),):
+    owner_email: str = typer.Argument(..., help="Workspace owner email"),
+    new_owner_email: str = typer.Argument(..., help="Workspace target owner email"),
+):
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         async with atomic(session):
@@ -244,7 +245,9 @@ async def transfer(
 
                 old_data = await owner_ws.get_arbitrary_info_by_owner_id_if_use_arbitrary(owner.id)
                 if not old_data:
-                    raise WorkspaceNotFoundError(f"Arbitrary settings for owner {owner_email} with id {owner.id} not found")
+                    raise WorkspaceNotFoundError(
+                        f"Arbitrary settings for owner {owner_email} with id {owner.id} not found"
+                    )
 
                 data = WorkspaceArbitraryCreate(
                     database_uri=old_data.database_uri,
@@ -268,14 +271,15 @@ async def transfer(
             except WorkspaceNotFoundError as e:
                 error(str(e))
             else:
-                print(f"[green]Abitrary settings for owner {owner_email} with id {owner.id} are transfered to {new_owner_email} with id {new_owner.id}![/green]")
+                print(f"[green]Abitrary settings for owner {owner_email} with id {owner.id} are ", end="")
+                print(f"transfered to {new_owner_email} with id {new_owner.id}![/green]")
+
 
 @app.command(short_help="Remove server settings for an workspace by email")
 @coro
 async def remove(
     owner_email: str = typer.Argument(..., help="Workspace owner email"),
 ):
-
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         async with atomic(session):
