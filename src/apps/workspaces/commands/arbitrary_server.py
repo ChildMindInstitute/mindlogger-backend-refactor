@@ -147,6 +147,7 @@ async def add(
         elif loc[-1] != "__root__":
             loc_str = f"{loc[-1]}: "
         error(loc_str + err["msg"])
+
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         async with atomic(session):
@@ -160,6 +161,7 @@ async def add(
                 error("Arbitrary server is already set. Use --force to rewrite.")
             except (UserNotFound, UserIsDeletedError):
                 error(f"User with email {owner_email} not found")
+
     alembic_version = await get_version(data.database_uri)
     output = WorkSpaceArbitraryConsoleOutput(
         email=owner_email, user_id=owner.id, **data.model_dump(), alembic_version=alembic_version
@@ -220,34 +222,68 @@ async def show(
                 output = WorkSpaceArbitraryConsoleOutput(
                     **arbitrary_fields.model_dump(),
                     email=user.email_encrypted,
-                    user_id=user.id,
                     alembic_version=alembic_version,
                 )
                 print_data_table(output)
 
+
+@app.command(short_help="Transfer arbitrary server ownership from one user to another")
+@coro
+async def transfer(
+        owner_email: str = typer.Argument(..., help="Workspace owner email"),
+        new_owner_email: str = typer.Argument(..., help="Workspace target owner email"),):
+    session_maker = session_manager.get_session()
+    async with session_maker() as session:
+        async with atomic(session):
+            try:
+                owner = await UsersCRUD(session).get_by_email(owner_email)
+                new_owner = await UsersCRUD(session).get_by_email(new_owner_email)
+
+                owner_ws = WorkspaceService(session, owner.id)
+                new_owner_ws = WorkspaceService(session, new_owner.id)
+
+                old_data = await owner_ws.get_arbitrary_info_by_owner_id_if_use_arbitrary(owner.id)
+                if not old_data:
+                    raise WorkspaceNotFoundError(f"Arbitrary settings for owner {owner_email} with id {owner.id} not found")
+
+                data = WorkspaceArbitraryCreate(
+                    database_uri=old_data.database_uri,
+                    storage_type=old_data.storage_type,
+                    storage_url=old_data.storage_url,
+                    storage_access_key=old_data.storage_access_key,
+                    storage_secret_key=old_data.storage_secret_key,
+                    storage_region=old_data.storage_region,
+                    storage_bucket=old_data.storage_bucket,
+                    use_arbitrary=old_data.use_arbitrary,
+                )
+
+                await owner_ws.remove_arbitrary_server()
+                await new_owner_ws.set_arbitrary_server(data, rewrite=False)
+
+            except (UserNotFound, UserIsDeletedError):
+                error(f"User with email {owner_email} not found")
+            except ArbitraryServerSettingsError as e:
+                print_data_table(e.data)
+                error("Arbitrary server is already set. Use --force to rewrite.")
+            except WorkspaceNotFoundError as e:
+                error(str(e))
+            else:
+                print(f"[green]Abitrary settings for owner {owner_email} with id {owner.id} are transfered to {new_owner_email} with id {new_owner.id}![/green]")
+    
+    pass
 
 @app.command(short_help="Remove server settings for an workspace by email")
 @coro
 async def remove(
     owner_email: str = typer.Argument(..., help="Workspace owner email"),
 ):
-    data = WorkspaceArbitraryFields(
-        database_uri=None,
-        storage_type=None,
-        storage_url=None,
-        storage_access_key=None,
-        storage_secret_key=None,
-        storage_region=None,
-        storage_bucket=None,
-        use_arbitrary=False,
-    )
 
     session_maker = session_manager.get_session()
     async with session_maker() as session:
         async with atomic(session):
             try:
                 owner = await UsersCRUD(session).get_by_email(owner_email)
-                await WorkspaceService(session, owner.id).set_arbitrary_server(data, rewrite=True)
+                await WorkspaceService(session, owner.id).remove_arbitrary_server()
             except (UserNotFound, UserIsDeletedError):
                 error(f"User with email {owner_email} not found")
             except WorkspaceNotFoundError as e:
