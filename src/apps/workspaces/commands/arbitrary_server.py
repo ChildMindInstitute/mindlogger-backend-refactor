@@ -269,8 +269,6 @@ async def transfer(
                 error(str(e))
             else:
                 print(f"[green]Abitrary settings for owner {owner_email} with id {owner.id} are transfered to {new_owner_email} with id {new_owner.id}![/green]")
-    
-    pass
 
 @app.command(short_help="Remove server settings for an workspace by email")
 @coro
