@@ -45,7 +45,6 @@ class UserWorkspaceCRUD(BaseCRUD[UserWorkspaceSchema]):
         )
         return instance
 
-
     async def get_by_applet_id(self, applet_id: uuid.UUID) -> UserWorkspaceSchema | None:
         query: Query = (
             select(UserWorkspaceSchema)

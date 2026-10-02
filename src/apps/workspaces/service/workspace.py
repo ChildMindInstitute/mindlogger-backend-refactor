@@ -271,7 +271,6 @@ class WorkspaceService:
         """Returning map {"arbitrary_uri": [applet_ids]}"""
         return await UserWorkspaceCRUD(self.session).get_arbitraries_map_by_applet_ids(applet_ids)
 
-
     async def get_user_answer_db_info(self) -> list[AnswerDbApplets]:
         db_info = await UserWorkspaceCRUD(self.session).get_user_answers_db_info(self._user_id)
 
@@ -313,7 +312,7 @@ class WorkspaceService:
             setattr(schema, k, v)
 
         await repository.update_by_user_id(schema.user_id, schema)
-        
+
     async def remove_arbitrary_server(self) -> None:
         """Delete the arbitrary server settings for the current service user"""
         data = WorkspaceArbitraryFields(

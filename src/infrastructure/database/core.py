@@ -51,5 +51,3 @@ class atomic:
         else:
             await self.session.rollback()
             raise
-
-

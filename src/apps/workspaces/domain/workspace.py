@@ -2,7 +2,7 @@ import datetime
 import uuid
 from typing import Annotated, Self
 
-from pydantic import Field, field_validator, model_validator, ConfigDict, field_serializer
+from pydantic import ConfigDict, Field, field_serializer, field_validator, model_validator
 from pydantic_core.core_schema import ValidationInfo
 from sqlalchemy import Unicode
 from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
@@ -375,7 +375,7 @@ class WorkspaceArbitraryFields(InternalModel):
 
 class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
     model_config = ConfigDict(extra="allow")
-    
+
     user_id: uuid.UUID
     email: str
     alembic_version: str | None = None
