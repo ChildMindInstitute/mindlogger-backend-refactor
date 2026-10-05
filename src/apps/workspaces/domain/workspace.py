@@ -391,6 +391,9 @@ class WorkSpaceArbitraryConsoleOutput(WorkspaceArbitraryFields):
 class WorkspaceArbitraryCreate(WorkspaceArbitraryFields):
     """This class provides extra validation criteria for arbitrary workspace creation"""
 
+    database_uri: str
+    storage_secret_key: str
+
     @model_validator(mode="after")
     def validate_storage_settings(self) -> Self:
         storage_type = self.storage_type

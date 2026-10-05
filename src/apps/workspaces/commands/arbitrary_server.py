@@ -203,7 +203,6 @@ async def show(
                 output = WorkSpaceArbitraryConsoleOutput(
                     **arbitrary_fields.model_dump(),
                     email=owner_email,
-                    user_id=owner.id,
                     alembic_version=alembic_version,
                 )
                 print_data_table(output)
