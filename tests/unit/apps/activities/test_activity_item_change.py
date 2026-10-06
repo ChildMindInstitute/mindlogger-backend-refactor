@@ -6,7 +6,12 @@ import pytest
 from apps.activities.domain.activity_history import ActivityItemHistoryFull
 from apps.activities.domain.conditional_logic import ConditionalLogic, Match
 from apps.activities.domain.conditions import ConditionType, EqualCondition, ValuePayload
-from apps.activities.domain.response_type_config import AdditionalResponseOption, ResponseType, SingleSelectionConfig
+from apps.activities.domain.response_type_config import (
+    AdditionalResponseOption,
+    ResponseType,
+    SingleSelectionConfig,
+    UnityConfig,
+)
 from apps.activities.domain.response_values import (
     SingleSelectionRowsValues,
     SingleSelectionValues,
@@ -464,6 +469,44 @@ def test_single_selection_config_timer_was_added(
     service = ConfigChangeService()
     service.check_update_changes(single_selection_config, new, changes)
     assert [f"Timer was set to {timer}"] == changes
+
+
+@pytest.fixture
+def unity_config() -> UnityConfig:
+    return UnityConfig(type=ResponseType.UNITY, device_type="mobile", file='{"m_sTaskName": "AB Trails"}')
+
+
+def test_initial_unity_config_change(unity_config: UnityConfig) -> None:
+    changes: list[str] = []
+    service = ConfigChangeService()
+    service.check_changes(unity_config, changes)
+    assert changes == ["MERIT Configuration File was added"]
+
+
+def test_initial_unity_config_without_file(unity_config: UnityConfig) -> None:
+    unity_config.file = None
+    changes: list[str] = []
+    service = ConfigChangeService()
+    service.check_changes(unity_config, changes)
+    assert changes == []
+
+
+def test_unity_config_file_updated(unity_config: UnityConfig) -> None:
+    new = unity_config.model_copy(deep=True)
+    new.file = '{"m_sTaskName": "Updated"}'
+    changes: list[str] = []
+    service = ConfigChangeService()
+    service.check_update_changes(unity_config, new, changes)
+    assert changes == ["MERIT Configuration File was updated"]
+
+
+def test_unity_config_device_type_change_is_not_reported(unity_config: UnityConfig) -> None:
+    new = unity_config.model_copy(deep=True)
+    new.device_type = "tablet"
+    changes: list[str] = []
+    service = ConfigChangeService()
+    service.check_update_changes(unity_config, new, changes)
+    assert changes == []
 
 
 def test_initial_version_changes(
