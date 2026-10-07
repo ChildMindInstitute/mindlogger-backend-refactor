@@ -58,6 +58,28 @@ def client_token_claims(content_source: MindloggerContentSource | None) -> dict:
     return {JWTClaim.client: content_source} if content_source else {}
 
 
+def issue_login_tokens(user_id: uuid.UUID, content_source: MindloggerContentSource | None) -> Token:
+    """Create the refresh and access tokens that start a new login session."""
+    rjti = str(uuid.uuid4())
+    refresh_token = AuthenticationService.create_refresh_token(
+        {
+            JWTClaim.sub: str(user_id),
+            JWTClaim.jti: rjti,
+            JWTClaim.family: rjti,
+            **client_token_claims(content_source),
+        }
+    )
+    access_token = AuthenticationService.create_access_token(
+        {
+            JWTClaim.sub: str(user_id),
+            JWTClaim.rjti: rjti,
+            JWTClaim.family: rjti,
+            **client_token_claims(content_source),
+        }
+    )
+    return Token(access_token=access_token, refresh_token=refresh_token)
+
+
 async def revoke_token_family_if_web_admin(session, token: InternalToken) -> None:
     """On logout of a rotating (web/admin) token, revoke its whole family so a superseded
     refresh token in the same chain cannot keep the session alive."""
@@ -122,21 +144,7 @@ async def get_token(
             )
         )
 
-    rjti = str(uuid.uuid4())
-    refresh_token = AuthenticationService.create_refresh_token(
-        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, JWTClaim.family: rjti, **client_token_claims(content_source)}
-    )
-
-    access_token = AuthenticationService.create_access_token(
-        {
-            JWTClaim.sub: str(user.id),
-            JWTClaim.rjti: rjti,
-            JWTClaim.family: rjti,
-            **client_token_claims(content_source),
-        }
-    )
-
-    token = Token(access_token=access_token, refresh_token=refresh_token)
+    token = issue_login_tokens(user.id, content_source)
     public_user = PublicUser.from_user(user)
 
     await log(
@@ -318,24 +326,7 @@ async def verify_mfa_totp(
                 )
 
             # Issue refresh and access tokens
-            rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token(
-                {
-                    JWTClaim.sub: str(user.id),
-                    JWTClaim.jti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
-
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user.id),
-                    JWTClaim.rjti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
+            token = issue_login_tokens(user.id, content_source)
     except BaseError as e:
         await log(
             AuditEvent(
@@ -346,7 +337,6 @@ async def verify_mfa_totp(
         )
         raise
 
-    token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
 
     await log(
@@ -601,24 +591,7 @@ async def verify_mfa_recovery_code(
                 )
 
             # Step 6: Issue refresh and access tokens
-            rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.jti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
-
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.rjti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
+            token = issue_login_tokens(user_id, content_source)
     except BaseError as e:
         await log(
             AuditEvent(
@@ -646,7 +619,6 @@ async def verify_mfa_recovery_code(
         )
     )
 
-    token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
 
     return Response(
