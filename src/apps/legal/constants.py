@@ -7,6 +7,7 @@ class LegalDocType(StrEnum):
 
 class AcceptanceSource(StrEnum):
     SIGNUP = "signup"
+    LOGIN_PROMPT = "login_prompt"
 
 
 class MsaStatus(StrEnum):
