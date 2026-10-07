@@ -28,3 +28,9 @@ class MsaStatusResult(InternalModel):
     status: MsaStatus
     version: str
     deadline: datetime.date | None = None
+
+
+class PublicMsaStatus(PublicModel):
+    status: MsaStatus
+    version: str
+    deadline: datetime.date | None = None
