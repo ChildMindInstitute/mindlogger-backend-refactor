@@ -1,7 +1,7 @@
 import datetime
 import uuid
 
-from apps.legal.constants import AcceptanceSource, LegalDocType
+from apps.legal.constants import AcceptanceSource, LegalDocType, MsaStatus
 from apps.shared.domain import InternalModel, PublicModel
 
 
@@ -22,3 +22,9 @@ class LegalAcceptance(LegalAcceptanceCreate):
 
 class MsaVersion(PublicModel):
     version: str
+
+
+class MsaStatusResult(InternalModel):
+    status: MsaStatus
+    version: str
+    deadline: datetime.date | None = None
