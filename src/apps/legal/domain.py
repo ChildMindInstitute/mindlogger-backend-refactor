@@ -34,3 +34,7 @@ class PublicMsaStatus(PublicModel):
     status: MsaStatus
     version: str
     deadline: datetime.date | None = None
+
+
+class MsaAcceptRequest(PublicModel):
+    msa_version: str
