@@ -673,6 +673,30 @@ class TestApplet:
         applet = response.json()["result"]
         assert applet["version"] == "2.0.0"
 
+    async def test_update_applet_with_unity__config_change_is_patch_version(
+        self, client: TestClient, tom: User, applet_with_all_performance_tasks: AppletFull
+    ):
+        client.login(tom)
+        url = self.applet_detail_url.format(pk=applet_with_all_performance_tasks.id)
+        update_data = applet_with_all_performance_tasks.model_dump()
+
+        # saving without changing the Unity config is a patch change
+        response = await client.put(url, data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.1.1"
+
+        # changing the Unity config file is also a patch change
+        unity_item = next(
+            item
+            for activity in update_data["activities"]
+            for item in activity["items"]
+            if item["response_type"] == ResponseType.UNITY
+        )
+        unity_item["config"]["file"] = '{"m_sTaskName": "Updated"}'
+        response = await client.put(url, data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.1.2"
+
     async def test_get_history_version__applet_version_does_not_exist(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
