@@ -31,6 +31,16 @@ class MFARequiredResponse(PublicModel):
     user_email: EmailStr  # Only need email for the client
 
 
+class MSARequiredResponse(PublicModel):
+    """Response when an admin user must accept the MSA before getting a session."""
+
+    msa_required: bool = True
+    msa_token: str  # JWT that only allows accepting the MSA
+    version: str  # MSA version the user must accept
+    user_id: str
+    user_email: EmailStr
+
+
 class MFATOTPVerifyRequest(PublicModel):
     """Request model for verifying TOTP during MFA."""
 

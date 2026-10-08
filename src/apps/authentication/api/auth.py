@@ -8,7 +8,13 @@ from pydantic import ValidationError
 
 from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
+from apps.authentication.domain.login import (
+    MFARequiredResponse,
+    MFATOTPVerifyRequest,
+    MSARequiredResponse,
+    UserLogin,
+    UserLoginRequest,
+)
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.recovery_code import RecoveryCodeVerifyRequest
 from apps.authentication.domain.token import (
@@ -37,6 +43,8 @@ from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
 from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.services.security import AuthenticationService
+from apps.legal.constants import MsaStatus
+from apps.legal.service import LegalAcceptanceService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
 from apps.shared.response import EmptyResponse
@@ -80,6 +88,23 @@ def issue_login_tokens(user_id: uuid.UUID, content_source: MindloggerContentSour
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
+async def msa_required_response(
+    session, user: User, content_source: MindloggerContentSource | None
+) -> MSARequiredResponse | None:
+    """For an admin login that must accept the MSA first, the response to send instead of tokens."""
+    if content_source != MindloggerContentSource.admin:
+        return None
+    msa_status = await LegalAcceptanceService(session).get_msa_status(user.id)
+    if msa_status.status != MsaStatus.REQUIRED:
+        return None
+    return MSARequiredResponse(
+        msa_token=AuthenticationService.create_msa_token(user.id),
+        version=msa_status.version,
+        user_id=str(user.id),
+        user_email=user.email_encrypted,
+    )
+
+
 async def revoke_token_family_if_web_admin(session, token: InternalToken) -> None:
     """On logout of a rotating (web/admin) token, revoke its whole family so a superseded
     refresh token in the same chain cannot keep the session alive."""
@@ -98,7 +123,7 @@ async def get_token(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin | MFARequiredResponse]:
+) -> Response[UserLogin | MFARequiredResponse | MSARequiredResponse]:
     """Generate the JWT access token."""
     try:
         async with atomic(session):
@@ -144,6 +169,9 @@ async def get_token(
             )
         )
 
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
+
     token = issue_login_tokens(user.id, content_source)
     public_user = PublicUser.from_user(user)
 
@@ -171,7 +199,7 @@ async def verify_mfa_totp(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MSARequiredResponse]:
     """Verify TOTP code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
     try:
@@ -325,8 +353,6 @@ async def verify_mfa_totp(
                     )
                 )
 
-            # Issue refresh and access tokens
-            token = issue_login_tokens(user.id, content_source)
     except BaseError as e:
         await log(
             AuditEvent(
@@ -337,6 +363,10 @@ async def verify_mfa_totp(
         )
         raise
 
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
+
+    token = issue_login_tokens(user.id, content_source)
     public_user = PublicUser.from_user(user)
 
     await log(
@@ -363,7 +393,7 @@ async def verify_mfa_recovery_code(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MSARequiredResponse]:
     """Verify recovery code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
     try:
@@ -590,8 +620,6 @@ async def verify_mfa_recovery_code(
                     )
                 )
 
-            # Step 6: Issue refresh and access tokens
-            token = issue_login_tokens(user_id, content_source)
     except BaseError as e:
         await log(
             AuditEvent(
@@ -611,6 +639,11 @@ async def verify_mfa_recovery_code(
             **http_audit_fields(request),
         )
     )
+
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
+
+    token = issue_login_tokens(user.id, content_source)
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_LOGIN,

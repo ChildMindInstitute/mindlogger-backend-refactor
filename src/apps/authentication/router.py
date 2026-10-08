@@ -12,6 +12,7 @@ from apps.authentication.api.auth import (
 from apps.authentication.deps import openapi_auth
 from apps.authentication.domain.login import (
     MFARequiredResponse,
+    MSARequiredResponse,
     UserLogin,
 )
 from apps.authentication.domain.token.public import Token
@@ -27,9 +28,9 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 # Get token
 router.post(
     "/login",
-    response_model=Response[UserLogin | MFARequiredResponse],
+    response_model=Response[UserLogin | MFARequiredResponse | MSARequiredResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[UserLogin | MFARequiredResponse]},
+        status.HTTP_200_OK: {"model": Response[UserLogin | MFARequiredResponse | MSARequiredResponse]},
         **NO_CONTENT_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
     },
@@ -38,9 +39,9 @@ router.post(
 # Verify MFA TOTP code
 router.post(
     "/mfa/totp/verify",
-    response_model=Response[UserLogin],
+    response_model=Response[UserLogin | MSARequiredResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        status.HTTP_200_OK: {"model": Response[UserLogin | MSARequiredResponse]},
         status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Too many failed attempts"},
         **AUTHENTICATION_ERROR_RESPONSES,
         **DEFAULT_OPENAPI_RESPONSE,
@@ -50,9 +51,9 @@ router.post(
 # Verify MFA recovery code
 router.post(
     "/mfa/recovery-codes/verify",
-    response_model=Response[UserLogin],
+    response_model=Response[UserLogin | MSARequiredResponse],
     responses={
-        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        status.HTTP_200_OK: {"model": Response[UserLogin | MSARequiredResponse]},
         status.HTTP_404_NOT_FOUND: {"description": "No unused recovery codes found"},
         status.HTTP_429_TOO_MANY_REQUESTS: {"description": "Too many failed attempts"},
         **AUTHENTICATION_ERROR_RESPONSES,
