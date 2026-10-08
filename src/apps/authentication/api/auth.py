@@ -8,7 +8,14 @@ from pydantic import ValidationError
 
 from apps.audit import AuditEvent, EventAction, http_audit_fields, log
 from apps.authentication.deps import get_current_token, get_current_user
-from apps.authentication.domain.login import MFARequiredResponse, MFATOTPVerifyRequest, UserLogin, UserLoginRequest
+from apps.authentication.domain.login import (
+    MFARequiredResponse,
+    MFATOTPVerifyRequest,
+    MSAAcceptRequest,
+    MSARequiredResponse,
+    UserLogin,
+    UserLoginRequest,
+)
 from apps.authentication.domain.logout import UserLogoutRequest
 from apps.authentication.domain.recovery_code import RecoveryCodeVerifyRequest
 from apps.authentication.domain.token import (
@@ -29,6 +36,7 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
+    MSAAcceptanceRequiredError,
     TooManyTOTPAttemptsError,
 )
 from apps.authentication.services.mfa_helpers import extract_request_metadata
@@ -37,6 +45,8 @@ from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
 from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.services.security import AuthenticationService
+from apps.legal.constants import AcceptanceSource, MsaStatus
+from apps.legal.service import LegalAcceptanceService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
 from apps.shared.response import EmptyResponse
@@ -58,6 +68,45 @@ def client_token_claims(content_source: MindloggerContentSource | None) -> dict:
     return {JWTClaim.client: content_source} if content_source else {}
 
 
+def issue_login_tokens(user_id: uuid.UUID, content_source: MindloggerContentSource | None) -> Token:
+    """Create the refresh and access tokens that start a new login session."""
+    rjti = str(uuid.uuid4())
+    refresh_token = AuthenticationService.create_refresh_token(
+        {
+            JWTClaim.sub: str(user_id),
+            JWTClaim.jti: rjti,
+            JWTClaim.family: rjti,
+            **client_token_claims(content_source),
+        }
+    )
+    access_token = AuthenticationService.create_access_token(
+        {
+            JWTClaim.sub: str(user_id),
+            JWTClaim.rjti: rjti,
+            JWTClaim.family: rjti,
+            **client_token_claims(content_source),
+        }
+    )
+    return Token(access_token=access_token, refresh_token=refresh_token)
+
+
+async def msa_required_response(
+    session, user: User, content_source: MindloggerContentSource | None
+) -> MSARequiredResponse | None:
+    """For an admin login that must accept the MSA first, the response to send instead of tokens."""
+    if content_source != MindloggerContentSource.admin:
+        return None
+    msa_status = await LegalAcceptanceService(session).get_msa_status(user.id)
+    if msa_status.status != MsaStatus.REQUIRED:
+        return None
+    return MSARequiredResponse(
+        msa_token=AuthenticationService.create_msa_token(user.id),
+        version=msa_status.version,
+        user_id=str(user.id),
+        user_email=user.email_encrypted,
+    )
+
+
 async def revoke_token_family_if_web_admin(session, token: InternalToken) -> None:
     """On logout of a rotating (web/admin) token, revoke its whole family so a superseded
     refresh token in the same chain cannot keep the session alive."""
@@ -76,7 +125,7 @@ async def get_token(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin | MFARequiredResponse]:
+) -> Response[UserLogin | MFARequiredResponse | MSARequiredResponse]:
     """Generate the JWT access token."""
     try:
         async with atomic(session):
@@ -122,21 +171,10 @@ async def get_token(
             )
         )
 
-    rjti = str(uuid.uuid4())
-    refresh_token = AuthenticationService.create_refresh_token(
-        {JWTClaim.sub: str(user.id), JWTClaim.jti: rjti, JWTClaim.family: rjti, **client_token_claims(content_source)}
-    )
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
 
-    access_token = AuthenticationService.create_access_token(
-        {
-            JWTClaim.sub: str(user.id),
-            JWTClaim.rjti: rjti,
-            JWTClaim.family: rjti,
-            **client_token_claims(content_source),
-        }
-    )
-
-    token = Token(access_token=access_token, refresh_token=refresh_token)
+    token = issue_login_tokens(user.id, content_source)
     public_user = PublicUser.from_user(user)
 
     await log(
@@ -163,7 +201,7 @@ async def verify_mfa_totp(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MSARequiredResponse]:
     """Verify TOTP code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
     try:
@@ -317,25 +355,6 @@ async def verify_mfa_totp(
                     )
                 )
 
-            # Issue refresh and access tokens
-            rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token(
-                {
-                    JWTClaim.sub: str(user.id),
-                    JWTClaim.jti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
-
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user.id),
-                    JWTClaim.rjti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
     except BaseError as e:
         await log(
             AuditEvent(
@@ -346,7 +365,10 @@ async def verify_mfa_totp(
         )
         raise
 
-    token = Token(access_token=access_token, refresh_token=refresh_token)
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
+
+    token = issue_login_tokens(user.id, content_source)
     public_user = PublicUser.from_user(user)
 
     await log(
@@ -373,7 +395,7 @@ async def verify_mfa_recovery_code(
     os_version: Annotated[str | None, Header()] = None,
     app_version: Annotated[str | None, Header()] = None,
     content_source: MindloggerContentSource | None = Depends(get_optional_mindlogger_content_source),
-) -> Response[UserLogin]:
+) -> Response[UserLogin | MSARequiredResponse]:
     """Verify recovery code during MFA and return tokens."""
     user_id: uuid.UUID | None = None
     try:
@@ -600,25 +622,6 @@ async def verify_mfa_recovery_code(
                     )
                 )
 
-            # Step 6: Issue refresh and access tokens
-            rjti = str(uuid.uuid4())
-            refresh_token = AuthenticationService.create_refresh_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.jti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
-
-            access_token = AuthenticationService.create_access_token(
-                {
-                    JWTClaim.sub: str(user_id),
-                    JWTClaim.rjti: rjti,
-                    JWTClaim.family: rjti,
-                    **client_token_claims(content_source),
-                }
-            )
     except BaseError as e:
         await log(
             AuditEvent(
@@ -638,6 +641,11 @@ async def verify_mfa_recovery_code(
             **http_audit_fields(request),
         )
     )
+
+    if msa_required := await msa_required_response(session, user, content_source):
+        return Response(result=msa_required)
+
+    token = issue_login_tokens(user.id, content_source)
     await log(
         AuditEvent(
             event_action=EventAction.USER_SESSION_LOGIN,
@@ -646,7 +654,6 @@ async def verify_mfa_recovery_code(
         )
     )
 
-    token = Token(access_token=access_token, refresh_token=refresh_token)
     public_user = PublicUser.from_user(user)
 
     return Response(
@@ -655,6 +662,31 @@ async def verify_mfa_recovery_code(
             user=public_user,
         )
     )
+
+
+async def accept_msa_at_login(
+    request: Request,
+    accept_request: MSAAcceptRequest = Body(...),
+    session=Depends(get_session),
+) -> Response[UserLogin]:
+    """Accept the MSA with the token from login, then finish logging in to admin."""
+    user_id = AuthenticationService.validate_msa_token(accept_request.msa_token)
+    async with atomic(session):
+        user: User = await UsersCRUD(session).get_by_id(user_id)
+        await LegalAcceptanceService(session).accept_msa_once(
+            user_id, AcceptanceSource.LOGIN_PROMPT, request, accept_request.msa_version
+        )
+
+    # MSA tokens are only issued for admin logins
+    token = issue_login_tokens(user_id, MindloggerContentSource.admin)
+    await log(
+        AuditEvent(
+            user_id=user_id,
+            event_action=EventAction.USER_SESSION_LOGIN,
+            **http_audit_fields(request),
+        )
+    )
+    return Response(result=UserLogin(token=token, user=PublicUser.from_user(user)))
 
 
 async def refresh_access_token(
@@ -697,6 +729,12 @@ async def refresh_access_token(
                 raise InvalidRefreshToken() from e
 
             user_id = token_data.sub
+            # Past the MSA deadline, admin sessions end here instead of being renewed
+            if token_data.client == MindloggerContentSource.admin:
+                msa_status = await LegalAcceptanceService(session).get_msa_status(user_id)
+                if msa_status.status == MsaStatus.REQUIRED:
+                    raise MSAAcceptanceRequiredError()
+
             family = token_data.family or token_data.jti
             is_web_admin = token_data.client in (MindloggerContentSource.web, MindloggerContentSource.admin)
 
