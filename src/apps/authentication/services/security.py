@@ -12,6 +12,8 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
+    MSATokenExpiredError,
+    MSATokenInvalidError,
 )
 from apps.authentication.services.core import TokensService
 from apps.shared.bcrypt import get_password_hash, verify
@@ -296,6 +298,43 @@ class AuthenticationService:
             raise MFATokenMalformedError()
 
         return user_id
+
+    @staticmethod
+    def create_msa_token(user_id: uuid.UUID) -> str:
+        """Short-lived token that only lets a blocked admin user accept the MSA and finish logging in."""
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.authentication.mfa_token.expiration)
+        to_encode = {
+            JWTClaim.sub: str(user_id),
+            "purpose": TokenPurpose.MSA,
+            JWTClaim.exp: expire,
+            JWTClaim.jti: str(uuid.uuid4()),
+        }
+        return jwt.encode(
+            to_encode,
+            settings.authentication.mfa_token.secret_key,  # Reuse MFA token secret
+            algorithm=settings.authentication.algorithm,
+        )
+
+    @staticmethod
+    def validate_msa_token(token: str) -> uuid.UUID:
+        """Return the user id from an MSA token, rejecting expired, tampered or wrong-purpose tokens."""
+        try:
+            payload = jwt.decode(
+                token,
+                settings.authentication.mfa_token.secret_key,
+                algorithms=[settings.authentication.algorithm],
+            )
+        except jwt.ExpiredSignatureError:
+            raise MSATokenExpiredError()
+        except jwt.PyJWTError as e:
+            raise MSATokenInvalidError() from e
+
+        if payload.get("purpose") != TokenPurpose.MSA:
+            raise MSATokenInvalidError()
+        try:
+            return uuid.UUID(payload.get(JWTClaim.sub))
+        except (ValueError, TypeError, AttributeError):
+            raise MSATokenInvalidError()
 
     @staticmethod
     def extract_token_payload(token: str, key: str) -> TokenPayload:
