@@ -41,6 +41,13 @@ class MSARequiredResponse(PublicModel):
     user_email: EmailStr
 
 
+class MSAAcceptRequest(PublicModel):
+    """Accept the MSA during login, using the token from MSARequiredResponse."""
+
+    msa_token: str
+    msa_version: str
+
+
 class MFATOTPVerifyRequest(PublicModel):
     """Request model for verifying TOTP during MFA."""
 

@@ -33,6 +33,13 @@ class LegalAcceptanceService:
         )
         return await LegalAcceptancesCRUD(self.session).create(data)
 
+    async def accept_msa_once(
+        self, user_id: uuid.UUID, source: AcceptanceSource, request: Request, version: str
+    ) -> None:
+        """Accept the MSA unless this version is already accepted, so repeat clicks make one row."""
+        if not await LegalAcceptancesCRUD(self.session).has_accepted(user_id, LegalDocType.MSA, version):
+            await self.accept_msa(user_id, source, request, version)
+
     async def get_msa_status(self, user_id: uuid.UUID) -> MsaStatusResult:
         """Whether the user has accepted the current MSA, is in the grace period, or must accept now."""
         version = settings.legal.msa_version

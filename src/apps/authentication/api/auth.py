@@ -11,6 +11,7 @@ from apps.authentication.deps import get_current_token, get_current_user
 from apps.authentication.domain.login import (
     MFARequiredResponse,
     MFATOTPVerifyRequest,
+    MSAAcceptRequest,
     MSARequiredResponse,
     UserLogin,
     UserLoginRequest,
@@ -43,7 +44,7 @@ from apps.authentication.services.mfa_session import MFASessionService
 from apps.authentication.services.recovery_codes import send_recovery_code_notifications, verify_recovery_code_service
 from apps.authentication.services.rotation import TokenRotationService
 from apps.authentication.services.security import AuthenticationService
-from apps.legal.constants import MsaStatus
+from apps.legal.constants import AcceptanceSource, MsaStatus
 from apps.legal.service import LegalAcceptanceService
 from apps.shared.domain.response import Response
 from apps.shared.exception import BaseError
@@ -660,6 +661,31 @@ async def verify_mfa_recovery_code(
             user=public_user,
         )
     )
+
+
+async def accept_msa_at_login(
+    request: Request,
+    accept_request: MSAAcceptRequest = Body(...),
+    session=Depends(get_session),
+) -> Response[UserLogin]:
+    """Accept the MSA with the token from login, then finish logging in to admin."""
+    user_id = AuthenticationService.validate_msa_token(accept_request.msa_token)
+    async with atomic(session):
+        user: User = await UsersCRUD(session).get_by_id(user_id)
+        await LegalAcceptanceService(session).accept_msa_once(
+            user_id, AcceptanceSource.LOGIN_PROMPT, request, accept_request.msa_version
+        )
+
+    # MSA tokens are only issued for admin logins
+    token = issue_login_tokens(user_id, MindloggerContentSource.admin)
+    await log(
+        AuditEvent(
+            user_id=user_id,
+            event_action=EventAction.USER_SESSION_LOGIN,
+            **http_audit_fields(request),
+        )
+    )
+    return Response(result=UserLogin(token=token, user=PublicUser.from_user(user)))
 
 
 async def refresh_access_token(
