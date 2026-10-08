@@ -21,6 +21,7 @@ class AuthErrorCode:
     # MSA acceptance at login
     MSA_TOKEN_INVALID = "AUTH.MSA.TOKEN_INVALID"
     MSA_TOKEN_EXPIRED = "AUTH.MSA.TOKEN_EXPIRED"
+    MSA_REQUIRED = "AUTH.MSA.REQUIRED"
 
     # General authentication errors
     INVALID_CREDENTIALS = "AUTH.INVALID_CREDENTIALS"
