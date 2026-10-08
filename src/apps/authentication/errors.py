@@ -63,6 +63,11 @@ class MSATokenExpiredError(AuthenticationError):
     error_code = AuthErrorCode.MSA_TOKEN_EXPIRED
 
 
+class MSAAcceptanceRequiredError(AccessDeniedError):
+    message = _("The Master Services Agreement must be accepted. Please log in again.")
+    error_code = AuthErrorCode.MSA_REQUIRED
+
+
 class MFASessionNotFoundError(AuthenticationError):
     message = _("MFA session not found or expired")
     error_code = AuthErrorCode.MFA_SESSION_NOT_FOUND

@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 import allure
 import pytest
@@ -8,6 +9,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy import select
 from starlette import status
 
+from apps.authentication.domain.token import JWTClaim
 from apps.authentication.router import router as auth_router
 from apps.authentication.services.security import AuthenticationService
 from apps.legal.db.schemas import LegalAcceptanceSchema
@@ -16,6 +18,7 @@ from config import settings
 
 LOGIN_URL = auth_router.url_path_for("get_token")
 MSA_ACCEPT_URL = auth_router.url_path_for("accept_msa_at_login")
+REFRESH_URL = auth_router.url_path_for("refresh_access_token")
 PASSWORD = "Str0ngPass!word"
 
 
@@ -83,3 +86,15 @@ class TestMsaLogin:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["error_code"] == "LEGAL.MSA_VERSION_OUTDATED"
         assert await self.acceptances(db_session, ferb_user) == []
+
+    async def test_admin_refresh_is_blocked_when_msa_required(self, app: FastAPI, ferb_user: User):
+        jti = str(uuid.uuid4())
+        refresh_token = AuthenticationService.create_refresh_token(
+            {JWTClaim.sub: str(ferb_user.id), JWTClaim.jti: jti, JWTClaim.family: jti, JWTClaim.client: "admin"}
+        )
+
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com") as client:
+            response = await client.post(REFRESH_URL, json={"refreshToken": refresh_token})
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.json()["error_code"] == "AUTH.MSA.REQUIRED"

@@ -36,6 +36,7 @@ from apps.authentication.errors import (
     MFATokenExpiredError,
     MFATokenInvalidError,
     MFATokenMalformedError,
+    MSAAcceptanceRequiredError,
     TooManyTOTPAttemptsError,
 )
 from apps.authentication.services.mfa_helpers import extract_request_metadata
@@ -728,6 +729,12 @@ async def refresh_access_token(
                 raise InvalidRefreshToken() from e
 
             user_id = token_data.sub
+            # Past the MSA deadline, admin sessions end here instead of being renewed
+            if token_data.client == MindloggerContentSource.admin:
+                msa_status = await LegalAcceptanceService(session).get_msa_status(user_id)
+                if msa_status.status == MsaStatus.REQUIRED:
+                    raise MSAAcceptanceRequiredError()
+
             family = token_data.family or token_data.jti
             is_web_admin = token_data.client in (MindloggerContentSource.web, MindloggerContentSource.admin)
 
