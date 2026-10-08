@@ -1,8 +1,7 @@
 from fastapi import Body, Depends, Request
 
 from apps.authentication.deps import get_current_user
-from apps.legal.constants import AcceptanceSource, LegalDocType
-from apps.legal.crud import LegalAcceptancesCRUD
+from apps.legal.constants import AcceptanceSource
 from apps.legal.domain import MsaAcceptRequest, MsaVersion, PublicMsaStatus
 from apps.legal.service import LegalAcceptanceService
 from apps.shared.domain.response import Response
@@ -35,8 +34,6 @@ async def msa_accept(
     """Accept the MSA from the prompt shown after login."""
     service = LegalAcceptanceService(session)
     async with atomic(session):
-        # Skip repeat clicks so one acceptance makes one row
-        if not await LegalAcceptancesCRUD(session).has_accepted(user.id, LegalDocType.MSA, schema.msa_version):
-            await service.accept_msa(user.id, AcceptanceSource.LOGIN_PROMPT, request, schema.msa_version)
+        await service.accept_msa_once(user.id, AcceptanceSource.LOGIN_PROMPT, request, schema.msa_version)
     result = await service.get_msa_status(user.id)
     return Response(result=PublicMsaStatus(**result.model_dump()))

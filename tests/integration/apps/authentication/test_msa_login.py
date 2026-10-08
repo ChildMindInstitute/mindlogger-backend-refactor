@@ -5,12 +5,17 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 from starlette import status
 
 from apps.authentication.router import router as auth_router
+from apps.authentication.services.security import AuthenticationService
+from apps.legal.db.schemas import LegalAcceptanceSchema
+from apps.users import User
 from config import settings
 
 LOGIN_URL = auth_router.url_path_for("get_token")
+MSA_ACCEPT_URL = auth_router.url_path_for("accept_msa_at_login")
 PASSWORD = "Str0ngPass!word"
 
 
@@ -52,3 +57,29 @@ class TestMsaLogin:
         result = await self.login(app, user_email, "web")
 
         assert result["token"]["accessToken"]
+
+    async def accept(self, app: FastAPI, user: User, version: str):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test.com") as client:
+            return await client.post(
+                MSA_ACCEPT_URL,
+                json={"msaToken": AuthenticationService.create_msa_token(user.id), "msaVersion": version},
+            )
+
+    async def acceptances(self, db_session, user: User) -> list[LegalAcceptanceSchema]:
+        query = select(LegalAcceptanceSchema).where(LegalAcceptanceSchema.user_id == user.id)
+        return list((await db_session.scalars(query)).all())
+
+    async def test_accept_at_login_returns_tokens(self, app: FastAPI, db_session, ferb_user: User):
+        response = await self.accept(app, ferb_user, "2026-11-01")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["result"]["token"]["accessToken"]
+        rows = await self.acceptances(db_session, ferb_user)
+        assert [row.source for row in rows] == ["login_prompt"]
+
+    async def test_accept_at_login_rejects_outdated_version(self, app: FastAPI, db_session, ferb_user: User):
+        response = await self.accept(app, ferb_user, "2025-01-01")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["error_code"] == "LEGAL.MSA_VERSION_OUTDATED"
+        assert await self.acceptances(db_session, ferb_user) == []

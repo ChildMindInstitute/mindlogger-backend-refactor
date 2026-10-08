@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.authentication.api.auth import (
+    accept_msa_at_login,
     delete_access_token,
     delete_refresh_token,
     get_token,
@@ -60,6 +61,17 @@ router.post(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(verify_mfa_recovery_code)
+
+# Accept the MSA during login (admin users who must accept first)
+router.post(
+    "/msa/accept",
+    response_model=Response[UserLogin],
+    responses={
+        status.HTTP_200_OK: {"model": Response[UserLogin]},
+        **AUTHENTICATION_ERROR_RESPONSES,
+        **DEFAULT_OPENAPI_RESPONSE,
+    },
+)(accept_msa_at_login)
 
 # Add token to the blacklist
 router.post(
