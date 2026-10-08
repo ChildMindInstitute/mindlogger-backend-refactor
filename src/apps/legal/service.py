@@ -7,6 +7,7 @@ from apps.legal.constants import AcceptanceSource, LegalDocType, MsaStatus
 from apps.legal.crud import LegalAcceptancesCRUD
 from apps.legal.domain import LegalAcceptance, LegalAcceptanceCreate, MsaStatusResult
 from apps.legal.errors import MSAVersionOutdatedError
+from apps.users.cruds.user import UsersCRUD
 from config import settings
 from infrastructure.http.deps import get_optional_mindlogger_content_source
 
@@ -58,5 +59,10 @@ class LegalAcceptanceService:
         return MsaStatusResult(status=MsaStatus.REQUIRED, version=version)
 
     async def _is_existing_admin_user(self, user_id: uuid.UUID) -> bool:
-        """Existing admin users get the grace period: those who accepted an earlier MSA version."""
-        return await LegalAcceptancesCRUD(self.session).has_accepted(user_id, LegalDocType.MSA)
+        """Grace period goes to users who accepted an earlier MSA version or signed up before the cutoff."""
+        if await LegalAcceptancesCRUD(self.session).has_accepted(user_id, LegalDocType.MSA):
+            return True
+        cutoff = settings.legal.msa_grace_signup_cutoff or settings.legal.msa_effective_from
+        created_at = await UsersCRUD(self.session).get_created_at(user_id)
+        # Signing up on the cutoff day itself does not count
+        return cutoff is not None and created_at is not None and created_at.date() < cutoff

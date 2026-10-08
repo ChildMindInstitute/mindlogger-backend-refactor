@@ -55,3 +55,17 @@ class TestMsaStatus:
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
 
         assert result.status == MsaStatus.REQUIRED
+
+    async def test_signed_up_before_cutoff_is_in_grace(self, db_session, ferb_user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.legal, "msa_grace_signup_cutoff", TODAY + datetime.timedelta(days=1))
+
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        assert result.status == MsaStatus.GRACE
+
+    async def test_signed_up_on_cutoff_day_is_required(self, db_session, ferb_user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.legal, "msa_grace_signup_cutoff", TODAY)
+
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        assert result.status == MsaStatus.REQUIRED
