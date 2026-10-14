@@ -51,6 +51,15 @@ class TestMsaStatus:
         assert result.status == MsaStatus.GRACE
         assert result.deadline == EFFECTIVE_FROM + datetime.timedelta(days=60)
 
+    async def test_past_deadline_is_required_with_deadline(self, db_session, ferb_user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.legal, "msa_grace_days", 0)
+        await add_acceptance(db_session, ferb_user, "2025-01-01")
+
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        assert result.status == MsaStatus.REQUIRED
+        assert result.deadline == EFFECTIVE_FROM
+
     async def test_no_acceptance_is_required(self, db_session, ferb_user: User):
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
 

@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import EmailStr, field_validator
 
 from apps.authentication.domain.token import Token
@@ -39,6 +41,7 @@ class MSARequiredResponse(PublicModel):
     version: str  # MSA version the user must accept
     user_id: str
     user_email: EmailStr
+    deadline: datetime.date | None = None  # Set when the user's grace period has ended
 
 
 class MSAAcceptRequest(PublicModel):
