@@ -52,11 +52,13 @@ class LegalAcceptanceService:
         if await LegalAcceptancesCRUD(self.session).has_accepted(user_id, LegalDocType.MSA, version):
             return MsaStatusResult(status=MsaStatus.ACCEPTED, version=version)
 
-        deadline = effective_from + datetime.timedelta(days=settings.legal.msa_grace_days)
-        if today < deadline and await self._is_existing_admin_user(user_id):
-            return MsaStatusResult(status=MsaStatus.GRACE, version=version, deadline=deadline)
+        if not await self._is_existing_admin_user(user_id):
+            return MsaStatusResult(status=MsaStatus.REQUIRED, version=version)
 
-        return MsaStatusResult(status=MsaStatus.REQUIRED, version=version)
+        deadline = effective_from + datetime.timedelta(days=settings.legal.msa_grace_days)
+        # Past the deadline the date is still returned so admin can say when the grace period ended
+        status = MsaStatus.GRACE if today < deadline else MsaStatus.REQUIRED
+        return MsaStatusResult(status=status, version=version, deadline=deadline)
 
     async def _is_existing_admin_user(self, user_id: uuid.UUID) -> bool:
         """Grace period goes to users who accepted an earlier MSA version or signed up before the cutoff."""

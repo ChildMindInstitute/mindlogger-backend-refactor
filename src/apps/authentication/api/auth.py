@@ -104,6 +104,7 @@ async def msa_required_response(
         version=msa_status.version,
         user_id=str(user.id),
         user_email=user.email_encrypted,
+        deadline=msa_status.deadline,
     )
 
 
