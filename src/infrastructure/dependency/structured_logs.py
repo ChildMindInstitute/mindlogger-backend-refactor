@@ -203,10 +203,10 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             # - Error: 5XX (Backend error)
             logger_fn = access_logger.info
             if 400 <= status_code < 500:
-                logger_fn = access_logger.warn
+                logger_fn = access_logger.warning
             elif 600 > status_code >= 500:
                 # TODO Keep an eye on this one and change to warning if too noisy in Datadog
-                logger_fn = access_logger.error
+                logger_fn = access_logger.warning
 
             # Recreate the Uvicorn access log format, but add all parameters as structured information
             logger_fn(
