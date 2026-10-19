@@ -22,14 +22,6 @@ class TestTaskIngestUserData:
                 "success": True,
             }
         )
-        # httpx_mock.add_response(
-        #     url=re.compile(".*/user-management/v1/user"),
-        #     method="GET",
-        #     json={
-        #         "entry": [{"oneup_user_id": 1}],
-        #         "success": True,
-        #     },
-        # )
 
         # mock audit event
         httpx2_mock.get(
@@ -49,23 +41,6 @@ class TestTaskIngestUserData:
                 "total": 4,
             }
         )
-        # httpx_mock.add_response(
-        #     url=re.compile(
-        #         ".*/r4/AuditEvent\\?subtype=data-transfer-initiated%2Cmember-data-ingestion-completed%2Cmember-data-ingestion-timeout.*"
-        #     ),
-        #     method="GET",
-        #     json={
-        #         "entry": [
-        #             {
-        #                 "resource": {"id": "fakeid", "subtype": [{"code": "data-transfer-initiated"}]},
-        #             },
-        #             {
-        #                 "resource": {"id": "fakeid", "subtype": [{"code": "member-data-ingestion-completed"}]},
-        #             },
-        #         ],
-        #         "total": 4,
-        #     },
-        # )
 
         # mock patient resources
         httpx2_mock.get(re.compile(".*/r4/Patient")).respond(
@@ -79,51 +54,6 @@ class TestTaskIngestUserData:
                 ],
             }
         )
-        # httpx_mock.add_response(
-        #     url=re.compile(".*/r4/Patient"),
-        #     method="GET",
-        #     json={
-        #         "total": 1,
-        #         "entry": [
-        #             {
-        #                 "fullUrl": "https://fake.url/r4/Patient/fakeid",
-        #                 "resource": {"id": "health_provider_id_1"},
-        #             }
-        #         ],
-        #     },
-        # )
-        # mock patient resources data
-        # Not called
-        # httpx2_mock.get(re.compile(".*/r4/Patient/fakeid/\\$everything")).respond(json={
-        #         "total": 2,
-        #         "entry": [
-        #             {
-        #                 "fullUrl": "https://fake.url/r4/AllergyIntolerance/fakeid",
-        #                 "resource": {"id": "resource_id_1"},
-        #             },
-        #             {
-        #                 "fullUrl": "https://fake.url/r4/AllergyIntolerance/fakeid2",
-        #                 "resource": {"id": "resource_id_2"},
-        #             },
-        #         ],
-        #     })
-        # httpx_mock.add_response(
-        #     url=re.compile(".*/r4/Patient/fakeid/\\$everything"),
-        #     method="GET",
-        #     json={
-        #         "total": 2,
-        #         "entry": [
-        #             {
-        #                 "fullUrl": "https://fake.url/r4/AllergyIntolerance/fakeid",
-        #                 "resource": {"id": "resource_id_1"},
-        #             },
-        #             {
-        #                 "fullUrl": "https://fake.url/r4/AllergyIntolerance/fakeid2",
-        #                 "resource": {"id": "resource_id_2"},
-        #             },
-        #         ],
-        #     },
-        # )
 
         with patch(
             "apps.integrations.oneup_health.service.ehr_storage.EHRStorage.upload_resources"
