@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-import httpx
+import httpx2
 from taskiq import Context, TaskiqDepends
 
 from apps.answers.crud.answers import AnswersEHRCRUD
@@ -290,7 +290,7 @@ async def task_ingest_user_data(
                             meta=ehr_metadata,
                         )
                     )
-            except (BaseError, httpx.RequestError) as e:
+            except (BaseError, httpx2.RequestError) as e:
                 failed_attempts += 1
                 if failed_attempts > settings.oneup_health.max_error_retries:
                     async with atomic(answer_session):
