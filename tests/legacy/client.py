@@ -4,7 +4,7 @@ import uuid
 from io import BytesIO
 from typing import Any, Mapping
 
-from httpx import ASGITransport, AsyncClient, Response
+from httpx2 import ASGITransport, AsyncClient, Response
 from pydantic import BaseModel
 
 from apps.authentication.domain.token import JWTClaim
