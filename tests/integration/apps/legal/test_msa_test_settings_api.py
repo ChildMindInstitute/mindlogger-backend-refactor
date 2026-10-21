@@ -50,3 +50,20 @@ class TestMsaTestSettingsApi:
             response = await client.put(self.test_settings_url, json={"graceDays": 60})
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    async def test_delete_returns_to_normal_settings(
+        self, create_authorized_client, ferb_user: User, mocker: MockerFixture
+    ):
+        mocker.patch.object(settings.legal, "msa_test_overrides_enabled", True)
+        body = {"effectiveFrom": str(TODAY - datetime.timedelta(days=70)), "graceDays": 60}
+        clear_url = legal_router.url_path_for("msa_test_settings_delete")
+
+        async with create_authorized_client(ferb_user) as client:
+            await client.put(self.test_settings_url, json=body)
+            response = await client.delete(clear_url)
+            current = await client.get(legal_router.url_path_for("msa_test_settings_get"))
+
+        # Enforcement is off in the normal settings
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()["result"]["status"] == "accepted"
+        assert current.json()["result"]["effectiveFrom"] is None
