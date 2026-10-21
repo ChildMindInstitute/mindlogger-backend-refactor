@@ -20,6 +20,13 @@ class LegalAcceptance(LegalAcceptanceCreate):
     id: uuid.UUID
 
 
+class MsaSettings(InternalModel):
+    version: str
+    effective_from: datetime.date | None = None
+    grace_days: int
+    signup_cutoff: datetime.date | None = None
+
+
 class MsaVersion(PublicModel):
     version: str
 
