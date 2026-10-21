@@ -11,6 +11,8 @@ class LegalSettings(BaseModel):
     msa_grace_days: int = 60
     # Accounts created before this day get the grace period; defaults to msa_effective_from
     msa_grace_signup_cutoff: datetime.date | None = None
+    # Lets users set their own MSA test settings; dev only
+    msa_test_overrides_enabled: bool = False
 
     @field_validator("msa_version")
     @classmethod
