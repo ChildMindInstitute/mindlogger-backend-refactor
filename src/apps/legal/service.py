@@ -4,6 +4,7 @@ import uuid
 import pytz
 from fastapi import Request
 
+from apps.legal.cache import MsaTestSettingsCache
 from apps.legal.constants import (
     MSA_DAY_ROLLOVER_HOURS,
     MSA_DAY_TIMEZONE,
@@ -16,6 +17,7 @@ from apps.legal.domain import LegalAcceptance, LegalAcceptanceCreate, MsaSetting
 from apps.legal.errors import MSAVersionOutdatedError
 from apps.users.cruds.user import UsersCRUD
 from config import settings
+from infrastructure.cache import CacheNotFound
 from infrastructure.http.deps import get_optional_mindlogger_content_source
 
 
@@ -77,13 +79,26 @@ class LegalAcceptanceService:
         return MsaStatusResult(status=status, version=version, deadline=deadline)
 
     async def get_msa_settings(self, user_id: uuid.UUID) -> MsaSettings:
-        """The MSA settings that apply to this user."""
-        return MsaSettings(
+        """The MSA settings that apply to this user, with their own test settings on top when enabled."""
+        msa = MsaSettings(
             version=settings.legal.msa_version,
             effective_from=settings.legal.msa_effective_from,
             grace_days=settings.legal.msa_grace_days,
             signup_cutoff=settings.legal.msa_grace_signup_cutoff,
         )
+        if not settings.legal.msa_test_overrides_enabled:
+            return msa
+        try:
+            overrides = (await MsaTestSettingsCache().get(user_id)).instance
+        except CacheNotFound:
+            return msa
+        update = {
+            "version": overrides.msa_version,
+            "effective_from": overrides.effective_from,
+            "grace_days": overrides.grace_days,
+            "signup_cutoff": overrides.grace_signup_cutoff,
+        }
+        return msa.model_copy(update={key: value for key, value in update.items() if value is not None})
 
     async def _is_existing_admin_user(self, user_id: uuid.UUID, cutoff: datetime.date | None) -> bool:
         """Grace period goes to users who accepted an earlier MSA version or signed up before the cutoff."""
