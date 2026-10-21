@@ -6,10 +6,12 @@ from apps.legal.api import (
     msa_accept,
     msa_status_get,
     msa_test_overrides_enabled,
+    msa_test_settings_delete,
+    msa_test_settings_get,
     msa_test_settings_put,
     msa_version_get,
 )
-from apps.legal.domain import MsaVersion, PublicMsaStatus
+from apps.legal.domain import MsaTestSettings, MsaVersion, PublicMsaStatus
 from apps.shared.domain.response import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
 from config import settings
 
@@ -56,3 +58,27 @@ router.put(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(msa_test_settings_put)
+
+router.get(
+    "/msa/test-settings",
+    response_model=Response[MsaTestSettings],
+    dependencies=[Depends(msa_test_overrides_enabled)],
+    include_in_schema=settings.legal.msa_test_overrides_enabled,
+    responses={
+        status.HTTP_200_OK: {"model": Response[MsaTestSettings]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(msa_test_settings_get)
+
+router.delete(
+    "/msa/test-settings",
+    response_model=Response[PublicMsaStatus],
+    dependencies=[Depends(msa_test_overrides_enabled)],
+    include_in_schema=settings.legal.msa_test_overrides_enabled,
+    responses={
+        status.HTTP_200_OK: {"model": Response[PublicMsaStatus]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(msa_test_settings_delete)

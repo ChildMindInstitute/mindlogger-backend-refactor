@@ -9,6 +9,7 @@ from apps.shared.domain.response import Response
 from apps.shared.exception import NotFoundError
 from apps.users.domain import User
 from config import settings
+from infrastructure.cache import CacheNotFound
 from infrastructure.database.core import atomic
 from infrastructure.database.deps import get_session
 
@@ -54,5 +55,24 @@ async def msa_test_settings_put(
 ) -> Response[PublicMsaStatus]:
     """Set the logged-in user's own MSA test settings and return their MSA status under them."""
     await MsaTestSettingsCache().save(user.id, schema)
+    result = await LegalAcceptanceService(session).get_msa_status(user.id)
+    return Response(result=PublicMsaStatus(**result.model_dump()))
+
+
+async def msa_test_settings_get(user: User = Depends(get_current_user)) -> Response[MsaTestSettings]:
+    """The logged-in user's own MSA test settings; all empty when none are set."""
+    try:
+        values = (await MsaTestSettingsCache().get(user.id)).instance
+    except CacheNotFound:
+        values = MsaTestSettings()
+    return Response(result=values)
+
+
+async def msa_test_settings_delete(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> Response[PublicMsaStatus]:
+    """Clear the logged-in user's own MSA test settings and return their status under the normal settings."""
+    await MsaTestSettingsCache().delete(user.id)
     result = await LegalAcceptanceService(session).get_msa_status(user.id)
     return Response(result=PublicMsaStatus(**result.model_dump()))
