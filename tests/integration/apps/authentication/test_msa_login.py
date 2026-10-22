@@ -13,6 +13,7 @@ from apps.authentication.domain.token import JWTClaim
 from apps.authentication.router import router as auth_router
 from apps.authentication.services.security import AuthenticationService
 from apps.legal.db.schemas import LegalAcceptanceSchema
+from apps.legal.service import msa_today
 from apps.users import User
 from config import settings
 
@@ -29,7 +30,7 @@ class TestMsaLogin:
     def msa_enforced(self, mocker: MockerFixture):
         mocker.patch("apps.authentication.api.auth.log")
         mocker.patch.object(settings.legal, "msa_version", "2026-11-01")
-        effective_from = datetime.datetime.now(datetime.timezone.utc).date() - datetime.timedelta(days=1)
+        effective_from = msa_today() - datetime.timedelta(days=1)
         mocker.patch.object(settings.legal, "msa_effective_from", effective_from)
 
     @pytest.fixture

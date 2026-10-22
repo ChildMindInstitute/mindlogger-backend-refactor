@@ -12,6 +12,7 @@ from apps.legal.crud import LegalAcceptancesCRUD
 from apps.legal.db.schemas import LegalAcceptanceSchema
 from apps.legal.domain import LegalAcceptanceCreate
 from apps.legal.router import router as legal_router
+from apps.legal.service import msa_today
 from apps.users import User
 from config import settings
 
@@ -34,7 +35,7 @@ class TestMsaVersionApi:
     async def test_msa_status_shows_grace_deadline(
         self, create_authorized_client, db_session, ferb_user: User, mocker: MockerFixture
     ):
-        effective_from = datetime.datetime.now(datetime.timezone.utc).date() - datetime.timedelta(days=1)
+        effective_from = msa_today() - datetime.timedelta(days=1)
         mocker.patch.object(settings.legal, "msa_version", "2026-11-01")
         mocker.patch.object(settings.legal, "msa_effective_from", effective_from)
         await LegalAcceptancesCRUD(db_session).create(
@@ -54,13 +55,13 @@ class TestMsaVersionApi:
         assert response.json()["result"] == {
             "status": "grace",
             "version": "2026-11-01",
-            "deadline": str(effective_from + datetime.timedelta(days=60)),
+            "deadline": str(effective_from + datetime.timedelta(days=59)),
         }
 
     async def test_msa_accept_saves_one_row(
         self, create_authorized_client, db_session, ferb_user: User, mocker: MockerFixture
     ):
-        effective_from = datetime.datetime.now(datetime.timezone.utc).date() - datetime.timedelta(days=1)
+        effective_from = msa_today() - datetime.timedelta(days=1)
         mocker.patch.object(settings.legal, "msa_version", "2026-11-01")
         mocker.patch.object(settings.legal, "msa_effective_from", effective_from)
 
