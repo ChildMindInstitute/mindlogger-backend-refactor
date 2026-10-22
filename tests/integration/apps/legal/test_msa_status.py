@@ -7,11 +7,11 @@ from pytest_mock import MockerFixture
 from apps.legal.constants import AcceptanceSource, LegalDocType, MsaStatus
 from apps.legal.crud import LegalAcceptancesCRUD
 from apps.legal.domain import LegalAcceptanceCreate
-from apps.legal.service import LegalAcceptanceService
+from apps.legal.service import LegalAcceptanceService, msa_today
 from apps.users import User
 from config import settings
 
-TODAY = datetime.datetime.now(datetime.timezone.utc).date()
+TODAY = msa_today()
 EFFECTIVE_FROM = TODAY - datetime.timedelta(days=1)
 
 
@@ -49,16 +49,26 @@ class TestMsaStatus:
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
 
         assert result.status == MsaStatus.GRACE
-        assert result.deadline == EFFECTIVE_FROM + datetime.timedelta(days=60)
+        assert result.deadline == EFFECTIVE_FROM + datetime.timedelta(days=59)
 
     async def test_past_deadline_is_required_with_deadline(self, db_session, ferb_user: User, mocker: MockerFixture):
-        mocker.patch.object(settings.legal, "msa_grace_days", 0)
+        # A 1-day grace period ends on the effective date itself, which was yesterday
+        mocker.patch.object(settings.legal, "msa_grace_days", 1)
         await add_acceptance(db_session, ferb_user, "2025-01-01")
 
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
 
         assert result.status == MsaStatus.REQUIRED
         assert result.deadline == EFFECTIVE_FROM
+
+    async def test_deadline_day_is_still_grace(self, db_session, ferb_user: User, mocker: MockerFixture):
+        mocker.patch.object(settings.legal, "msa_effective_from", TODAY - datetime.timedelta(days=59))
+        await add_acceptance(db_session, ferb_user, "2025-01-01")
+
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        assert result.status == MsaStatus.GRACE
+        assert result.deadline == TODAY
 
     async def test_no_acceptance_is_required(self, db_session, ferb_user: User):
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
