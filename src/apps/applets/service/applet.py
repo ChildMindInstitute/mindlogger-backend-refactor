@@ -39,6 +39,7 @@ from apps.applets.errors import (
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
+from apps.applets.tasks import send_push_notification
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.schedule.service import ScheduleService
@@ -63,7 +64,7 @@ __all__ = [
 ]
 
 from apps.shared.query_params import QueryParams
-from infrastructure.utility.notification_client import FCMNotification, FirebaseMessage, FirebaseNotificationType
+from infrastructure.utility.notification_client import FirebaseMessage, FirebaseNotificationType
 
 
 class AppletService:
@@ -804,17 +805,23 @@ class AppletService:
             device_ids = []
         respondents_device_ids = await AppletsCRUD(self.session).get_respondents_device_ids(applet_id, respondent_ids)
         respondents_device_ids += device_ids
-        await FCMNotification().notify(
-            respondents_device_ids,
-            FirebaseMessage(
-                title=title,
-                body=body,
-                data=dict(
-                    type=type_,
-                    applet_id=applet_id,
-                ),
+        if not respondents_device_ids:
+            return
+        message = FirebaseMessage(
+            title=title,
+            body=body,
+            data=dict(
+                type=type_,
+                applet_id=applet_id,
             ),
         )
+        # Send on the worker, but wait for the result so errors come back here
+        task = await send_push_notification.kiq(respondents_device_ids, message.model_dump(mode="json"))
+        task_result = await task.wait_result(timeout=settings.task_push_notification.task_wait_timeout)
+        if task_result.is_err:
+            if task_result.error:
+                raise task_result.error
+            raise Exception("Push notification task failed")
 
     async def get_info_by_id(self, applet_id: uuid.UUID, language: str) -> AppletActivitiesBaseInfo:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)

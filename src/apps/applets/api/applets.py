@@ -3,7 +3,6 @@ import uuid
 from copy import deepcopy
 
 from fastapi import Body, Depends
-from firebase_admin.exceptions import FirebaseError
 from starlette.requests import Request
 from starlette.responses import Response as HTTPResponse
 
@@ -178,9 +177,9 @@ async def applet_update(
             "Applet is updated.",
             FirebaseNotificationType.APPLET_UPDATE,
         )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
     return Response(result=public_detail.Applet.model_validate(applet))
 
@@ -433,9 +432,9 @@ async def applet_delete(
             FirebaseNotificationType.APPLET_DELETE,
             device_ids=respondents_device_ids,
         )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
 
 async def applet_set_folder(

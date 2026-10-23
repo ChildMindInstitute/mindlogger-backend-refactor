@@ -4,7 +4,6 @@ from datetime import date, timedelta
 from typing import Annotated
 
 from fastapi import Body, Depends, Header
-from firebase_admin.exceptions import FirebaseError
 
 # TODO: don't use answers error for schedule
 from apps.answers.errors import UserDoesNotHavePermissionError
@@ -60,9 +59,9 @@ async def schedule_create(
                 FirebaseNotificationType.SCHEDULE_UPDATED,
                 respondent_ids=respondent_ids,
             )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
     return Response(result=PublicEvent(**schedule.model_dump()))
 
@@ -146,9 +145,9 @@ async def schedule_delete_all(
                 FirebaseNotificationType.SCHEDULE_UPDATED,
                 respondent_ids=respondent_ids,
             )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
 
 async def schedule_delete_by_id(
@@ -180,9 +179,9 @@ async def schedule_delete_by_id(
                 FirebaseNotificationType.SCHEDULE_UPDATED,
                 respondent_ids=respondent_ids,
             )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
 
 async def schedule_update(
@@ -214,9 +213,9 @@ async def schedule_update(
                 FirebaseNotificationType.SCHEDULE_UPDATED,
                 respondent_ids=respondent_ids,
             )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
     return Response(result=public_event)
 
@@ -255,9 +254,9 @@ async def schedule_delete_by_user(
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
 
 async def schedule_get_all_by_user(
@@ -353,9 +352,9 @@ async def schedule_remove_individual_calendar(
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
 
 # TODO: Add logic to allow to create events by permissions
@@ -400,9 +399,9 @@ async def schedule_create_individual(
             FirebaseNotificationType.SCHEDULE_UPDATED,
             respondent_ids=[respondent_id],
         )
-    except FirebaseError as e:
+    except Exception as e:
         # mute error
-        logger.exception(e)
+        logger.exception(str(e))
 
     return ResponseMulti(result=schedules, count=len(schedules))
 

@@ -25,7 +25,7 @@ from config.redis import RedisSettings
 from config.secret import SecretSettings
 from config.service import JsonLdConverterSettings, ServiceSettings
 from config.superuser import SuperAdmin
-from config.task import AnswerEncryption, AudioFileConvert, ImageConvert
+from config.task import AnswerEncryption, AudioFileConvert, ImageConvert, PushNotification
 
 
 # NOTE: Settings powered by pydantic
@@ -90,6 +90,7 @@ class Settings(BaseSettings):
     task_answer_encryption: AnswerEncryption = AnswerEncryption()
     task_audio_file_convert: AudioFileConvert = AudioFileConvert()
     task_image_convert: ImageConvert = ImageConvert()
+    task_push_notification: PushNotification = PushNotification()
 
     applet_ema: AppletEMASettings = AppletEMASettings()
 

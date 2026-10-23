@@ -841,6 +841,17 @@ class TestApplet:
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=applet_minimal_data)
         assert resp.status_code == http.HTTPStatus.OK
 
+    async def test_update_applet__non_firebase_push_error_muted(
+        self, client, tom, applet_minimal_data, mocker, applet_one
+    ):
+        client.login(tom)
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=ValueError("MulticastMessage.tokens must not contain more than 500 tokens."),
+        )
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=applet_minimal_data)
+        assert resp.status_code == http.HTTPStatus.OK
+
     async def test_update_report_config_for_activity__activity_from_another_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, applet_two, applet_report_configuration_data
     ):
