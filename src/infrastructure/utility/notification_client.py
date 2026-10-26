@@ -10,9 +10,6 @@ from firebase_admin import credentials, messaging
 from apps.shared.domain import InternalModel
 from config import settings
 
-# FCM allows at most 500 tokens per multicast message
-MULTICAST_TOKEN_LIMIT = 500
-
 
 class FirebaseNotificationType(enum.StrEnum):
     RESPONSE = "response-data-alert"
@@ -93,11 +90,12 @@ class FCMNotification:
         if len(devices) == 0:
             return
         elif devices and len(devices) > 1:
-            for i in range(0, len(devices), MULTICAST_TOKEN_LIMIT):
+            batch_size = settings.fcm.multicast_batch_size
+            for i in range(0, len(devices), batch_size):
                 await asyncio.to_thread(
                     messaging.send_each_for_multicast,
                     messaging.MulticastMessage(
-                        devices[i : i + MULTICAST_TOKEN_LIMIT],
+                        devices[i : i + batch_size],
                         android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
                         data=dict(message=json.dumps(message.model_dump(by_alias=True), default=str)),
                         apns=messaging.APNSConfig(
