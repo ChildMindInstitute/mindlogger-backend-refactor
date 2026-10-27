@@ -9,6 +9,7 @@ from firebase_admin import credentials, messaging
 
 from apps.shared.domain import InternalModel
 from config import settings
+from infrastructure.logger import logger
 
 
 class FirebaseNotificationType(enum.StrEnum):
@@ -91,7 +92,13 @@ class FCMNotification:
             return
         elif devices and len(devices) > 1:
             batch_size = settings.fcm.multicast_batch_size
+            test_limit = settings.fcm.test_token_limit
+            if test_limit:
+                logger.warning(f"FCM__TEST_TOKEN_LIMIT is set to {test_limit}, bigger push batches will fail")
             for i in range(0, len(devices), batch_size):
+                # Same error Firebase gives for more than 500 tokens
+                if test_limit and len(devices[i : i + batch_size]) > test_limit:
+                    raise ValueError(f"MulticastMessage.tokens must not contain more than {test_limit} tokens.")
                 await asyncio.to_thread(
                     messaging.send_each_for_multicast,
                     messaging.MulticastMessage(
