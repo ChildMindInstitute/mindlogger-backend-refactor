@@ -18,6 +18,7 @@ python src/cli.py [COMMAND] [SUBCOMMAND] [OPTIONS]
 - `activities` – Commands for processing activities
 - `assessments` – Commands for processing assessments
 - `token` - Generate access token
+- `users` – User management (soft-delete, delete-orphaned)
 
 ## Getting Help
 All commands and subcommands support `--help` for detailed usage, arguments, and options:
@@ -38,6 +39,10 @@ python src/cli.py [COMMAND] --help
 - Add arbitrary server settings:
   ```bash
   python src/cli.py arbitrary add <owner_email> --db-uri <uri> --storage-type <type> --storage-secret-key <key>
+  ```
+- Permanently delete a user with no applets and no applet membership:
+  ```bash
+  python src/cli.py users delete-orphaned <email>
   ```
 
 ## More CLI Documentation
