@@ -1,6 +1,8 @@
 import datetime
 import uuid
 
+from pydantic import Field
+
 from apps.legal.constants import AcceptanceSource, LegalDocType, MsaStatus
 from apps.shared.domain import InternalModel, PublicModel
 
@@ -18,6 +20,13 @@ class LegalAcceptanceCreate(InternalModel):
 
 class LegalAcceptance(LegalAcceptanceCreate):
     id: uuid.UUID
+
+
+class MsaSettings(InternalModel):
+    version: str
+    effective_from: datetime.date | None = None
+    grace_days: int
+    signup_cutoff: datetime.date | None = None
 
 
 class MsaVersion(PublicModel):
@@ -38,3 +47,12 @@ class PublicMsaStatus(PublicModel):
 
 class MsaAcceptRequest(PublicModel):
     msa_version: str
+
+
+class MsaTestSettings(PublicModel):
+    """A user's own MSA test settings; anything not set uses the normal settings."""
+
+    msa_version: str | None = None
+    effective_from: datetime.date | None = None
+    grace_days: int | None = Field(default=None, ge=0)
+    grace_signup_cutoff: datetime.date | None = None

@@ -4,9 +4,10 @@ import allure
 import pytest
 from pytest_mock import MockerFixture
 
+from apps.legal.cache import MsaTestSettingsCache
 from apps.legal.constants import AcceptanceSource, LegalDocType, MsaStatus
 from apps.legal.crud import LegalAcceptancesCRUD
-from apps.legal.domain import LegalAcceptanceCreate
+from apps.legal.domain import LegalAcceptanceCreate, MsaTestSettings
 from apps.legal.service import LegalAcceptanceService, msa_today
 from apps.users import User
 from config import settings
@@ -88,3 +89,37 @@ class TestMsaStatus:
         result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
 
         assert result.status == MsaStatus.REQUIRED
+
+    @pytest.fixture
+    async def past_deadline_test_settings(self, ferb_user: User):
+        # Own test settings that put this existing user past the deadline
+        cache = MsaTestSettingsCache()
+        await cache.save(
+            ferb_user.id,
+            MsaTestSettings(
+                effective_from=TODAY - datetime.timedelta(days=70),
+                grace_days=60,
+                grace_signup_cutoff=TODAY + datetime.timedelta(days=1),
+            ),
+        )
+        yield
+        await cache.delete(ferb_user.id)
+
+    async def test_own_test_settings_apply_when_enabled(
+        self, db_session, ferb_user: User, mocker: MockerFixture, past_deadline_test_settings
+    ):
+        mocker.patch.object(settings.legal, "msa_test_overrides_enabled", True)
+
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        assert result.status == MsaStatus.REQUIRED
+        assert result.deadline == TODAY - datetime.timedelta(days=11)
+
+    async def test_own_test_settings_ignored_when_disabled(
+        self, db_session, ferb_user: User, past_deadline_test_settings
+    ):
+        result = await LegalAcceptanceService(db_session).get_msa_status(ferb_user.id)
+
+        # Normal settings: a new user with no acceptance, so no deadline
+        assert result.status == MsaStatus.REQUIRED
+        assert result.deadline is None
