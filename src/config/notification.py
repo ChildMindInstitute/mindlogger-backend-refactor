@@ -1,6 +1,6 @@
 import base64
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class FirebaseCloudMessagingSettings(BaseModel):
@@ -18,6 +18,10 @@ class FirebaseCloudMessagingSettings(BaseModel):
     client_x509_cert_url: str | None = None
     universe_domain: str | None = None
     ttl: int = 7 * 24 * 60 * 60
+    # Tokens per Firebase call (Firebase allows at most 500); lower it on dev to test batching
+    multicast_batch_size: int = Field(default=500, ge=1, le=500)
+    # Test only: fail Firebase calls with more tokens than this, to fake the >500 error on dev
+    test_token_limit: int | None = Field(default=None, ge=1)
 
     @property
     def certificate(self) -> dict:

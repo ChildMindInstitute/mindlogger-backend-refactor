@@ -9,6 +9,7 @@ from firebase_admin import credentials, messaging
 
 from apps.shared.domain import InternalModel
 from config import settings
+from infrastructure.logger import logger
 
 
 class FirebaseNotificationType(enum.StrEnum):
@@ -90,19 +91,27 @@ class FCMNotification:
         if len(devices) == 0:
             return
         elif devices and len(devices) > 1:
-            await asyncio.to_thread(
-                messaging.send_each_for_multicast,
-                messaging.MulticastMessage(
-                    devices,
-                    android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
-                    data=dict(message=json.dumps(message.model_dump(by_alias=True), default=str)),
-                    apns=messaging.APNSConfig(
-                        headers={"apns-priority": "5"},
-                        payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
+            batch_size = settings.fcm.multicast_batch_size
+            test_limit = settings.fcm.test_token_limit
+            if test_limit:
+                logger.warning(f"FCM__TEST_TOKEN_LIMIT is set to {test_limit}, bigger push batches will fail")
+            for i in range(0, len(devices), batch_size):
+                # Same error Firebase gives for more than 500 tokens
+                if test_limit and len(devices[i : i + batch_size]) > test_limit:
+                    raise ValueError(f"MulticastMessage.tokens must not contain more than {test_limit} tokens.")
+                await asyncio.to_thread(
+                    messaging.send_each_for_multicast,
+                    messaging.MulticastMessage(
+                        devices[i : i + batch_size],
+                        android=messaging.AndroidConfig(ttl=settings.fcm.ttl, priority="high"),
+                        data=dict(message=json.dumps(message.model_dump(by_alias=True), default=str)),
+                        apns=messaging.APNSConfig(
+                            headers={"apns-priority": "5"},
+                            payload=messaging.APNSPayload(aps=messaging.Aps(content_available=True)),
+                        ),
                     ),
-                ),
-                app=self._app,
-            )
+                    app=self._app,
+                )
         else:
             await asyncio.to_thread(
                 messaging.send,
