@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import InstrumentedAttribute, Query
 
@@ -11,11 +11,15 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.folders.db.schemas import FolderSchema
 from apps.integrations.loris.db.schemas import ConsentSchema, MlLorisUserRelationshipSchema
 from apps.invitations.db import InvitationSchema
-from apps.schedule.db.schemas import EventHistorySchema, EventSchema
+from apps.legal.db.schemas import LegalAcceptanceSchema
+from apps.library.db.schemas import CartSchema
+from apps.logs.db.schemas import NotificationLogSchema
+from apps.schedule.db.schemas import EventHistorySchema, EventSchema, UserDeviceEventsHistorySchema
 from apps.subjects.db.schemas import SubjectSchema
 from apps.themes.db.schemas import ThemeSchema
 from apps.transfer_ownership.db import TransferSchema
-from apps.workspaces.db.schemas import UserAppletAccessSchema
+from apps.users.db.schemas import UserDeviceSchema, UserSchema
+from apps.workspaces.db.schemas import UserAppletAccessSchema, UserWorkspaceSchema
 
 # Any row in these columns, even soft deleted, means the user is not orphaned
 BLOCKING_COLUMNS: list[InstrumentedAttribute] = [
@@ -46,6 +50,15 @@ BLOCKING_COLUMNS: list[InstrumentedAttribute] = [
     AnswerNoteSchema.user_id,
 ]
 
+# The user's own rows, deleted together with the user
+OWN_COLUMNS: list[InstrumentedAttribute] = [
+    UserDeviceEventsHistorySchema.user_id,
+    UserDeviceSchema.user_id,
+    CartSchema.user_id,
+    LegalAcceptanceSchema.user_id,
+    UserWorkspaceSchema.user_id,
+]
+
 
 class OrphanedUserService:
     def __init__(self, session: AsyncSession) -> None:
@@ -58,3 +71,10 @@ class OrphanedUserService:
             if await self.session.scalar(select(query)):
                 references.append(f"{column.class_.__tablename__}.{column.key}")
         return references
+
+    async def delete_user(self, user_id: uuid.UUID) -> None:
+        for column in OWN_COLUMNS:
+            await self.session.execute(delete(column.class_).where(column == user_id))
+        # notification_logs stores the user id as text
+        await self.session.execute(delete(NotificationLogSchema).where(NotificationLogSchema.user_id == str(user_id)))
+        await self.session.execute(delete(UserSchema).where(UserSchema.id == user_id))
