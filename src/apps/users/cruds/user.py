@@ -120,6 +120,10 @@ class UsersCRUD(BaseCRUD[UserSchema]):
         db_result = await self._execute(query)
         return db_result.scalars().one_or_none()
 
+    async def get_created_at(self, id_: uuid.UUID) -> datetime.datetime | None:
+        """When the account was created (naive UTC)."""
+        return await self.session.scalar(select(UserSchema.created_at).where(UserSchema.id == id_))
+
     async def get_by_ids(self, ids: Collection[uuid.UUID]) -> List[UserSchema]:
         query: Query = select(UserSchema)
         query = query.where(UserSchema.id.in_(ids))
