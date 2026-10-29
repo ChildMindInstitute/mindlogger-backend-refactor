@@ -6,7 +6,7 @@ from typing import Any, Callable
 import pytest
 import taskiq_fastapi
 from fastapi import FastAPI
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
