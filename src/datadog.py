@@ -33,6 +33,7 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
         botocore=True,
         asyncpg=True,
         httpx=True,
+        httpx2=True,
         jinja2=True,
         requests=True,
         starlette=True,
