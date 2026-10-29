@@ -4,7 +4,7 @@ import uuid
 from io import BytesIO
 from typing import Any, Mapping
 
-from httpx import ASGITransport, AsyncClient, Response
+from httpx2 import ASGITransport, AsyncClient, Response
 from pydantic import BaseModel
 
 from apps.authentication.domain.token import JWTClaim
@@ -36,7 +36,7 @@ class TestClient:
     ) -> dict:
         """Headers for a request whose body is serialized JSON.
 
-        The body is passed to httpx as raw ``content``, so the JSON content type has to be set
+        The body is passed to httpx2 as raw ``content``, so the JSON content type has to be set
         explicitly - Starlette will not parse the body into the endpoint's model without it.
         Skipped for multipart requests and when the caller sets the header itself.
         """
