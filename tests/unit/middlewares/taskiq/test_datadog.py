@@ -1,4 +1,5 @@
 import pytest
+import ddtrace
 from ddtrace import tracer
 from taskiq import InMemoryBroker, TaskiqMessage, TaskiqResult
 
@@ -164,3 +165,14 @@ async def test_end_to_end_with_in_memory_broker(finished_spans):
     assert send.parent_id == request_span.span_id
     assert execute.parent_id == send.span_id
     assert execute.trace_id == request_span.trace_id
+
+
+def test_override_service_name():
+    mw = DatadogTaskiqMiddleware(worker_service="test-service")
+    assert mw._worker_service == "test-service"
+
+
+def test_default_service_name(monkeypatch):
+    ddtrace.config.service = "test-service"
+    mw = DatadogTaskiqMiddleware()
+    assert mw._worker_service == "test-service"

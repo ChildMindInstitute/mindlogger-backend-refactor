@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import ddtrace
 from ddtrace import tracer
 from ddtrace.propagation.http import HTTPPropagator
 from taskiq import TaskiqMessage, TaskiqMiddleware, TaskiqResult
@@ -31,7 +32,10 @@ class DatadogTaskiqMiddleware(TaskiqMiddleware):
     def __init__(self, worker_service: str | None = None) -> None:
         super().__init__()
         # None -> use DD_SERVICE of the worker process.
-        self._worker_service = worker_service
+        if worker_service is None:
+            self._worker_service = ddtrace.config.service
+        else:
+            self._worker_service = worker_service
         self._send_spans: dict[str, Any] = {}
         self._exec_spans: dict[str, Any] = {}
 
@@ -101,12 +105,11 @@ class DatadogTaskiqMiddleware(TaskiqMiddleware):
 
 
 def _flag_error(span: Any, error: BaseException) -> None:
+    """Flag the span with the error information so it shows in Datadog."""
     if error.__traceback__ is not None:
         span.set_exc_info(type(error), error, error.__traceback__)
         return
-    # Span.set_exc_info silently does nothing without a traceback, which is the
-    # case for an exception that was rebuilt or returned rather than raised, so
-    # flag the span ourselves.
+    # Error with no traceback.  Still mark the span as errored
     span.error = 1
     span.set_tag("error.type", f"{type(error).__module__}.{type(error).__qualname__}")
     span.set_tag("error.message", str(error))
