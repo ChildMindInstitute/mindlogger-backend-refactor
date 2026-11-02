@@ -72,7 +72,7 @@ class DatadogTaskiqMiddleware(TaskiqMiddleware):
 
     def pre_execute(self, message: TaskiqMessage) -> TaskiqMessage:
         carrier = {
-            key[len(LABEL_PREFIX):]: value
+            key[len(LABEL_PREFIX) :]: value
             for key, value in message.labels.items()
             if key.startswith(LABEL_PREFIX) and isinstance(value, str)
         }

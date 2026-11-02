@@ -1,4 +1,3 @@
-
 import taskiq_fastapi
 from taskiq import AsyncBroker, InMemoryBroker
 from taskiq.formatters.json_formatter import JSONFormatter

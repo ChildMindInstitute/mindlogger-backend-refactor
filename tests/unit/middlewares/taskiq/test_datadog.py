@@ -1,5 +1,5 @@
-import pytest
 import ddtrace
+import pytest
 from ddtrace import tracer
 from taskiq import InMemoryBroker, TaskiqMessage, TaskiqResult
 
@@ -49,9 +49,7 @@ def ok_result() -> TaskiqResult:
 
 
 def err_result(exc: BaseException) -> TaskiqResult:
-    return TaskiqResult(
-        is_err=True, log=None, return_value=None, execution_time=0.0, error=exc
-    )
+    return TaskiqResult(is_err=True, log=None, return_value=None, execution_time=0.0, error=exc)
 
 
 def test_send_injects_labels_and_parents_to_active_span(finished_spans):
@@ -143,9 +141,7 @@ def test_execute_without_labels_starts_a_new_trace(finished_spans):
 
 @pytest.mark.asyncio
 async def test_end_to_end_with_in_memory_broker(finished_spans):
-    broker = InMemoryBroker(await_inplace=True).with_middlewares(
-        DatadogTaskiqMiddleware()
-    )
+    broker = InMemoryBroker(await_inplace=True).with_middlewares(DatadogTaskiqMiddleware())
 
     @broker.task
     async def add(a: int, b: int) -> int:

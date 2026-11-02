@@ -34,7 +34,6 @@ import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
-import middlewares as middlewares_
 from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.exception import BaseError
 from config import settings
