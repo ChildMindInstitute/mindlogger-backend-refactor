@@ -4,7 +4,7 @@ import uuid
 from unittest.mock import ANY, AsyncMock
 
 import pytest
-from httpx import Response as HttpResponse
+from httpx2 import Response as HttpResponse
 from pytest_mock import MockFixture
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
