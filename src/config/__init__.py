@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     password: PasswordSettings = PasswordSettings()
 
     # Legal agreements
-    legal: LegalSettings = LegalSettings()
+    legal: LegalSettings
 
     # Encryption
     secrets: SecretSettings = SecretSettings()
