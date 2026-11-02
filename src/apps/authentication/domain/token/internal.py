@@ -14,6 +14,7 @@ class TokenPurpose(StrEnum):
     REFRESH = "refresh"
     MFA = "mfa"
     DOWNLOAD_RECOVERY_CODES = "download_recovery_codes"
+    MSA = "msa"
 
 
 class JWTClaim(StrEnum):
