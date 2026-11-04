@@ -296,16 +296,36 @@ class WorkspaceService:
     async def set_arbitrary_server(
         self, data: WorkspaceArbitraryCreate | WorkspaceArbitraryFields, *, rewrite=False
     ) -> None:
+        """Set the arbitrary server settings for the current service user"""
         repository = UserWorkspaceCRUD(self.session)
         schema = await repository.get_by_user_id(self._user_id)
+
         if not schema:
             raise WorkspaceNotFoundError("Workspace not found")
+
         arbitrary_data = WorkspaceArbitraryFields.model_validate(schema)
+
         if not arbitrary_data.is_arbitrary_empty() and not rewrite:
             raise ArbitraryServerSettingsError(arbitrary_data, "Arbitrary settings are already set")
+
         for k, v in data.model_dump(by_alias=False).items():
             setattr(schema, k, v)
+
         await repository.update_by_user_id(schema.user_id, schema)
+
+    async def remove_arbitrary_server(self) -> None:
+        """Delete the arbitrary server settings for the current service user"""
+        data = WorkspaceArbitraryFields(
+            database_uri=None,
+            storage_type=None,
+            storage_url=None,
+            storage_access_key=None,
+            storage_secret_key=None,
+            storage_region=None,
+            storage_bucket=None,
+            use_arbitrary=False,
+        )
+        await self.set_arbitrary_server(data, rewrite=True)
 
     async def get_arbitrary_list(self) -> list[WorkspaceArbitrary]:
         schemas = await UserWorkspaceCRUD(self.session).get_arbitrary_list()

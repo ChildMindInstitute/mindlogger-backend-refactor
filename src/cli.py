@@ -20,7 +20,7 @@ from apps.shared.commands.storage import app as storage_cli  # noqa: E402
 from apps.users.commands.token import app as token_cli  # noqa: E402
 from apps.users.commands.manage import app as user_cli  # noqa: E402
 from apps.users.commands.mfa import app as mfa_cli  # noqa: E402
-from apps.workspaces.commands import arbitrary_server_cli  # noqa: E402
+from apps.workspaces.commands.arbitrary_server import app as arbitrary_server_cli  # noqa: E402
 
 cli = typer.Typer()
 cli.add_typer(arbitrary_server_cli, name="arbitrary")

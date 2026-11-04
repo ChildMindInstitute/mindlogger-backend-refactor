@@ -673,6 +673,30 @@ class TestApplet:
         applet = response.json()["result"]
         assert applet["version"] == "2.0.0"
 
+    async def test_update_applet_with_unity__config_change_is_patch_version(
+        self, client: TestClient, tom: User, applet_with_all_performance_tasks: AppletFull
+    ):
+        client.login(tom)
+        url = self.applet_detail_url.format(pk=applet_with_all_performance_tasks.id)
+        update_data = applet_with_all_performance_tasks.model_dump()
+
+        # saving without changing the Unity config is a patch change
+        response = await client.put(url, data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.1.1"
+
+        # changing the Unity config file is also a patch change
+        unity_item = next(
+            item
+            for activity in update_data["activities"]
+            for item in activity["items"]
+            if item["response_type"] == ResponseType.UNITY
+        )
+        unity_item["config"]["file"] = '{"m_sTaskName": "Updated"}'
+        response = await client.put(url, data=update_data)
+        assert response.status_code == http.HTTPStatus.OK
+        assert response.json()["result"]["version"] == "1.1.2"
+
     async def test_get_history_version__applet_version_does_not_exist(
         self, client: TestClient, tom: User, applet_one: AppletFull
     ):
@@ -813,6 +837,17 @@ class TestApplet:
         mocker.patch(
             "infrastructure.utility.notification_client.FCMNotificationTest.notify",
             side_effect=FireBaseNotFoundError(message="device id not found"),
+        )
+        resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=applet_minimal_data)
+        assert resp.status_code == http.HTTPStatus.OK
+
+    async def test_update_applet__non_firebase_push_error_muted(
+        self, client, tom, applet_minimal_data, mocker, applet_one
+    ):
+        client.login(tom)
+        mocker.patch(
+            "infrastructure.utility.notification_client.FCMNotificationTest.notify",
+            side_effect=ValueError("MulticastMessage.tokens must not contain more than 500 tokens."),
         )
         resp = await client.put(self.applet_detail_url.format(pk=applet_one.id), data=applet_minimal_data)
         assert resp.status_code == http.HTTPStatus.OK

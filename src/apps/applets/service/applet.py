@@ -39,6 +39,7 @@ from apps.applets.errors import (
     AppletsFolderAccessDenied,
 )
 from apps.applets.service.applet_history_service import AppletHistoryService
+from apps.applets.tasks import send_push_notification
 from apps.folders.crud import FolderAppletCRUD, FolderCRUD
 from apps.integrations.crud.integrations import IntegrationsCRUD
 from apps.schedule.service import ScheduleService
@@ -63,7 +64,7 @@ __all__ = [
 ]
 
 from apps.shared.query_params import QueryParams
-from infrastructure.utility.notification_client import FCMNotification, FirebaseMessage, FirebaseNotificationType
+from infrastructure.utility.notification_client import FirebaseMessage, FirebaseNotificationType
 
 
 class AppletService:
@@ -465,26 +466,6 @@ class AppletService:
             if new_activity_items_ids != old_activity_items_ids:
                 return VERSION_DIFFERENCE_ITEM
 
-            # Only check if there is at least one Unity activity in the new payload
-            has_unity = any(getattr(item, "response_type", None) == "unity" for item in new_activity_items)
-            if has_unity:
-                # Fetch old Unity items from DB
-                old_items = await ActivityItemsCRUD(self.session).get_by_activity_ids(list(old_activity_ids))
-                old_unity_items = {
-                    item.id: item for item in old_items if getattr(item, "response_type", None) == "unity"
-                }
-                # Get new Unity items from update payload
-                new_unity_items = {
-                    item.id: item for item in new_activity_items if getattr(item, "response_type", None) == "unity"
-                }
-                # Compare configs for matching Unity items
-                for item_id, old_item in old_unity_items.items():
-                    new_item = new_unity_items.get(item_id)
-                    if new_item is not None:
-                        # Compare config dicts (assuming both are dict-like)
-                        if getattr(old_item, "config", None) != getattr(new_item, "config", None):
-                            return VERSION_DIFFERENCE_ITEM
-
             return VERSION_DIFFERENCE_MINOR
 
     async def get_list_by_single_language(
@@ -824,17 +805,23 @@ class AppletService:
             device_ids = []
         respondents_device_ids = await AppletsCRUD(self.session).get_respondents_device_ids(applet_id, respondent_ids)
         respondents_device_ids += device_ids
-        await FCMNotification().notify(
-            respondents_device_ids,
-            FirebaseMessage(
-                title=title,
-                body=body,
-                data=dict(
-                    type=type_,
-                    applet_id=applet_id,
-                ),
+        if not respondents_device_ids:
+            return
+        message = FirebaseMessage(
+            title=title,
+            body=body,
+            data=dict(
+                type=type_,
+                applet_id=applet_id,
             ),
         )
+        # Send on the worker, but wait for the result so errors come back here
+        task = await send_push_notification.kiq(respondents_device_ids, message.model_dump(mode="json"))
+        task_result = await task.wait_result(timeout=settings.task_push_notification.task_wait_timeout)
+        if task_result.is_err:
+            if task_result.error:
+                raise task_result.error
+            raise Exception("Push notification task failed")
 
     async def get_info_by_id(self, applet_id: uuid.UUID, language: str) -> AppletActivitiesBaseInfo:
         schema = await AppletsCRUD(self.session).get_by_id(applet_id)

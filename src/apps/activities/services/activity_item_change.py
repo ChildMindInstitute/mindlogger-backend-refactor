@@ -77,15 +77,23 @@ class ConfigChangeService(BaseChangeGenerator):
         "text_input_option": "Add Text Input Option",
         "text_input_required": "Input Required",
         "portrait_layout": "Portrait Layout",
+        # MERIT (Unity)
+        "file": "MERIT Configuration File",
     }
+    # Set automatically on creation and not editable, so not reported as a change
+    skipped_fields = ("type", "device_type")
 
     def check_changes(self, value, changes: list[str]) -> None:
         if not value:
             return
         for key, val in value:
-            if key == "type":
+            if key in self.skipped_fields:
                 continue
-            if isinstance(val, bool):
+            if key == "file":
+                # The MERIT config file can be very large, so report it without its contents
+                if val:
+                    changes.append(self._change_text_generator.added_text(self.field_name_verbose_name_map[key]))
+            elif isinstance(val, bool):
                 verbose_name = self.field_name_verbose_name_map[key]
                 self._populate_bool_changes(verbose_name, val, changes)
 
@@ -101,9 +109,13 @@ class ConfigChangeService(BaseChangeGenerator):
         if new_value == old_value:
             return
         for key, val in new_value:
+            if key in self.skipped_fields:
+                continue
             old_val = getattr(old_value, key)
             if val != old_val:
-                if isinstance(val, bool):
+                if key == "file":
+                    changes.append(self._change_text_generator.updated_text(self.field_name_verbose_name_map[key]))
+                elif isinstance(val, bool):
                     vn = self.field_name_verbose_name_map[key]
                     self._populate_bool_changes(vn, val, changes)
                 elif isinstance(val, AdditionalResponseOption):
