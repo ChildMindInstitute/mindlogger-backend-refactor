@@ -1,9 +1,10 @@
-from typing import Iterable, Type
+from typing import Any, Iterable
 
 from asgi_correlation_id import CorrelationIdMiddleware
 from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
 from fastapi.routing import APIRouter
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -34,7 +35,6 @@ import apps.themes.router as themes
 import apps.transfer_ownership.router as transfer_ownership
 import apps.users.router as users
 import apps.workspaces.router as workspaces
-import middlewares as middlewares_
 from apps.authentication.errors import SessionTokenInvalidError
 from apps.shared.exception import BaseError
 from config import settings
@@ -49,6 +49,10 @@ from infrastructure.http.exceptions import (
 )
 from infrastructure.lifespan import lifespan
 from infrastructure.logger import logger
+from middlewares.fastapi.cache_control import CacheControlMiddleware
+from middlewares.fastapi.content_length import ContentLengthLimitMiddleware
+from middlewares.fastapi.cors import cors_options
+from middlewares.fastapi.internalization import InternalizationMiddleware
 
 # Declare your routers here
 routers: Iterable[APIRouter] = (
@@ -88,19 +92,19 @@ routers: Iterable[APIRouter] = (
 )
 
 # Declare your middlewares here
-middlewares: Iterable[tuple[Type[middlewares_.Middleware], dict]] = (
+middlewares: Iterable[tuple[Any, dict]] = (
     (
-        middlewares_.ContentLengthLimitMiddleware,
+        ContentLengthLimitMiddleware,
         dict(
             content_length_limit=settings.content_length_limit,
             methods=["POST"],
         ),
     ),
-    (middlewares_.InternalizationMiddleware, {}),
-    (middlewares_.CORSMiddleware, middlewares_.cors_options),
+    (InternalizationMiddleware, {}),
+    (CORSMiddleware, cors_options),
     (StructuredLoggingMiddleware, {}),
     (CorrelationIdMiddleware, {}),
-    (middlewares_.CacheControlMiddleware, {}),
+    (CacheControlMiddleware, {}),
 )
 
 

@@ -1,13 +1,4 @@
-from fastapi.middleware.cors import CORSMiddleware as _CORSMiddleware
-
 from config import settings
-
-__all__ = ["CORSMiddleware", "cors_options"]
-
-
-class CORSMiddleware(_CORSMiddleware):
-    pass
-
 
 cors_options: dict = {
     "allow_origins": settings.cors.allow_origins,
