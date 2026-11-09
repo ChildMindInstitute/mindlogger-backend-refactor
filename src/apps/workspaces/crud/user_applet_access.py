@@ -905,6 +905,7 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         applet_ids: list[uuid.UUID],
         roles: list[Role],
         invitor_id: uuid.UUID | None = None,
+        owner_id: uuid.UUID | None = None,
     ) -> list[UserAppletAccessSchema]:
         query: Query = select(self.schema_class)
         query = query.where(self.schema_class.soft_exists())
@@ -913,6 +914,8 @@ class UserAppletAccessCRUD(BaseCRUD[UserAppletAccessSchema]):
         query = query.where(self.schema_class.role.in_(roles))
         if invitor_id:
             query = query.where(self.schema_class.invitor_id == invitor_id)
+        if owner_id:
+            query = query.where(self.schema_class.owner_id == owner_id)
 
         db_result = await self._execute(query)
         return db_result.scalars().all()
