@@ -124,11 +124,14 @@ class UserAccessService:
                     schema.user_id,
                 )
 
-    async def _validate_ownership(self, applet_ids: list[uuid.UUID], roles: list[Role]):
+    async def _validate_ownership(
+        self, applet_ids: list[uuid.UUID], roles: list[Role], owner_id: uuid.UUID | None = None
+    ):
         accesses = await UserAppletAccessCRUD(self.session).get_user_applet_accesses_by_roles(
             self._user_id,
             applet_ids,
             roles,
+            owner_id=owner_id,
         )
         owners_applet_ids = [access.applet_id for access in accesses]
         no_access_applets = set(applet_ids) - set(owners_applet_ids)
@@ -251,9 +254,9 @@ class UserAccessService:
     ):
         if manager_id == self._user_id:
             raise AccessDeniedToUpdateOwnAccesses()
-        # Caller must manage every applet they grant on
+        # Caller must manage every applet they grant on, in this workspace
         applet_ids = [access.applet_id for access in access_data.accesses]
-        await self._validate_ownership(applet_ids, [Role.OWNER, Role.MANAGER])
+        await self._validate_ownership(applet_ids, [Role.OWNER, Role.MANAGER], owner_id=owner_id)
         schemas = []
         for access in access_data.accesses:
             for role in access.roles:
