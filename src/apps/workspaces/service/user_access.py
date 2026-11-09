@@ -251,6 +251,9 @@ class UserAccessService:
     ):
         if manager_id == self._user_id:
             raise AccessDeniedToUpdateOwnAccesses()
+        # Caller must manage every applet they grant on
+        applet_ids = [access.applet_id for access in access_data.accesses]
+        await self._validate_ownership(applet_ids, [Role.OWNER, Role.MANAGER])
         schemas = []
         for access in access_data.accesses:
             for role in access.roles:
