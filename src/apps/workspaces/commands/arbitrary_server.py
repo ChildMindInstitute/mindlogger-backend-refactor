@@ -4,7 +4,7 @@ import io
 import uuid
 from typing import Optional
 
-import httpx
+import httpx2
 import typer
 from pydantic import ValidationError
 from rich import print
@@ -329,7 +329,7 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
         presigned_data = storage.generate_presigned_post(key)
         print(f"Presigned POST fields are following: {presigned_data['fields'].keys()}")
         file = io.BytesIO(b"")
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             try:
                 response = await client.post(
                     presigned_data["url"], data=presigned_data["fields"], files={"file": (key, file)}
@@ -339,7 +339,7 @@ async def ping(owner_email: str = typer.Argument(..., help="Workspace owner emai
                 else:
                     error_msg("File upload error")
                     print(response.content)
-            except httpx.HTTPError as e:
+            except httpx2.HTTPError as e:
                 error_msg("File upload error")
                 error(str(e))
 

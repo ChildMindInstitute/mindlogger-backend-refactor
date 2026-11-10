@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-import httpx
+import httpx2
 
 from infrastructure.app import create_app
 
@@ -47,7 +47,7 @@ def save_to_file(spec: dict[str, Any], file_name: str):
 def main():
     old_specification_url = "https://api-dev.cmiml.net/openapi.json"
     new_spec = create_app().openapi()
-    old_spec = httpx.get(old_specification_url).json()
+    old_spec = httpx2.get(old_specification_url).json()
     fix_exclusive_values(new_spec)
     fix_exclusive_values(old_spec)
     save_to_file(new_spec, "new_spec.json")
