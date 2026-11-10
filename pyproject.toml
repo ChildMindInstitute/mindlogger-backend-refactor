@@ -20,7 +20,7 @@ dependencies = [
   "ddtrace~=4.15.6",
   "fastapi>=0.136.0",
   "fastapi-mail>=1.6.3",
-  "firebase-admin==6.9.*",
+  "firebase-admin==7.7.*",
   "jinja2==3.1.*",
   "nh3==0.3.*",
   "pydantic[email]>=2.0",
