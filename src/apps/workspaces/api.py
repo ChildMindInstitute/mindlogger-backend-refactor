@@ -593,6 +593,62 @@ async def workspace_managers_applet_access_set(
         )
 
 
+async def workspace_managers_applet_access_replace(
+    owner_id: uuid.UUID,
+    manager_id: uuid.UUID,
+    request: Request,
+    accesses: ManagerAccesses = Body(...),
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+):
+    applet_ids = [access.applet_id for access in accesses.accesses]
+    try:
+        async with atomic(session):
+            await WorkspaceService(session, user.id).exists_by_owner_id(owner_id)
+            await AppletService(session, user.id).exist_by_ids(applet_ids)
+            await UserService(session).exists_by_id(manager_id)
+
+            await UserAccessService(session, user.id).replace(owner_id, manager_id, accesses)
+    except BaseError as e:
+        for access in accesses.accesses:
+            await log(
+                AuditEvent(
+                    event_action=EventAction.APPLET_ACCESS_GRANT,
+                    user_id=user.id,
+                    user_target_id=manager_id,
+                    user_target_roles=list(access.roles),
+                    curious_applet_id=[access.applet_id],
+                    curious_subject_id=access.subjects or None,
+                    **http_audit_fields(request, e),
+                )
+            )
+        raise
+
+    # Same trail as removing then granting
+    for applet_id in applet_ids:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_REVOKE,
+                user_id=user.id,
+                user_target_id=manager_id,
+                curious_applet_id=[applet_id],
+                **http_audit_fields(request),
+            )
+        )
+    for access in accesses.accesses:
+        await log(
+            AuditEvent(
+                event_action=EventAction.APPLET_ACCESS_GRANT,
+                user_id=user.id,
+                user_target_id=manager_id,
+                user_target_roles=list(access.roles),
+                curious_applet_id=[access.applet_id],
+                curious_subject_id=access.subjects or None,
+                **http_audit_fields(request),
+            )
+        )
+
+
 async def workspace_applet_get_respondent(
     owner_id: uuid.UUID,
     applet_id: uuid.UUID,
