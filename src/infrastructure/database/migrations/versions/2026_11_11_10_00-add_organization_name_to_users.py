@@ -1,8 +1,8 @@
 """Add organization name to users
 
 Revision ID: 49d5bb028673
-Revises: f475633a2836
-Create Date: 2026-09-16 15:44:22.199761
+Revises: 1cac75504b32
+Create Date: 2026-11-11 10:00:00.000000
 
 """
 
@@ -12,7 +12,7 @@ from sqlalchemy_utils import StringEncryptedType
 
 # revision identifiers, used by Alembic.
 revision = "49d5bb028673"
-down_revision = "f475633a2836"
+down_revision = "1cac75504b32"
 branch_labels = None
 depends_on = None
 
