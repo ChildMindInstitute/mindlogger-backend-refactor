@@ -15,6 +15,7 @@ class UserSchema(Base):
     email_encrypted = Column(StringEncryptedType(Unicode, get_key), default=None)
     first_name = Column(StringEncryptedType(Unicode, get_key))
     last_name = Column(StringEncryptedType(Unicode, get_key))
+    organization_name = Column(StringEncryptedType(Unicode, get_key), nullable=True)
     hashed_password = Column(String(length=100))
     last_seen_at = Column(DateTime(), default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     is_super_admin = Column(Boolean(), default=False, server_default="false")
