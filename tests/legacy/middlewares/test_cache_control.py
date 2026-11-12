@@ -4,7 +4,7 @@ from httpx2 import ASGITransport, AsyncClient
 from tests.legacy.base import BaseTest
 
 from apps.users.domain import User
-from middlewares import CacheControlMiddleware
+from middlewares.fastapi.cache_control import CacheControlMiddleware
 
 
 class TestCacheControl(BaseTest):
