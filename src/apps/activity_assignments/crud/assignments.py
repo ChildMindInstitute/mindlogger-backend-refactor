@@ -275,6 +275,37 @@ class ActivityAssigmentCRUD(BaseCRUD[ActivityAssigmentSchema]):
 
         return db_result.scalars().all()
 
+    async def get_by_respondent_subjects(
+        self, respondent_subject_ids: list[uuid.UUID]
+    ) -> list[ActivityAssigmentSchema]:
+        """
+        Returns assignments for the given respondent subjects, each limited to the respondent's own applet.
+        """
+        respondent_schema = aliased(SubjectSchema)
+        target_schema = aliased(SubjectSchema)
+
+        query = (
+            select(ActivityAssigmentSchema)
+            .outerjoin(ActivitySchema, ActivitySchema.id == ActivityAssigmentSchema.activity_id)
+            .outerjoin(ActivityFlowSchema, ActivityFlowSchema.id == ActivityAssigmentSchema.activity_flow_id)
+            .join(respondent_schema, respondent_schema.id == ActivityAssigmentSchema.respondent_subject_id)
+            .join(target_schema, target_schema.id == ActivityAssigmentSchema.target_subject_id)
+            .where(
+                ActivityAssigmentSchema.respondent_subject_id.in_(respondent_subject_ids),
+                or_(
+                    ActivityFlowSchema.applet_id == respondent_schema.applet_id,
+                    ActivitySchema.applet_id == respondent_schema.applet_id,
+                ),
+                ActivityAssigmentSchema.soft_exists(),
+                respondent_schema.soft_exists(),
+                target_schema.soft_exists(),
+            )
+        )
+
+        db_result = await self._execute(query)
+
+        return db_result.scalars().all()
+
     async def upsert(self, values: dict) -> ActivityAssigmentSchema | None:
         stmt = (
             insert(ActivityAssigmentSchema)

@@ -12,7 +12,7 @@ from apps.activity_assignments.domain.assignments import (
 from apps.activity_assignments.service import ActivityAssignmentService
 from apps.applets.service import AppletService
 from apps.authentication.deps import get_current_user
-from apps.shared.domain import Response
+from apps.shared.domain import Response, ResponseMulti
 from apps.shared.exception import NotFoundError
 from apps.shared.query_params import QueryParams, parse_query_params
 from apps.subjects.services import SubjectsService
@@ -138,3 +138,12 @@ async def applet_respondent_assignments(
             assignments=assignments,
         )
     )
+
+
+async def respondent_assignments(
+    user: User = Depends(get_current_user),
+    session=Depends(get_session),
+) -> ResponseMulti[ActivitiesAssignmentsWithSubjects]:
+    applets_assignments = await ActivityAssignmentService(session).get_all_for_respondent_user(user.id)
+
+    return ResponseMulti(result=applets_assignments, count=len(applets_assignments))

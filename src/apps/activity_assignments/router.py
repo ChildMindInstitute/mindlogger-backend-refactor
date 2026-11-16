@@ -6,9 +6,10 @@ from apps.activity_assignments.api import (
     applet_respondent_assignments,
     assignment_delete,
     assignments_create,
+    respondent_assignments,
 )
 from apps.activity_assignments.domain.assignments import ActivitiesAssignments, ActivitiesAssignmentsWithSubjects
-from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response
+from apps.shared.domain import AUTHENTICATION_ERROR_RESPONSES, DEFAULT_OPENAPI_RESPONSE, Response, ResponseMulti
 
 router = APIRouter(prefix="/assignments", tags=["Activity assignments"])
 
@@ -55,6 +56,19 @@ router.get(
 
 # User endpoints
 user_router = APIRouter(prefix="/users", tags=["Users"])
+
+user_router.get(
+    "/me/assignments",
+    description="""
+    Get all activity assignments for logged-in respondent across every applet they can access.
+                """,
+    status_code=status.HTTP_200_OK,
+    responses={
+        status.HTTP_200_OK: {"model": ResponseMulti[ActivitiesAssignmentsWithSubjects]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(respondent_assignments)
 
 user_router.get(
     "/me/assignments/{applet_id}",

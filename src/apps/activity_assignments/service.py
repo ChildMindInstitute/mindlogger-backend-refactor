@@ -7,6 +7,7 @@ from apps.activities.db.schemas import ActivitySchema
 from apps.activity_assignments.crud.assignments import ActivityAssigmentCRUD
 from apps.activity_assignments.db.schemas import ActivityAssigmentSchema
 from apps.activity_assignments.domain.assignments import (
+    ActivitiesAssignmentsWithSubjects,
     ActivityAssignment,
     ActivityAssignmentCreate,
     ActivityAssignmentDelete,
@@ -393,6 +394,35 @@ class ActivityAssignmentService:
 
         assignments = await ActivityAssigmentCRUD(self.session).get_by_applet(applet_id, query_params)
 
+        return await self._with_subject_entities(assignments)
+
+    async def get_all_for_respondent_user(self, user_id: uuid.UUID) -> list[ActivitiesAssignmentsWithSubjects]:
+        """
+        Returns the user's assignments as respondent, grouped by applet, for every applet the user can access.
+        Applets with no assignments are included with an empty list.
+        """
+        respondent_subjects = await SubjectsCrud(self.session).get_by_user_in_accessible_applets(user_id)
+        if not respondent_subjects:
+            return []
+
+        assignments = await ActivityAssigmentCRUD(self.session).get_by_respondent_subjects(
+            [subject.id for subject in respondent_subjects]
+        )
+
+        assignments_by_applet: dict[uuid.UUID, list[ActivityAssignmentWithSubject]] = {
+            subject.applet_id: [] for subject in respondent_subjects
+        }
+        for assignment in await self._with_subject_entities(assignments):
+            assignments_by_applet[assignment.respondent_subject.applet_id].append(assignment)
+
+        return [
+            ActivitiesAssignmentsWithSubjects(applet_id=applet_id, assignments=applet_assignments)
+            for applet_id, applet_assignments in assignments_by_applet.items()
+        ]
+
+    async def _with_subject_entities(
+        self, assignments: list[ActivityAssigmentSchema]
+    ) -> list[ActivityAssignmentWithSubject]:
         subject_ids: set[uuid.UUID] = set()
         for assignment in assignments:
             subject_ids.add(assignment.respondent_subject_id)
