@@ -330,6 +330,32 @@ class TestApplet:
         assert len(result) == 1
         assert result[0]["message"] == DuplicateActivityNameError.message
 
+    async def test_copy_activity_to_another_applet(
+        self, session: AsyncSession, tom: User, applet_minimal_data: AppletCreate, applet_one_with_flow: AppletFull
+    ):
+        srv = AppletService(session, tom.id)
+        data = applet_minimal_data.model_copy(deep=True)
+        data.display_name = "Copy source"
+        data.activities[0].name = "Activity to copy"
+        source = await srv.create(data)
+        source_activity = source.activities[0]
+
+        result = await srv.copy_activity(source.id, source_activity.id, applet_one_with_flow.id)
+
+        # Existing activities and flow are kept, the copy is added last
+        assert [a.id for a in result.activities[:-1]] == [a.id for a in applet_one_with_flow.activities]
+        assert result.activity_flows[0].id == applet_one_with_flow.activity_flows[0].id
+        copied = result.activities[-1]
+        assert copied.order == len(result.activities)
+        assert copied.name == source_activity.name
+        assert copied.id != source_activity.id
+        assert copied.auto_assign == source_activity.auto_assign
+        assert [i.name for i in copied.items] == [i.name for i in source_activity.items]
+        assert not {i.id for i in copied.items} & {i.id for i in source_activity.items}
+
+        source_after = await srv.get_full_applet(source.id)
+        assert [a.id for a in source_after.activities] == [source_activity.id]
+
     async def test_duplicate_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):

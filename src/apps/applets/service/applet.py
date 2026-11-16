@@ -6,9 +6,13 @@ from typing import cast
 from ddtrace import tracer
 
 from apps.activities.crud import ActivitiesCRUD, ActivityItemsCRUD
+from apps.activities.domain.activity_base import ActivityBase
 from apps.activities.domain.activity_create import ActivityCreate, ActivityItemCreate
+from apps.activities.domain.activity_update import ActivityItemUpdate, ActivityUpdate
+from apps.activities.errors import ActivityDoeNotExist
 from apps.activities.services import ActivityHistoryService
 from apps.activities.services.activity import ActivityService
+from apps.activities.services.activity_item import ActivityItemService
 from apps.activity_flows.crud import FlowItemHistoriesCRUD, FlowsCRUD
 from apps.activity_flows.domain.flow_create import FlowCreate, FlowItemCreate
 from apps.activity_flows.service.flow import FlowService
@@ -365,6 +369,35 @@ class AppletService:
             activity_flows=activity_flows,
             encryption=encryption,
         )
+
+    @tracer.wrap(name="applet.copy_activity")
+    async def copy_activity(
+        self, source_applet_id: uuid.UUID, activity_id: uuid.UUID, target_applet_id: uuid.UUID
+    ) -> AppletFull:
+        source = await ActivitiesCRUD(self.session).get_by_id(activity_id)
+        if not source or source.applet_id != source_applet_id:
+            raise ActivityDoeNotExist()
+        items = await ActivityItemService(self.session).get_items_by_activity_ids([activity_id])
+
+        target = await self.get_full_applet(target_applet_id)
+
+        # New key and no ids, so the save creates it as a new activity
+        copied = ActivityUpdate(
+            **ActivityBase.model_validate(source, from_attributes=True).model_dump(),
+            key=uuid.uuid4(),
+            items=[ActivityItemUpdate.model_validate(item.model_dump(exclude={"id"})) for item in items],
+        )
+
+        data = target.model_dump()
+        # Flows point to activities by key in the save payload
+        key_by_id = {activity["id"]: activity["key"] for activity in data["activities"]}
+        for flow in data["activity_flows"]:
+            for flow_item in flow["items"]:
+                flow_item["activity_key"] = key_by_id[flow_item["activity_id"]]
+        data["activities"].append(copied.model_dump())
+
+        # Fails if the target has no encryption; only very old applets lack it
+        return await self.update(target_applet_id, AppletUpdate(**data))
 
     async def _validate_applet_name(
         self, display_name: str, owner_id: uuid.UUID, exclude_by_id: uuid.UUID | None = None
