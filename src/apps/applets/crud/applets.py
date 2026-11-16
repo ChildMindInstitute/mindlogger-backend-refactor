@@ -107,6 +107,11 @@ class AppletsCRUD(BaseCRUD[AppletSchema]):
         instance = await self._fetch(key="id", value=id_)
         return instance
 
+    async def lock_by_id(self, id_: uuid.UUID) -> None:
+        # Held until the transaction ends
+        query: Query = select(AppletSchema.id).where(AppletSchema.id == id_).with_for_update()
+        await self._execute(query)
+
     async def get_by_ids(self, ids: typing.Iterable[uuid.UUID]) -> list[AppletSchema]:
         query: Query = select(AppletSchema)
         query = query.where(AppletSchema.id.in_(ids))

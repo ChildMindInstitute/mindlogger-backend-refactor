@@ -2,6 +2,7 @@ from fastapi.routing import APIRouter
 from starlette import status
 
 from apps.applets.api.applets import (
+    activity_copy,
     activity_report_config_update,
     applet_conceal,
     applet_delete,
@@ -244,6 +245,18 @@ router.put(
         **DEFAULT_OPENAPI_RESPONSE,
     },
 )(activity_report_config_update)
+
+router.post(
+    "/{applet_id}/activities/{activity_id}/copy",
+    description="""Copy an activity to the end of another applet""",
+    status_code=status.HTTP_200_OK,
+    response_model=Response[public_detail.Applet],
+    responses={
+        status.HTTP_200_OK: {"model": Response[public_detail.Applet]},
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(activity_copy)
 
 
 router.put(

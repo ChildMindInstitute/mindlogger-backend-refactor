@@ -23,6 +23,7 @@ from apps.applets.domain.applet import (
     AppletSingleLanguageInfoPublic,
 )
 from apps.applets.domain.applet_create_update import (
+    ActivityCopyRequest,
     AppletCreate,
     AppletDuplicateRequest,
     AppletReportConfiguration,
@@ -234,6 +235,36 @@ async def applet_duplicate(
         applet = await service.duplicate(
             applet_for_duplicate, schema.display_name, schema.encryption, schema.include_report_server
         )
+    return Response(result=public_detail.Applet.model_validate(applet))
+
+
+async def activity_copy(
+    applet_id: uuid.UUID,
+    activity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    schema: ActivityCopyRequest = Body(...),
+    session=Depends(get_session),
+) -> Response[public_detail.Applet]:
+    target_applet_id = schema.target_applet_id
+    async with atomic(session):
+        service = AppletService(session, user.id)
+        await service.exist_by_id(applet_id)
+        await service.exist_by_id(target_applet_id)
+        access_service = CheckAccessService(session, user.id)
+        await access_service.check_applet_edit_access(applet_id)
+        await access_service.check_applet_edit_access(target_applet_id)
+        applet = await service.copy_activity(applet_id, activity_id, target_applet_id)
+    try:
+        await service.send_notification_to_applet_respondents(
+            target_applet_id,
+            "Applet is updated.",
+            "Applet is updated.",
+            FirebaseNotificationType.APPLET_UPDATE,
+        )
+    except Exception as e:
+        # mute error
+        logger.exception(str(e))
+
     return Response(result=public_detail.Applet.model_validate(applet))
 
 

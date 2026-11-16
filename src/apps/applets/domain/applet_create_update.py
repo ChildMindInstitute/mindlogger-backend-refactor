@@ -1,3 +1,4 @@
+import uuid
 from typing import Annotated, Self
 
 from pydantic import Field, model_validator
@@ -104,3 +105,7 @@ class AppletDuplicateRequest(InternalModel):
     display_name: str
     encryption: Encryption
     include_report_server: bool = False
+
+
+class ActivityCopyRequest(InternalModel):
+    target_applet_id: uuid.UUID
