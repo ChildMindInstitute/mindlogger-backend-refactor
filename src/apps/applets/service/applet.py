@@ -381,9 +381,13 @@ class AppletService:
 
         target = await self.get_full_applet(target_applet_id)
 
+        activity_data = ActivityBase.model_validate(source, from_attributes=True).model_dump()
+        activity_data["name"] = self._get_unique_activity_name(
+            activity_data["name"], {activity.name for activity in target.activities}
+        )
         # New key and no ids, so the save creates it as a new activity
         copied = ActivityUpdate(
-            **ActivityBase.model_validate(source, from_attributes=True).model_dump(),
+            **activity_data,
             key=uuid.uuid4(),
             items=[ActivityItemUpdate.model_validate(item.model_dump(exclude={"id"})) for item in items],
         )
@@ -398,6 +402,17 @@ class AppletService:
 
         # Fails if the target has no encryption; only very old applets lack it
         return await self.update(target_applet_id, AppletUpdate(**data))
+
+    @staticmethod
+    def _get_unique_activity_name(name: str, existing_names: set[str]) -> str:
+        # Same rule as the admin builder: "Name (1)", "Name (2)", ...
+        while name in existing_names:
+            match = re.search(r"\((\d+)\)$", name)
+            if match:
+                name = f"{name[: match.start()]}({int(match.group(1)) + 1})"
+            else:
+                name = f"{name} (1)"
+        return name
 
     async def _validate_applet_name(
         self, display_name: str, owner_id: uuid.UUID, exclude_by_id: uuid.UUID | None = None

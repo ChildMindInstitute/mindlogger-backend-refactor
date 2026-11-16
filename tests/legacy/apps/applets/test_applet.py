@@ -356,6 +356,27 @@ class TestApplet:
         source_after = await srv.get_full_applet(source.id)
         assert [a.id for a in source_after.activities] == [source_activity.id]
 
+    async def test_copy_activity_renames_on_name_clash(
+        self, session: AsyncSession, tom: User, applet_minimal_data: AppletCreate
+    ):
+        srv = AppletService(session, tom.id)
+        activity = applet_minimal_data.activities[0]
+        source_data = applet_minimal_data.model_copy(deep=True)
+        source_data.display_name = "Copy source"
+        source_data.activities = [activity.model_copy(update={"name": "X"})]
+        target_data = applet_minimal_data.model_copy(deep=True)
+        target_data.display_name = "Copy target"
+        target_data.activities = [
+            activity.model_copy(update={"name": "X", "key": uuid.uuid4()}),
+            activity.model_copy(update={"name": "X (1)", "key": uuid.uuid4()}),
+        ]
+        source = await srv.create(source_data)
+        target = await srv.create(target_data)
+
+        result = await srv.copy_activity(source.id, source.activities[0].id, target.id)
+
+        assert [a.name for a in result.activities] == ["X", "X (1)", "X (2)"]
+
     async def test_duplicate_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
     ):
