@@ -374,6 +374,8 @@ class AppletService:
     async def copy_activity(
         self, source_applet_id: uuid.UUID, activity_id: uuid.UUID, target_applet_id: uuid.UUID
     ) -> AppletFull:
+        # Lock the target so simultaneous copies run one after another
+        await AppletsCRUD(self.session).lock_by_id(target_applet_id)
         source = await ActivitiesCRUD(self.session).get_by_id(activity_id)
         if not source or source.applet_id != source_applet_id:
             raise ActivityDoeNotExist()
