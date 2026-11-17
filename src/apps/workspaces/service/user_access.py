@@ -326,7 +326,6 @@ class UserAccessService:
         if manager_id == self._user_id:
             raise AccessDeniedToUpdateOwnAccesses()
         applet_ids = [access.applet_id for access in access_data.accesses]
-        await self._validate_ownership(applet_ids, [Role.OWNER, Role.MANAGER], owner_id=owner_id)
         # Fails unless the member is already on every applet
         await self.remove_manager_access(RemoveManagerAccess(user_id=manager_id, applet_ids=applet_ids))
         await self.set(owner_id, manager_id, access_data)
