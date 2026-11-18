@@ -4,9 +4,11 @@ from typing import Annotated
 import typer
 from rich import print
 
+from apps.shared.hashing import hash_sha224
 from apps.subjects.crud import SubjectsCrud
 from apps.users import UserIsDeletedError, UserNotFound, UsersCRUD
 from apps.users.domain import SoftDeleteUserRequest
+from apps.users.services.orphaned_user import OrphanedUserService
 from infrastructure.commands.utils import coro
 from infrastructure.database import atomic, session_manager
 
@@ -73,6 +75,42 @@ async def soft_delete(
             await subjects_crud.update(subject)
 
             print(f"[bold green]User {user_id} soft deleted successfully[/bold green]")
+
+
+@app.command(
+    short_help="Delete an orphaned user",
+    help="Permanently delete a user who has no applets and no applet membership",
+)
+@coro
+async def delete_orphaned(
+    email: Annotated[str, typer.Argument(help="User email")],
+    yes: Annotated[bool, typer.Option(help="Do not prompt for confirmation")] = False,
+):
+    s_maker = session_manager.get_session()
+    async with s_maker() as session:
+        async with atomic(session):
+            service = OrphanedUserService(session)
+
+            # Not get_by_email, it raises on soft deleted users
+            user = await UsersCRUD(session)._get("email", hash_sha224(email.lower()))
+            if not user:
+                raise typer.BadParameter("User does not exist")
+
+            if user.is_super_admin or user.is_anonymous_respondent:
+                raise typer.BadParameter("Cannot delete a system user")
+
+            references = await service.get_blocking_references(user.id)
+            if references:
+                raise typer.BadParameter(f"User is not orphaned: {', '.join(references)}")
+
+            print(f"[bold green]Found orphaned user {user.id}[/bold green]")
+
+            if not yes:
+                typer.confirm("Are you sure that you want to permanently delete this user?", abort=True)
+
+            await service.delete_user(user.id)
+
+            print(f"[bold green]User {user.id} deleted successfully[/bold green]")
 
 
 # Placeholder until there are more commands, mostly for testing
