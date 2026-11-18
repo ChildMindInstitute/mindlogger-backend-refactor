@@ -44,4 +44,10 @@ if os.getenv("DD_TRACE_ENABLED", "false").lower() == "true":
     )
     config.botocore["distributed_tracing"] = True
 
-    logger.info("Structured logging configured")
+    logger.info("Datadog tracing enabled")
+
+if os.getenv("DD_RUNTIME_METRICS_ENABLED", "false").lower() == "true":
+    from ddtrace.runtime import RuntimeMetrics
+    RuntimeMetrics.enable()
+
+    logger.info("Datadog runtime metrics enabled")
