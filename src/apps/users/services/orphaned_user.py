@@ -11,7 +11,9 @@ from apps.applets.db.schemas import AppletHistorySchema, AppletSchema
 from apps.folders.db.schemas import FolderSchema
 from apps.integrations.loris.db.schemas import ConsentSchema, MlLorisUserRelationshipSchema
 from apps.invitations.db import InvitationSchema
-from apps.legal.db.schemas import LegalAcceptanceSchema
+
+# Temporarily remove for release/2026.11.2 only because the release branch excludes MSA changes
+# from apps.legal.db.schemas import LegalAcceptanceSchema
 from apps.library.db.schemas import CartSchema
 from apps.logs.db.schemas import NotificationLogSchema
 from apps.schedule.db.schemas import EventHistorySchema, EventSchema, UserDeviceEventsHistorySchema
@@ -55,7 +57,8 @@ OWN_COLUMNS: list[InstrumentedAttribute] = [
     UserDeviceEventsHistorySchema.user_id,
     UserDeviceSchema.user_id,
     CartSchema.user_id,
-    LegalAcceptanceSchema.user_id,
+    # Temporarily remove for release/2026.11.2 only because the release branch excludes MSA changes
+    # LegalAcceptanceSchema.user_id,
     UserWorkspaceSchema.user_id,
 ]
 
