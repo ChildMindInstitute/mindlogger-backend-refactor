@@ -7,7 +7,7 @@ import zipfile
 from datetime import datetime, timezone
 from functools import reduce
 
-import httpx
+import httpx2
 from slugify import slugify
 
 from apps.integrations.oneup_health.errors import (
@@ -171,7 +171,7 @@ class OneupHealthAPIClient:
             OneUpHealthAPIError: If the API returns any other error status code or an unsuccessful response.
         """
         try:
-            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
+            async with httpx2.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
                 resp = await client.post(url=url_path, data=data, params=params)
                 OneupHealthAPIClient._handle_error(resp, url_path)
 
@@ -181,7 +181,7 @@ class OneupHealthAPIClient:
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
@@ -201,14 +201,14 @@ class OneupHealthAPIClient:
             OneUpHealthAPIError: If the API returns any other error status code.
         """
         try:
-            async with httpx.AsyncClient(base_url=self._auth_base_url) as client:
+            async with httpx2.AsyncClient(base_url=self._auth_base_url) as client:
                 resp = await client.post(url=url_path, data={**data, **self._default_headers})
                 OneupHealthAPIClient._handle_error(resp, url_path)
 
                 result = resp.json()
 
                 return result
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 
@@ -229,7 +229,7 @@ class OneupHealthAPIClient:
             OneUpHealthAPIError: If the API returns any other error status code or an unsuccessful response.
         """
         try:
-            async with httpx.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
+            async with httpx2.AsyncClient(base_url=self._base_url, headers=self._default_headers) as client:
                 resp = await client.get(
                     url=url_path, params=params, headers={**(headers if headers else {}), **self._default_headers}
                 )
@@ -242,7 +242,7 @@ class OneupHealthAPIClient:
                     raise OneUpHealthAPIErrorMessageMap.get(result.get("error"), OneUpHealthAPIError)()
 
                 return result
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             logger.warning(f"Error requesting to OneUp health API {url_path} - {str(e)}", exc_info=True)
             raise OneUpHealthAPIError()
 

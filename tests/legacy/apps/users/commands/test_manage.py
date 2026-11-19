@@ -3,6 +3,7 @@ from typing import AsyncGenerator
 
 import pytest
 import typer
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio.session import AsyncSession
 from typer.testing import CliRunner
 
@@ -14,8 +15,12 @@ from apps.subjects.services import SubjectsService
 from apps.users import UserSchema, UsersCRUD
 from apps.users.commands.manage import NAME_CHECK
 from apps.users.commands.manage import app as manage_app
-from apps.users.domain import User, UserCreate
+from apps.users.db.schemas import UserDeviceSchema
+from apps.users.domain import User, UserCreate, UserDeviceCreate
 from apps.users.services.user import UserService
+from apps.users.services.user_device import UserDeviceService
+from apps.workspaces.db.schemas import UserWorkspaceSchema
+from apps.workspaces.service.workspace import WorkspaceService
 from infrastructure.database import atomic
 
 
@@ -240,3 +245,31 @@ class TestUsersManage:
 
         assert result.exit_code == 2
         assert "User is already soft deleted" in result.output
+
+    async def test_delete_orphaned(
+        self, app: typer.Typer, runner: CliRunner, regular_user: User, global_session: AsyncSession
+    ) -> None:
+        async with atomic(global_session):
+            await WorkspaceService(global_session, regular_user.id).create_workspace_from_user(regular_user)
+            await UserDeviceService(global_session, regular_user.id).add_device(UserDeviceCreate(device_id="device"))
+
+        result = runner.invoke(app, ["delete-orphaned", "--yes", self.USER_EMAIL])
+
+        assert result.exit_code == 0
+        for column in (UserSchema.id, UserWorkspaceSchema.user_id, UserDeviceSchema.user_id):
+            rows = await global_session.execute(select(column).where(column == regular_user.id))
+            assert rows.first() is None
+
+    async def test_delete_orphaned_refuses_applet_member(
+        self,
+        app: typer.Typer,
+        runner: CliRunner,
+        regular_user: User,
+        regular_subject: Subject,
+        global_session: AsyncSession,
+    ) -> None:
+        result = runner.invoke(app, ["delete-orphaned", "--yes", self.USER_EMAIL])
+
+        assert result.exit_code == 2
+        assert "User is not orphaned: subjects.user_id" in result.output
+        assert await UsersCRUD(global_session)._get("id", regular_user.id) is not None

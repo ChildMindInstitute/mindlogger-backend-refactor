@@ -5,7 +5,6 @@ from asyncpg import InvalidPasswordError
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import ORJSONResponse  # Fast, efficient JSON response
 from fastapi.routing import APIRouter
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -25,6 +24,7 @@ import apps.integrations.oneup_health.router as oneup_health
 import apps.integrations.prolific.router as prolific
 import apps.integrations.router as integrations
 import apps.invitations.router as invitations
+import apps.legal.router as legal
 import apps.library.router as library
 import apps.logs.router as logs
 import apps.schedule.router as schedule
@@ -87,6 +87,7 @@ routers: Iterable[APIRouter] = (
     integrations.router,
     oneup_health.router,
     audit.router,
+    legal.router,
 )
 
 # Declare your middlewares here
@@ -110,7 +111,6 @@ def create_app():
     # Create base FastAPI application
     app = FastAPI(
         description=f"Commit id: <b>{settings.commit_id}</b><br>Version: <b>{settings.version}</b>",
-        default_response_class=ORJSONResponse,
         debug=settings.debug,
         lifespan=lifespan,
     )

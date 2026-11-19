@@ -939,6 +939,31 @@ class TestWorkspaces(BaseTest):
         assert response.status_code == 200, response.json()
         # TODO: check from database results
 
+    async def test_set_workspace_manager_accesses_on_applet_caller_does_not_manage(
+        self, client, session, tom, lucy, bob, applet_one
+    ):
+        # Lucy names her own workspace but grants on Tom's applet
+        client.login(lucy)
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=lucy.id, manager_id=bob.id),
+            dict(accesses=[{"applet_id": str(applet_one.id), "roles": ["manager"]}]),
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()
+        assert not await UserAppletAccessService(session, bob.id, applet_one.id).has_role(Role.MANAGER)
+
+    async def test_set_workspace_manager_accesses_on_applet_from_other_workspace(
+        self, client, lucy, bob, applet_one_lucy_manager
+    ):
+        # Lucy manages Tom's applet but names her own workspace
+        client.login(lucy)
+        response = await client.post(
+            self.workspace_manager_accesses_url.format(owner_id=lucy.id, manager_id=bob.id),
+            dict(accesses=[{"applet_id": str(applet_one_lucy_manager.id), "roles": ["coordinator"]}]),
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()
+
     async def test_pin_workspace_respondents(self, client, tom, applet_one, applet_one_lucy_respondent):
         client.login(tom)
         response = await client.get(

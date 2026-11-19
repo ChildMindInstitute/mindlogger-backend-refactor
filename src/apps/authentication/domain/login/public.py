@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import EmailStr, field_validator
 
 from apps.authentication.domain.token import Token
@@ -29,6 +31,24 @@ class MFARequiredResponse(PublicModel):
     mfa_token: str  # JWT for MFA verification
     user_id: str  # Only need ID for the client
     user_email: EmailStr  # Only need email for the client
+
+
+class MSARequiredResponse(PublicModel):
+    """Response when an admin user must accept the MSA before getting a session."""
+
+    msa_required: bool = True
+    msa_token: str  # JWT that only allows accepting the MSA
+    version: str  # MSA version the user must accept
+    user_id: str
+    user_email: EmailStr
+    deadline: datetime.date | None = None  # Set when the user's grace period has ended
+
+
+class MSAAcceptRequest(PublicModel):
+    """Accept the MSA during login, using the token from MSARequiredResponse."""
+
+    msa_token: str
+    msa_version: str
 
 
 class MFATOTPVerifyRequest(PublicModel):
