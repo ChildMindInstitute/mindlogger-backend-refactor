@@ -976,6 +976,45 @@ class TestActivityAssignments(BaseTest):
         response = await client.get(self.user_activities_assignments.format(applet_id=applet_one.id))
         assert response.json()["result"]["assignments"] == applet_one_assignments
 
+    async def test_assignment_list_by_respondent_all_applets_includes_flows(
+        self,
+        client: TestClient,
+        applet_one_with_flow: AppletFull,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+    ):
+        client.login(tom)
+
+        assignments_create = ActivitiesAssignmentsCreate(
+            assignments=[
+                ActivityAssignmentCreate(
+                    activity_flow_id=applet_one_with_flow.activity_flows[0].id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                )
+            ]
+        )
+        response = await client.post(
+            self.activities_assignments_applet.format(applet_id=applet_one_with_flow.id), data=assignments_create
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        client.login(lucy)
+
+        response = await client.get(self.user_all_activities_assignments)
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assignments_by_applet = {applet["appletId"]: applet["assignments"] for applet in response.json()["result"]}
+        applet_one_assignments = assignments_by_applet[str(applet_one_with_flow.id)]
+        assert len(applet_one_assignments) == 1
+        assignment = applet_one_assignments[0]
+        assert assignment["activityId"] is None
+        assert assignment["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
+        assert assignment["respondentSubject"]["id"] == str(lucy_applet_one_subject.id)
+        assert assignment["targetSubject"]["id"] == str(tom_applet_one_subject.id)
+
     async def test_assignment_list_by_respondent_all_applets_skips_applets_without_access(
         self,
         session: AsyncSession,

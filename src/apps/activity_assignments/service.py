@@ -399,7 +399,7 @@ class ActivityAssignmentService:
     async def get_all_for_respondent_user(self, user_id: uuid.UUID) -> list[ActivitiesAssignmentsWithSubjects]:
         """
         Returns the user's assignments as respondent, grouped by applet, for every applet the user can access.
-        Applets with no assignments are included with an empty list.
+        Applets where the user has a subject but no assignments are included with an empty list.
         """
         respondent_subjects = await SubjectsCrud(self.session).get_by_user_in_accessible_applets(user_id)
         if not respondent_subjects:
