@@ -24,6 +24,7 @@ from apps.subjects.constants import SubjectStatus
 from apps.subjects.domain import Subject, SubjectCreate
 from apps.subjects.services import SubjectsService
 from apps.users import User, UserSchema, UsersCRUD
+from apps.workspaces.crud.user_applet_access import UserAppletAccessCRUD
 from apps.workspaces.domain.workspace import WorkspaceApplet
 from apps.workspaces.errors import AppletAccessDenied, InvalidAppletIDFilter
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
@@ -963,6 +964,29 @@ class TestWorkspaces(BaseTest):
         )
 
         assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()
+
+    async def test_replace_workspace_manager_accesses(self, client, session, tom, bob, applet_one_bob_coordinator):
+        # Keeping an existing role re-adds a soft-deleted row
+        client.login(tom)
+        response = await client.put(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=bob.id),
+            dict(accesses=[{"applet_id": str(applet_one_bob_coordinator.id), "roles": ["coordinator", "editor"]}]),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        roles = await UserAppletAccessCRUD(session).get_user_roles_to_applet(bob.id, applet_one_bob_coordinator.id)
+        assert set(roles) - {Role.RESPONDENT} == {Role.COORDINATOR, Role.EDITOR}
+
+    async def test_replace_workspace_manager_accesses_for_non_member(self, client, session, tom, bob, applet_one):
+        client.login(tom)
+        response = await client.put(
+            self.workspace_manager_accesses_url.format(owner_id=tom.id, manager_id=bob.id),
+            dict(accesses=[{"applet_id": str(applet_one.id), "roles": ["manager"]}]),
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN, response.json()
+        roles = await UserAppletAccessCRUD(session).get_user_roles_to_applet(bob.id, applet_one.id)
+        assert Role.MANAGER not in roles
 
     async def test_pin_workspace_respondents(self, client, tom, applet_one, applet_one_lucy_respondent):
         client.login(tom)

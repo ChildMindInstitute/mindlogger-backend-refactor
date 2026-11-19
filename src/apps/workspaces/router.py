@@ -21,6 +21,7 @@ from apps.workspaces.api import (
     workspace_applets,
     workspace_folder_applets,
     workspace_manager_pin,
+    workspace_managers_applet_access_replace,
     workspace_managers_applet_access_set,
     workspace_managers_list,
     workspace_remove_manager_access,
@@ -254,6 +255,15 @@ router.post(
         **AUTHENTICATION_ERROR_RESPONSES,
     },
 )(workspace_managers_applet_access_set)
+
+router.put(
+    "/{owner_id}/managers/{manager_id}/accesses",
+    status_code=status.HTTP_200_OK,
+    responses={
+        **DEFAULT_OPENAPI_RESPONSE,
+        **AUTHENTICATION_ERROR_RESPONSES,
+    },
+)(workspace_managers_applet_access_replace)
 
 # Remove manager access from a specific user
 router.delete(
