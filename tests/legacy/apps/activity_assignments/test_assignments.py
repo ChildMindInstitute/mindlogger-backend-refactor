@@ -3,7 +3,7 @@ import re
 import uuid
 
 import pytest
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tests.legacy.base import BaseTest
 from tests.legacy.client import TestClient
@@ -27,6 +27,7 @@ from apps.subjects.db.schemas import SubjectSchema
 from apps.subjects.domain import Subject, SubjectCreate, SubjectFull
 from apps.subjects.services import SubjectsService
 from apps.users import User
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 
 
 @pytest.fixture
@@ -128,6 +129,7 @@ def message_language(message_body: str):
 class TestActivityAssignments(BaseTest):
     activities_assignments_applet = "/assignments/applet/{applet_id}"
     user_activities_assignments = "/users/me/assignments/{applet_id}"
+    user_all_activities_assignments = "/users/me/assignments"
     activities_assign_unassign_applet = "/assignments/applet/{applet_id}"
 
     @pytest.mark.parametrize("invite_language", ["en", "fr", "el", "af", "xh", "zu"])
@@ -917,6 +919,129 @@ class TestActivityAssignments(BaseTest):
         assert assignment["respondentSubject"]["id"] == str(lucy_applet_one_subject.id)
         assert assignment["respondentSubject"]["firstName"] == lucy_applet_one_subject.first_name
         assert assignment["respondentSubject"]["lastName"] == lucy_applet_one_subject.last_name
+
+    async def test_assignment_list_by_respondent_all_applets_success(
+        self,
+        client: TestClient,
+        applet_one: AppletFull,
+        applet_two_lucy_respondent: AppletFull,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+        lucy_applet_two_subject: Subject,
+    ):
+        client.login(tom)
+
+        assignments_create = ActivitiesAssignmentsCreate(
+            assignments=[
+                ActivityAssignmentCreate(
+                    activity_id=applet_one.activities[0].id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                ),
+                ActivityAssignmentCreate(
+                    activity_id=applet_one.activities[0].id,
+                    respondent_subject_id=tom_applet_one_subject.id,
+                    target_subject_id=lucy_applet_one_subject.id,
+                ),
+            ]
+        )
+        response = await client.post(
+            self.activities_assignments_applet.format(applet_id=applet_one.id), data=assignments_create
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        client.login(lucy)
+
+        response = await client.get(self.user_all_activities_assignments)
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assert response.json()["count"] == len(response.json()["result"])
+        assignments_by_applet = {applet["appletId"]: applet["assignments"] for applet in response.json()["result"]}
+        assert {str(applet_one.id), str(applet_two_lucy_respondent.id)} <= set(assignments_by_applet)
+
+        # Only the assignment where Lucy is the respondent, matching the per-applet endpoint.
+        applet_one_assignments = assignments_by_applet[str(applet_one.id)]
+        assert len(applet_one_assignments) == 1
+        assignment = applet_one_assignments[0]
+        assert assignment["activityId"] == str(applet_one.activities[0].id)
+        assert assignment["activityFlowId"] is None
+        assert assignment["respondentSubject"]["id"] == str(lucy_applet_one_subject.id)
+        assert assignment["targetSubject"]["id"] == str(tom_applet_one_subject.id)
+        assert assignment["targetSubject"]["firstName"] == tom_applet_one_subject.first_name
+
+        assert assignments_by_applet[str(applet_two_lucy_respondent.id)] == []
+
+        response = await client.get(self.user_activities_assignments.format(applet_id=applet_one.id))
+        assert response.json()["result"]["assignments"] == applet_one_assignments
+
+    async def test_assignment_list_by_respondent_all_applets_includes_flows(
+        self,
+        client: TestClient,
+        applet_one_with_flow: AppletFull,
+        tom: User,
+        lucy: User,
+        tom_applet_one_subject: Subject,
+        lucy_applet_one_subject: Subject,
+    ):
+        client.login(tom)
+
+        assignments_create = ActivitiesAssignmentsCreate(
+            assignments=[
+                ActivityAssignmentCreate(
+                    activity_flow_id=applet_one_with_flow.activity_flows[0].id,
+                    respondent_subject_id=lucy_applet_one_subject.id,
+                    target_subject_id=tom_applet_one_subject.id,
+                )
+            ]
+        )
+        response = await client.post(
+            self.activities_assignments_applet.format(applet_id=applet_one_with_flow.id), data=assignments_create
+        )
+        assert response.status_code == http.HTTPStatus.CREATED, response.json()
+
+        client.login(lucy)
+
+        response = await client.get(self.user_all_activities_assignments)
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        assignments_by_applet = {applet["appletId"]: applet["assignments"] for applet in response.json()["result"]}
+        applet_one_assignments = assignments_by_applet[str(applet_one_with_flow.id)]
+        assert len(applet_one_assignments) == 1
+        assignment = applet_one_assignments[0]
+        assert assignment["activityId"] is None
+        assert assignment["activityFlowId"] == str(applet_one_with_flow.activity_flows[0].id)
+        assert assignment["respondentSubject"]["id"] == str(lucy_applet_one_subject.id)
+        assert assignment["targetSubject"]["id"] == str(tom_applet_one_subject.id)
+
+    async def test_assignment_list_by_respondent_all_applets_skips_applets_without_access(
+        self,
+        session: AsyncSession,
+        client: TestClient,
+        applet_one: AppletFull,
+        applet_two_lucy_respondent: AppletFull,
+        lucy: User,
+        lucy_applet_one_subject: Subject,
+        lucy_applet_two_subject: Subject,
+    ):
+        await session.execute(
+            update(UserAppletAccessSchema)
+            .where(
+                UserAppletAccessSchema.user_id == lucy.id,
+                UserAppletAccessSchema.applet_id == applet_two_lucy_respondent.id,
+            )
+            .values(is_deleted=True)
+        )
+
+        client.login(lucy)
+
+        response = await client.get(self.user_all_activities_assignments)
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        applet_ids = [applet["appletId"] for applet in response.json()["result"]]
+        assert str(applet_one.id) in applet_ids
+        assert str(applet_two_lucy_respondent.id) not in applet_ids
 
     async def test_reassign_creation(
         self,

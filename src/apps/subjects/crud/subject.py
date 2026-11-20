@@ -6,10 +6,12 @@ from sqlalchemy import and_, delete, func, or_, select, update
 from sqlalchemy.dialects.postgresql import UUID, insert
 from sqlalchemy.orm import Query
 
+from apps.applets.db.schemas import AppletSchema
 from apps.invitations.constants import InvitationStatus
 from apps.invitations.db import InvitationSchema
 from apps.subjects.db.schemas import SubjectRelationSchema, SubjectSchema
 from apps.subjects.domain import SubjectCreate, SubjectRelation
+from apps.workspaces.db.schemas import UserAppletAccessSchema
 from infrastructure.database.crud import BaseCRUD
 
 __all__ = ["SubjectsCrud"]
@@ -72,6 +74,27 @@ class SubjectsCrud(BaseCRUD[SubjectSchema]):
         )
         res_db = await self._execute(query)
         return res_db.scalar_one_or_none()
+
+    async def get_by_user_in_accessible_applets(self, user_id: uuid.UUID) -> list[SubjectSchema]:
+        """
+        Returns the user's subjects in every applet the user still has a role in and that isn't deleted.
+        """
+        accessible_applets_query = select(UserAppletAccessSchema.applet_id).where(
+            UserAppletAccessSchema.user_id == user_id,
+            UserAppletAccessSchema.soft_exists(),
+        )
+        query: Query = (
+            select(SubjectSchema)
+            .join(AppletSchema, AppletSchema.id == SubjectSchema.applet_id)
+            .where(
+                SubjectSchema.user_id == user_id,
+                SubjectSchema.soft_exists(),
+                SubjectSchema.applet_id.in_(accessible_applets_query),
+                AppletSchema.soft_exists(),
+            )
+        )
+        res_db = await self._execute(query)
+        return res_db.scalars().all()
 
     async def delete(self, id_: uuid.UUID):
         return await self._delete(id=id_)

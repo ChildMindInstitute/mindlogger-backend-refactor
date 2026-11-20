@@ -11,7 +11,9 @@ class ActivityAssigmentSchema(Base):
 
     activity_flow_id = Column(UUID(as_uuid=True), nullable=True)
     activity_id = Column(UUID(as_uuid=True), nullable=True)
-    respondent_subject_id = Column(ForeignKey("subjects.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    respondent_subject_id = Column(
+        ForeignKey("subjects.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False, index=True
+    )
     target_subject_id = Column(ForeignKey("subjects.id", ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
 
     __table_args__ = (
