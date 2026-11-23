@@ -35,7 +35,11 @@ from apps.shared.exception import NotFoundError
 from apps.subjects.domain import Subject
 from apps.users.domain import User
 from apps.workspaces.domain.constants import Role
-from apps.workspaces.errors import AppletCreationAccessDenied, AppletEncryptionUpdateDenied
+from apps.workspaces.errors import (
+    AppletCreationAccessDenied,
+    AppletEditionAccessDenied,
+    AppletEncryptionUpdateDenied,
+)
 from apps.workspaces.service.user_applet_access import UserAppletAccessService
 from infrastructure.utility.notification_client import FCMNotificationTest
 
@@ -48,6 +52,7 @@ class TestApplet:
     applet_duplicate_url = f"{applet_detail_url}/duplicate"
     applet_report_config_url = f"{applet_detail_url}/report_configuration"
     activity_report_config_url = f"{applet_detail_url}/activities/{{activity_id}}/report_configuration"
+    activity_copy_url = f"{applet_detail_url}/activities/{{activity_id}}/copy"
     flow_report_config_url = f"{applet_detail_url}/flows/{{flow_id}}/report_configuration"
     applet_publish_url = f"{applet_detail_url}/publish"
     applet_conceal_url = f"{applet_detail_url}/conceal"
@@ -329,6 +334,94 @@ class TestApplet:
         result = response.json()["result"]
         assert len(result) == 1
         assert result[0]["message"] == DuplicateActivityNameError.message
+
+    async def test_copy_activity_to_another_applet(
+        self, session: AsyncSession, tom: User, applet_minimal_data: AppletCreate, applet_one_with_flow: AppletFull
+    ):
+        srv = AppletService(session, tom.id)
+        data = applet_minimal_data.model_copy(deep=True)
+        data.display_name = "Copy source"
+        data.activities[0].name = "Activity to copy"
+        source = await srv.create(data)
+        source_activity = source.activities[0]
+
+        result = await srv.copy_activity(source.id, source_activity.id, applet_one_with_flow.id)
+
+        # Existing activities and flow are kept, the copy is added last
+        assert [a.id for a in result.activities[:-1]] == [a.id for a in applet_one_with_flow.activities]
+        assert result.activity_flows[0].id == applet_one_with_flow.activity_flows[0].id
+        copied = result.activities[-1]
+        assert copied.order == len(result.activities)
+        assert copied.name == source_activity.name
+        assert copied.id != source_activity.id
+        assert copied.auto_assign == source_activity.auto_assign
+        assert [i.name for i in copied.items] == [i.name for i in source_activity.items]
+        assert not {i.id for i in copied.items} & {i.id for i in source_activity.items}
+
+        source_after = await srv.get_full_applet(source.id)
+        assert [a.id for a in source_after.activities] == [source_activity.id]
+
+    async def test_copy_activity_renames_on_name_clash(
+        self, session: AsyncSession, tom: User, applet_minimal_data: AppletCreate
+    ):
+        srv = AppletService(session, tom.id)
+        activity = applet_minimal_data.activities[0]
+        source_data = applet_minimal_data.model_copy(deep=True)
+        source_data.display_name = "Copy source"
+        source_data.activities = [activity.model_copy(update={"name": "X"})]
+        target_data = applet_minimal_data.model_copy(deep=True)
+        target_data.display_name = "Copy target"
+        target_data.activities = [
+            activity.model_copy(update={"name": "X", "key": uuid.uuid4()}),
+            activity.model_copy(update={"name": "X (1)", "key": uuid.uuid4()}),
+        ]
+        source = await srv.create(source_data)
+        target = await srv.create(target_data)
+
+        result = await srv.copy_activity(source.id, source.activities[0].id, target.id)
+
+        assert [a.name for a in result.activities] == ["X", "X (1)", "X (2)"]
+
+    async def test_copy_activity_endpoint(
+        self, client: TestClient, tom: User, applet_one: AppletFull, applet_two: AppletFull
+    ):
+        client.login(tom)
+        source_activity = applet_two.activities[0]
+
+        response = await client.post(
+            self.activity_copy_url.format(pk=applet_two.id, activity_id=source_activity.id),
+            data=dict(target_applet_id=str(applet_one.id)),
+        )
+
+        assert response.status_code == http.HTTPStatus.OK, response.json()
+        activities = response.json()["result"]["activities"]
+        assert len(activities) == len(applet_one.activities) + 1
+        # Both applets use the same activity name, so the copy is renamed
+        assert activities[-1]["name"] == f"{source_activity.name} (1)"
+
+    async def test_copy_activity_endpoint_without_target_edit_access(
+        self,
+        client: TestClient,
+        session: AsyncSession,
+        lucy: User,
+        tom: User,
+        applet_one: AppletFull,
+        applet_minimal_data: AppletCreate,
+    ):
+        data = applet_minimal_data.model_copy(deep=True)
+        data.display_name = "Lucy source"
+        source = await AppletService(session, lucy.id).create(data)
+        client.login(lucy)
+
+        response = await client.post(
+            self.activity_copy_url.format(pk=source.id, activity_id=source.activities[0].id),
+            data=dict(target_applet_id=str(applet_one.id)),
+        )
+
+        assert response.status_code == http.HTTPStatus.FORBIDDEN
+        assert response.json()["result"][0]["message"] == AppletEditionAccessDenied.message
+        target = await AppletService(session, tom.id).get_full_applet(applet_one.id)
+        assert [a.id for a in target.activities] == [a.id for a in applet_one.activities]
 
     async def test_duplicate_applet(
         self, client: TestClient, tom: User, applet_one: AppletFull, encryption: Encryption
